@@ -1,3 +1,11 @@
+raye-settings (0.5.5~beta1) resolute; urgency=medium
+
+  * Raye Update: a direct link to Optional updates (drivers, Raye kernel).
+  * Search: Raye Update shows once, and the Raye kernel result says it is
+    an optional update.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Sun, 15 Nov 2026 19:02:45 +0000
+
 raye-settings (0.5.4~beta1) resolute; urgency=medium
 
   * Your info shows your Raye account like Windows shows a Microsoft

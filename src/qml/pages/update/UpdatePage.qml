@@ -345,6 +345,15 @@ PageScaffold {
     }
 
     NavCard {
+        searchId: "update-optional"
+        iconName: "org.raye.settings-drivers"
+        iconFallback: "preferences-system-hardware"
+        title: i18nc("@title settings page", "Optional updates")
+        description: i18nc("@info", "Drivers for your hardware, Raye kernel")
+        target: "update/drivers"
+    }
+
+    NavCard {
         searchId: "update-history"
         iconName: "org.raye.settings-update-history"
         iconFallback: "view-history"

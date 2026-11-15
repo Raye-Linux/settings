@@ -262,7 +262,15 @@ bool SearchIndex::load(const Sources &sources, QString *error)
         entry.keywords[Fr] = QStringList{frCategory.summary};
         entry.icon = category.icon;
         entry.iconFallback = category.iconFallback;
-        addEntry(entry);
+        // A category whose landing page is also one of its pages, under the
+        // same name, would show twice ("Raye Update" twice): the page stays.
+        bool landingIsAPage = false;
+        for (const Page &page : category.pages) {
+            if (!category.landing.isEmpty() && page.component == category.landing && page.name == category.name)
+                landingIsAPage = true;
+        }
+        if (!landingIsAPage)
+            addEntry(entry);
 
         for (qsizetype p = 0; p < category.pages.size(); ++p) {
             const Page &page = category.pages.at(p);

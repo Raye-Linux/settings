@@ -5,6 +5,6 @@
         {"id": "devices/autoplay#removable-drive", "label": "Removable drive", "label_fr": "Lecteur amovible", "keywords": ["usb drive", "usb key", "external drive", "open folder", "take no action"], "keywords_fr": ["clé usb", "disque externe", "ouvrir le dossier", "ne rien faire"]},
         {"id": "devices/autoplay#memory-card", "label": "Memory card", "label_fr": "Carte mémoire", "keywords": ["sd card", "camera card", "card reader"], "keywords_fr": ["carte sd", "carte d'appareil photo", "lecteur de cartes"]},
         {"id": "update/drivers#driver-updates", "label": "Driver updates", "label_fr": "Mises à jour des pilotes", "keywords": ["drivers", "graphics driver", "nvidia", "wifi driver", "install driver", "remove driver", "optional updates"], "keywords_fr": ["pilotes", "pilote graphique", "nvidia", "pilote wifi", "installer un pilote", "supprimer un pilote", "mises à jour facultatives"]},
-        {"id": "update/drivers#other-updates", "label": "Raye kernel", "label_fr": "Noyau Raye", "keywords": ["kernel", "crash screen"], "keywords_fr": ["noyau", "écran d'erreur"]}
+        {"id": "update/drivers#other-updates", "label": "Raye kernel (optional update)", "label_fr": "Noyau Raye (mise à jour facultative)", "keywords": ["kernel", "crash screen"], "keywords_fr": ["noyau", "écran d'erreur"]}
     ]
 }
