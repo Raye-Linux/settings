@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<!-- Settings > System > Troubleshoot: the fixes that touch the system
+     (restart the network, Bluetooth or printing service, start paused
+     printers, repair Raye Update). The helper refuses anything else. -->
+<policyconfig>
+  <vendor>Raye Linux</vendor>
+  <action id="org.raye.settings.troubleshoot">
+    <description>Fix problems found by a troubleshooter</description>
+    <description xml:lang="fr">Résoudre les problèmes trouvés par un utilitaire de résolution</description>
+    <message>Fixing these problems needs root access</message>
+    <message xml:lang="fr">La résolution de ces problèmes demande l'accès root</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/raye-settings/troubleshoot</annotate>
+  </action>
+</policyconfig>

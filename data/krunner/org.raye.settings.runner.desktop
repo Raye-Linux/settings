@@ -1,0 +1,17 @@
+[Desktop Entry]
+Name=Settings
+Name[fr]=Paramètres
+Comment=Find a setting and open it
+Comment[fr]=Trouver un paramètre et l'ouvrir
+Type=Service
+Icon=org.raye.settings
+X-KDE-PluginInfo-Author=Raye Linux
+X-KDE-PluginInfo-Name=org.raye.settings.runner
+X-KDE-PluginInfo-Version=1.0
+X-KDE-PluginInfo-License=GPL
+X-KDE-PluginInfo-EnabledByDefault=true
+X-Plasma-API=DBus
+X-Plasma-DBusRunner-Service=org.raye.settings.runner
+X-Plasma-DBusRunner-Path=/runner
+X-Plasma-Runner-Min-Letter-Count=2
+X-Plasma-Request-Actions-Once=true

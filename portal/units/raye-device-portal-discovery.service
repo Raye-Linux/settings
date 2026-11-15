@@ -1,0 +1,13 @@
+# Device discovery: other devices on the network see this PC's portal
+# by name (mDNS). Runs only while the portal is on.
+[Unit]
+Description=Raye Device Portal discovery
+BindsTo=raye-device-portal.socket
+After=raye-device-portal.socket
+ConditionPathExists=/usr/bin/avahi-publish-service
+
+[Service]
+ExecStart=/usr/bin/avahi-publish-service -s "%H Device Portal" _https._tcp 50443 path=/
+NoNewPrivileges=yes
+Restart=on-failure
+RestartSec=10

@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "entries": [
+        {"id": "system/notifications#notifications", "label": "Notifications", "label_fr": "Notifications", "keywords": ["alerts", "banners", "toasts", "turn off notifications", "popups"], "keywords_fr": ["alertes", "bannières", "désactiver les notifications", "fenêtres contextuelles"]},
+        {"id": "system/notifications#notification-sounds", "label": "Allow notifications to play sounds", "label_fr": "Autoriser les notifications à émettre des sons", "keywords": ["notification sound", "mute notifications", "ding"], "keywords_fr": ["son des notifications", "couper le son des notifications"]},
+        {"id": "system/notifications#lock-screen-notifications", "label": "Show notifications on the lock screen", "label_fr": "Afficher les notifications sur l'écran de verrouillage", "keywords": ["lock screen", "badges", "locked"], "keywords_fr": ["écran de verrouillage", "badges", "verrouillé"]},
+        {"id": "system/notifications#do-not-disturb", "label": "Do not disturb", "label_fr": "Ne pas déranger", "keywords": ["dnd", "quiet", "silence notifications", "mute"], "keywords_fr": ["silence", "notifications silencieuses", "muet"]},
+        {"id": "system/notifications#dnd-automatically", "label": "Turn on do not disturb automatically", "label_fr": "Activer automatiquement Ne pas déranger", "keywords": ["automatic rules", "dnd rules", "quiet hours"], "keywords_fr": ["règles automatiques", "heures calmes"]},
+        {"id": "system/notifications#dnd-duplicating", "label": "When duplicating your display", "label_fr": "Pendant la duplication de votre écran", "keywords": ["projector", "presentation", "mirror", "duplicate screen"], "keywords_fr": ["projecteur", "présentation", "dupliquer l'écran", "miroir"]},
+        {"id": "system/notifications#dnd-sharing", "label": "When sharing your screen", "label_fr": "Pendant le partage de votre écran", "keywords": ["screen sharing", "meeting", "video call", "screencast"], "keywords_fr": ["partage d'écran", "réunion", "appel vidéo"]},
+        {"id": "system/notifications#dnd-full-screen", "label": "When playing a game or using an app in full screen", "label_fr": "Pendant un jeu ou une application en plein écran", "keywords": ["game", "full screen", "fullscreen", "movie"], "keywords_fr": ["jeu", "plein écran", "film"]},
+        {"id": "system/focus#focus-session", "label": "Start a focus session", "label_fr": "Démarrer une session de concentration", "keywords": ["focus", "timer", "pomodoro", "concentrate", "work session"], "keywords_fr": ["concentration", "minuteur", "pomodoro", "session de travail"]},
+        {"id": "system/focus#focus-do-not-disturb", "label": "Turn on do not disturb during focus", "label_fr": "Activer Ne pas déranger pendant la concentration", "keywords": ["focus", "dnd", "quiet"], "keywords_fr": ["concentration", "ne pas déranger", "silence"]}
+    ]
+}

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Accounts > Sign-in options > Fingerprint: a saved fingerprint is only of
+# use once the system's sign-in rules ask for it. Those rules are off when
+# Raye is installed, since most PCs have no reader. Run through pkexec
+# (org.raye.settings.fingerprint).
+#
+#   fingerprint-signin on|off     allow signing in with a finger, or stop
+#   fingerprint-signin --check    say "on" or "off", change nothing
+set -u
+case ${1:-} in
+on) exec pam-auth-update --package --enable fprintd ;;
+off) exec pam-auth-update --package --remove fprintd ;;
+--check) if grep -qs pam_fprintd "${RAYE_PAM_AUTH:-/etc/pam.d/common-auth}"; then echo on; else echo off; fi ;;
+*) echo "usage: fingerprint-signin on|off|--check" >&2; exit 2 ;;
+esac

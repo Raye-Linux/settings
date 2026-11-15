@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+# Raye Settings answers for KDE System Settings: its two commands open
+# the Raye window (or a module on its own), and KDE's menu entry moves
+# out of the menu. Which other KDE entries show in the menu is decided
+# by the desktop entries of Raye, not here. Everything is put back when
+# raye-settings is removed.
+if [ "$1" = install ] || [ "$1" = upgrade ]; then
+    dpkg-divert --package raye-settings --add --rename \
+        --divert /usr/bin/systemsettings.kde /usr/bin/systemsettings
+    dpkg-divert --package raye-settings --add --rename \
+        --divert /usr/bin/kcmshell6.kde /usr/bin/kcmshell6
+    mkdir -p /usr/share/raye-settings/kde
+    dpkg-divert --package raye-settings --add --rename \
+        --divert /usr/share/raye-settings/kde/systemsettings.desktop \
+        /usr/share/applications/systemsettings.desktop
+
+    # test builds moved these two aside as well: put them back
+    for entry in org.kde.kinfocenter org.kde.kmenuedit; do
+        if [ "$(dpkg-divert --listpackage /usr/share/applications/$entry.desktop)" = raye-settings ]; then
+            dpkg-divert --package raye-settings --remove --rename \
+                --divert /usr/share/raye-settings/kde/$entry.desktop \
+                /usr/share/applications/$entry.desktop
+        fi
+    done
+fi
+#DEBHELPER#

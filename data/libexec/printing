@@ -1,0 +1,8 @@
+#!/bin/sh
+# Bluetooth & devices > Printers: turn the print service on, for good. Run
+# through pkexec (org.raye.settings.printing).
+set -u
+case ${1:-} in
+on) systemctl enable --now cups.socket cups.service ;;
+*) echo "usage: printing on" >&2; exit 2 ;;
+esac

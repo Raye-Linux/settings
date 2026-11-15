@@ -1,0 +1,229 @@
+{
+    "version": 1,
+    "entries": [
+        {
+            "id": "devices/mouse#primary-button",
+            "label": "Primary mouse button",
+            "label_fr": "Bouton principal de la souris",
+            "keywords": [
+                "left handed",
+                "right handed",
+                "swap buttons"
+            ],
+            "keywords_fr": [
+                "gaucher",
+                "droitier",
+                "inverser les boutons"
+            ]
+        },
+        {
+            "id": "devices/mouse#pointer-speed",
+            "label": "Mouse pointer speed",
+            "label_fr": "Vitesse du pointeur",
+            "keywords": [
+                "cursor speed",
+                "sensitivity",
+                "dpi"
+            ],
+            "keywords_fr": [
+                "vitesse de la souris",
+                "sensibilité"
+            ]
+        },
+        {
+            "id": "devices/mouse#pointer-precision",
+            "label": "Enhance pointer precision",
+            "label_fr": "Améliorer la précision du pointeur",
+            "keywords": [
+                "acceleration",
+                "mouse acceleration"
+            ],
+            "keywords_fr": [
+                "accélération de la souris"
+            ]
+        },
+        {
+            "id": "devices/mouse#scroll-speed",
+            "label": "Scroll speed",
+            "label_fr": "Vitesse de défilement",
+            "keywords": [
+                "wheel",
+                "lines",
+                "mouse wheel"
+            ],
+            "keywords_fr": [
+                "molette",
+                "lignes"
+            ]
+        },
+        {
+            "id": "devices/mouse#scroll-direction",
+            "label": "Scrolling direction",
+            "label_fr": "Sens du défilement",
+            "keywords": [
+                "natural scrolling",
+                "reverse scrolling"
+            ],
+            "keywords_fr": [
+                "défilement naturel",
+                "inverser"
+            ]
+        },
+        {
+            "id": "devices/touchpad#touchpad",
+            "label": "Touchpad",
+            "label_fr": "Pavé tactile",
+            "keywords": [
+                "trackpad",
+                "turn off touchpad"
+            ],
+            "keywords_fr": [
+                "désactiver le pavé tactile"
+            ]
+        },
+        {
+            "id": "devices/touchpad#keep-on-with-mouse",
+            "label": "Leave touchpad on when a mouse is connected",
+            "label_fr": "Laisser le pavé tactile actif quand une souris est connectée",
+            "keywords": [
+                "mouse connected"
+            ],
+            "keywords_fr": [
+                "souris connectée"
+            ]
+        },
+        {
+            "id": "devices/touchpad#cursor-speed",
+            "label": "Cursor speed",
+            "label_fr": "Vitesse du curseur",
+            "keywords": [
+                "touchpad speed",
+                "sensitivity"
+            ],
+            "keywords_fr": [
+                "sensibilité"
+            ]
+        },
+        {
+            "id": "devices/touchpad#disable-while-typing",
+            "label": "Turn the touchpad off while I type",
+            "label_fr": "Désactiver le pavé tactile pendant la frappe",
+            "keywords": [
+                "palm",
+                "typing"
+            ],
+            "keywords_fr": [
+                "paume",
+                "frappe"
+            ]
+        },
+        {
+            "id": "devices/touchpad#tap-to-click",
+            "label": "Tap with a single finger to click",
+            "label_fr": "Appuyer avec un doigt pour cliquer",
+            "keywords": [
+                "tap",
+                "click"
+            ],
+            "keywords_fr": [
+                "appui",
+                "cliquer"
+            ]
+        },
+        {
+            "id": "devices/touchpad#two-finger-tap",
+            "label": "Tap with two fingers",
+            "label_fr": "Appuyer avec deux doigts",
+            "keywords": [
+                "right click"
+            ],
+            "keywords_fr": [
+                "clic droit"
+            ]
+        },
+        {
+            "id": "devices/touchpad#tap-and-drag",
+            "label": "Tap twice and drag",
+            "label_fr": "Appuyer deux fois et faire glisser",
+            "keywords": [
+                "drag",
+                "select"
+            ],
+            "keywords_fr": [
+                "glisser",
+                "sélectionner"
+            ]
+        },
+        {
+            "id": "devices/touchpad#scroll-method",
+            "label": "Scroll with",
+            "label_fr": "Faire défiler avec",
+            "keywords": [
+                "two fingers",
+                "edge scrolling"
+            ],
+            "keywords_fr": [
+                "deux doigts",
+                "bord"
+            ]
+        },
+        {
+            "id": "devices/touchpad#scroll-direction",
+            "label": "Scrolling direction",
+            "label_fr": "Sens du défilement",
+            "keywords": [
+                "natural scrolling"
+            ],
+            "keywords_fr": [
+                "défilement naturel"
+            ]
+        },
+        {
+            "id": "devices/pen#tablet-settings",
+            "label": "Tablet settings",
+            "label_fr": "Paramètres de la tablette",
+            "keywords": [
+                "drawing tablet",
+                "pressure",
+                "pen"
+            ],
+            "keywords_fr": [
+                "tablette graphique",
+                "pression",
+                "stylet"
+            ]
+        },
+        {
+            "id": "devices/printers#add-printer",
+            "label": "Add a printer",
+            "label_fr": "Ajouter une imprimante",
+            "keywords": [
+                "install printer",
+                "printer",
+                "network printer",
+                "scanner"
+            ],
+            "keywords_fr": [
+                "installer une imprimante",
+                "imprimante réseau",
+                "scanneur"
+            ]
+        },
+        {
+            "id": "devices/phone#pc-name",
+            "label": "Your phone sees this PC as",
+            "label_fr": "Votre téléphone voit ce PC sous le nom",
+            "keywords": [
+                "pair phone",
+                "link phone",
+                "android",
+                "iphone",
+                "send files"
+            ],
+            "keywords_fr": [
+                "associer un téléphone",
+                "envoyer des fichiers"
+            ]
+        }
+    ]
+}

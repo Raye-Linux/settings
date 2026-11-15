@@ -1,0 +1,350 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Frees space for Settings > System > Storage, and for Storage Sense.
+# It only ever touches these places:
+#   trash       the user's trash (files, info, expunged)
+#   thumbnails  the user's thumbnail cache
+#   apt         downloaded package files in /var/cache/apt/archives
+#   logs        rotated logs, and journal files archived over 14 days
+#               ago, in /var/log
+#   snapshots   restore points (snapper, config "root"), all but the
+#               newest one and the one the system runs from
+#
+#   storage-clean [--root DIR] [--older-than DAYS] ITEM...
+#       says what each ITEM would free; deletes nothing (the default)
+#   storage-clean --apply [--root DIR] [--older-than DAYS] ITEM...
+#       deletes, and says what was freed
+#   storage-clean [--apply] --sense
+#       Storage Sense: what the user chose in raye-settingsrc
+#       ([StorageSense] TrashDays=, Thumbnails=)
+#
+# One line per item, tab separated:
+#   size   ITEM BYTES COUNT    (-1 when it cannot be known)
+#   freed  ITEM BYTES COUNT
+#   error  ITEM REASON         (denied, busy, missing, partial)
+# Exit status: 0 done, 1 wrong use, 2 an item failed.
+#
+# trash and thumbnails belong to the user and are cleaned as the user.
+# apt, logs and snapshots are deleted as root only, through pkexec and
+# the org.raye.settings.storage action; anyone may ask their size.
+# --root DIR does it all under DIR instead of /; it is for the tests
+# and pkexec refuses it. --older-than keeps trash and thumbnails that
+# are younger than DAYS days.
+set -u
+LC_ALL=C
+export LC_ALL
+umask 077
+
+usage() {
+    echo "usage: storage-clean [--apply] [--root DIR] [--older-than DAYS] ITEM... | --sense" >&2
+    echo "items: trash thumbnails apt logs snapshots" >&2
+    exit 1
+}
+
+root=/
+apply=0
+days=0
+sense=0
+items=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --apply) apply=1 ;;
+        --root) [ $# -ge 2 ] || usage; root=$2; shift ;;
+        --older-than) [ $# -ge 2 ] || usage; days=$2; shift ;;
+        --sense) sense=1 ;;
+        trash|thumbnails|apt|logs|snapshots)
+            case " $items " in *" $1 "*) ;; *) items="$items $1" ;; esac ;;
+        *) usage ;;
+    esac
+    shift
+done
+
+case $days in ''|*[!0-9]*) usage ;; esac
+[ "${#days}" -le 4 ] || usage
+case $root in /*) ;; *) usage ;; esac
+[ -d "$root" ] || usage
+# run by pkexec: the real system only, and no one else's home
+if [ -n "${PKEXEC_UID:-}" ] && [ "$root" != / ]; then
+    echo "storage-clean: --root is for tests" >&2
+    exit 1
+fi
+if [ "$sense" = 1 ]; then
+    [ -z "$items" ] || usage
+elif [ -z "$items" ]; then
+    usage
+fi
+
+base=${root%/}
+uid=$(id -u)
+status=0
+
+# XDG paths that are not absolute are ignored, as the spec says
+case ${XDG_DATA_HOME:-} in /*) data_home=$XDG_DATA_HOME ;; *) data_home=${HOME:-}/.local/share ;; esac
+case ${XDG_CACHE_HOME:-} in /*) cache_home=$XDG_CACHE_HOME ;; *) cache_home=${HOME:-}/.cache ;; esac
+case ${XDG_CONFIG_HOME:-} in /*) config_home=$XDG_CONFIG_HOME ;; *) config_home=${HOME:-}/.config ;; esac
+
+say() { printf '%s\t%s\t%s\t%s\n' "$@"; }
+fail() { printf 'error\t%s\t%s\n' "$1" "$2"; status=2; }
+
+# a folder we may walk: there, and not a link to somewhere else
+walkable() { [ -d "$1" ] && [ ! -L "$1" ]; }
+
+# measure DIR [tests]: bytes on disk and count of what the tests match
+measure() {
+    dir=$1; shift
+    if ! walkable "$dir"; then echo "0 0"; return; fi
+    find "$dir" -xdev -mindepth 1 "$@" ! -type d -printf '%b\n' 2>/dev/null |
+        awk '{ b += $1 * 512; n++ } END { printf "%.0f %d\n", b, n }'
+}
+
+# remove DIR [tests]: delete what the tests match, never a folder
+remove() {
+    dir=$1; shift
+    walkable "$dir" || return 0
+    find "$dir" -xdev -mindepth 1 "$@" ! -type d -delete 2>/dev/null
+}
+
+# the user's own things are not cleaned for someone else
+user_ok() {
+    if [ -n "${PKEXEC_UID:-}" ]; then fail "$1" denied; return 1; fi
+    case ${HOME:-} in /?*) ;; *) fail "$1" missing; return 1 ;; esac
+    return 0
+}
+
+# system files: as root, or in a test root
+system_ok() {
+    [ "$apply" = 0 ] && return 0
+    [ "$uid" = 0 ] && return 0
+    [ "$root" != / ] && return 0
+    fail "$1" denied
+    return 1
+}
+
+# report ITEM BEFORE AFTER: "size" for a dry run, "freed" after
+report() {
+    set -- "$1" $2 $3
+    if [ "$apply" = 1 ]; then
+        say freed "$1" "$(($2 - $4))" "$(($3 - $5))"
+    else
+        say size "$1" "$2" "$3"
+    fi
+}
+
+# --- trash -------------------------------------------------------------
+trash_aged() {   # trash_aged measure|delete: entries trashed DAYS ago
+    info=$data_home/Trash/info
+    if ! walkable "$info"; then
+        [ "$1" = measure ] && echo "0 0"
+        return 0
+    fi
+    if [ "$1" = measure ]; then
+        trash_aged_walk measure | awk '{ b += $1; n++ } END { printf "%.0f %d\n", b, n }'
+    else
+        trash_aged_walk delete
+    fi
+}
+
+# each entry is a .trashinfo in info/ and its namesake in files/
+trash_aged_walk() {
+    find "$data_home/Trash/info" -xdev -mindepth 1 -maxdepth 1 -type f -name '*.trashinfo' \
+            -mtime +$((days - 1)) -exec sh -c '
+        mode=$1; files=$2; shift 2
+        failed=0
+        for info do
+            name=${info##*/}
+            entry=$files/${name%.trashinfo}
+            if [ "$mode" = measure ]; then
+                if [ -e "$entry" ] || [ -L "$entry" ]; then
+                    du -s -x -P -B1 -- "$entry" 2>/dev/null | cut -f1
+                else
+                    echo 0
+                fi
+            elif [ -e "$entry" ] || [ -L "$entry" ]; then
+                if rm -rf --one-file-system -- "$entry" 2>/dev/null; then
+                    rm -f -- "$info" || failed=1
+                else
+                    failed=1
+                fi
+            else
+                rm -f -- "$info" || failed=1
+            fi
+        done
+        exit $failed' sh "$1" "$data_home/Trash/files" {} +
+}
+
+trash_all() {    # trash_all measure|delete
+    t=$data_home/Trash
+    if [ "$1" = measure ]; then
+        set -- $(measure "$t/files") $(measure "$t/info") $(measure "$t/expunged")
+        n=0
+        walkable "$t/files" && n=$(find "$t/files" -xdev -mindepth 1 -maxdepth 1 -printf x 2>/dev/null | wc -c)
+        echo "$(($1 + $3 + $5)) $n"
+        return 0
+    fi
+    ok=0
+    for d in files info expunged; do
+        walkable "$t/$d" || continue
+        find "$t/$d" -xdev -mindepth 1 -delete 2>/dev/null || ok=1
+    done
+    [ -f "$t/directorysizes" ] && [ ! -L "$t/directorysizes" ] && rm -f -- "$t/directorysizes"
+    return $ok
+}
+
+do_trash() {
+    user_ok trash || return 0
+    if [ "$days" -gt 0 ]; then walk=trash_aged; else walk=trash_all; fi
+    before=$($walk measure)
+    if [ "$apply" = 1 ]; then
+        $walk delete || fail trash partial
+        after=$($walk measure)
+    else
+        after="0 0"
+    fi
+    report trash "$before" "$after"
+}
+
+# --- thumbnails --------------------------------------------------------
+do_thumbnails() {
+    user_ok thumbnails || return 0
+    dir=$cache_home/thumbnails
+    if [ "$days" -gt 0 ]; then set -- -atime +$((days - 1)); else set --; fi
+    before=$(measure "$dir" "$@")
+    after="0 0"
+    if [ "$apply" = 1 ]; then
+        remove "$dir" "$@" || fail thumbnails partial
+        after=$(measure "$dir" "$@")
+    fi
+    report thumbnails "$before" "$after"
+}
+
+# --- apt ---------------------------------------------------------------
+do_apt() {
+    system_ok apt || return 0
+    dir=$base/var/cache/apt/archives
+    set -- \( \( -path "$dir/*.deb" ! -path "$dir/*/*" \) -o -path "$dir/partial/*" \)
+    before=$(measure "$dir" "$@")
+    after="0 0"
+    if [ "$apply" = 1 ]; then
+        # apt-get takes apt's lock: it says no while an update runs
+        if [ -z "$base" ] && command -v apt-get >/dev/null 2>&1; then
+            apt-get -qq clean >/dev/null 2>&1 || fail apt busy
+        else
+            remove "$dir" "$@" || fail apt partial
+        fi
+        after=$(measure "$dir" "$@")
+    fi
+    report apt "$before" "$after"
+}
+
+# --- logs --------------------------------------------------------------
+do_logs() {
+    system_ok logs || return 0
+    dir=$base/var/log
+    set -- -type f \( \
+        \( ! -path "$dir/journal/*" \( -name '*.gz' -o -name '*.xz' -o -name '*.zst' \
+            -o -name '*.bz2' -o -name '*.[0-9]' -o -name '*.old' \) \) \
+        -o \( -path "$dir/journal/*" \( -name '*@*.journal' -o -name '*@*.journal~' \) -mtime +13 \) \)
+    before=$(measure "$dir" "$@")
+    after="0 0"
+    if [ "$apply" = 1 ]; then
+        remove "$dir" "$@" || fail logs partial
+        after=$(measure "$dir" "$@")
+    fi
+    report logs "$before" "$after"
+}
+
+# --- snapshots ---------------------------------------------------------
+# The numbers snapper may delete, then their bytes (-1 if unknown):
+# every snapshot but 0, the newest, and the one mounted now or next.
+snapshot_plan() {
+    if [ "$uid" = 0 ]; then nodbus=--no-dbus; else nodbus=; fi
+    # shellcheck disable=SC2086
+    list=$(snapper $nodbus --csvout --no-headers -c root list \
+               --columns number,default,active,used-space 2>/dev/null) || return 1
+    printf '%s\n' "$list" | awk -F, '
+        $1 ~ /^[0-9]+$/ && $1 != 0 {
+            if ($2 == "yes" || $3 == "yes") next
+            n[++k] = $1; s[k] = $4
+            if ($1 + 0 > top) top = $1 + 0
+        }
+        END {
+            bytes = 0; known = 1; out = ""
+            for (i = 1; i <= k; i++) {
+                if (n[i] + 0 == top) continue
+                out = out " " n[i]
+                if (s[i] ~ /^[0-9]+$/) bytes += s[i]; else known = 0
+            }
+            if (!known) bytes = -1
+            print bytes out
+        }'
+}
+
+do_snapshots() {
+    system_ok snapshots || return 0
+    if [ ! -e "$base/etc/snapper/configs/root" ] || ! command -v snapper >/dev/null 2>&1; then
+        fail snapshots missing
+        return 0
+    fi
+    if ! plan=$(snapshot_plan); then
+        if [ "$apply" = 1 ]; then fail snapshots denied; else say size snapshots -1 -1; fi
+        return 0
+    fi
+    set -- $plan
+    bytes=$1; shift
+    if [ "$apply" = 0 ]; then
+        say size snapshots "$bytes" $#
+        return 0
+    fi
+    if [ $# -gt 0 ]; then
+        # one at a time: a snapshot that is busy keeps the others going
+        gone=0
+        for number do
+            if snapper --no-dbus -c root delete "$number" >/dev/null 2>&1; then
+                gone=$((gone + 1))
+            fi
+        done
+        [ "$gone" = $# ] || { fail snapshots partial; bytes=-1; }
+        say freed snapshots "$bytes" "$gone"
+    else
+        say freed snapshots 0 0
+    fi
+}
+
+# --- Storage Sense -----------------------------------------------------
+sense() {
+    trash_days=30
+    thumbnails=true
+    conf=$config_home/raye-settingsrc
+    if [ -f "$conf" ]; then
+        section=
+        while IFS= read -r line || [ -n "$line" ]; do
+            case $line in
+                \[*\]) section=$line ;;
+                TrashDays=*)
+                    value=${line#TrashDays=}
+                    if [ "$section" = "[StorageSense]" ]; then
+                        case $value in ''|*[!0-9]*) ;; *) [ "${#value}" -le 4 ] && trash_days=$value ;; esac
+                    fi ;;
+                Thumbnails=*)
+                    [ "$section" = "[StorageSense]" ] && thumbnails=${line#Thumbnails=} ;;
+            esac
+        done < "$conf"
+    fi
+    if [ "$trash_days" -gt 0 ]; then
+        days=$trash_days
+        do_trash
+    fi
+    if [ "$thumbnails" = true ]; then
+        days=30
+        do_thumbnails
+    fi
+}
+
+if [ "$sense" = 1 ]; then
+    sense
+else
+    for item in $items; do
+        "do_$item"
+    done
+fi
+exit $status

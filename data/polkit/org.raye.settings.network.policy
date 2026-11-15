@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Raye Linux</vendor>
+
+  <action id="org.raye.settings.network.reset">
+    <description>Reset network settings</description>
+    <description xml:lang="fr">Réinitialiser les paramètres réseau</description>
+    <message>Authentication is needed to forget all Wi-Fi networks and VPNs and restart networking.</message>
+    <message xml:lang="fr">Une authentification est nécessaire pour oublier tous les réseaux Wi-Fi et VPN et redémarrer le réseau.</message>
+    <icon_name>preferences-system-network</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/raye-settings/network-reset</annotate>
+  </action>
+</policyconfig>

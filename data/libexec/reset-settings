@@ -1,0 +1,263 @@
+#!/bin/sh
+# Recovery › Reset your settings. Puts the desktop, the taskbar and the
+# settings of Raye's own apps back as they were after installing, and
+# keeps what was there for 30 days so it can be put back.
+#
+# Plasma writes its settings again when it quits, so nothing can be
+# moved while the desktop runs: the reset is planned here, Settings signs
+# the user out, and the move happens at the next sign-in, before the
+# desktop starts (a script in ~/.config/plasma-workspace/env/, which
+# startplasma reads first).
+#
+#   reset-settings status                  what is planned, what can be undone
+#   reset-settings schedule [--keep-wallpaper]
+#   reset-settings schedule-undo
+#   reset-settings cancel
+#   reset-settings apply-pending           run by the sign-in script
+#   reset-settings restore-wallpaper       run once after the reset
+#
+# Runs as the user, never as root. RAYE_RESET_NOW (YYYYmmddHHMMSS) and
+# the XDG folders let tests/test_reset_settings.sh try it in a temp home.
+set -u
+
+# a root shell has no desktop of its own to reset (the tests run as root
+# in the build, and say so)
+if [ "$(id -u)" -eq 0 ] && [ "${RAYE_RESET_AS_ROOT:-}" != yes ]; then
+    echo "reset-settings: not as root" >&2
+    exit 2
+fi
+: "${HOME:?}"
+config=${XDG_CONFIG_HOME:-$HOME/.config}
+data=${XDG_DATA_HOME:-$HOME/.local/share}
+state=$data/raye-settings
+pending=$state/reset-pending
+hook=$config/plasma-workspace/env/raye-reset-settings.sh
+autostart=$config/autostart/raye-keep-wallpaper.desktop
+keep_days=30
+
+self=$(readlink -f "$0")
+now=${RAYE_RESET_NOW:-$(date +%Y%m%d%H%M%S)}
+case $now in
+*[!0-9]*|'') echo "reset-settings: bad RAYE_RESET_NOW" >&2; exit 2 ;;
+esac
+
+# What "your settings" are: the desktop, the taskbar, the window manager,
+# shortcuts, input, the look, and Raye's own apps. Not the settings of
+# other apps (a browser keeps its passwords and bookmarks), not the
+# programs set to start at sign-in, nor these scripts themselves. The
+# language, region formats, keyboard layouts and time zone stay too:
+# they are the user's, not the look of the desktop.
+settings_list() {
+    (
+        cd "$config" 2>/dev/null || exit 0
+        for name in plasma*rc kwin*rc \
+            kdeglobals kdedefaults kglobalshortcutsrc khotkeysrc kcminputrc \
+            kscreenlockerrc ksmserverrc ksplashrc kded5rc kded6rc krunnerrc klipperrc \
+            kiorc kservicemenurc kcmfonts kactivitymanagerdrc \
+            kactivitymanagerd-pluginsrc systemsettingsrc powerdevilrc \
+            powermanagementprofilesrc baloofilerc trashrc breezerc gtkrc gtkrc-2.0 \
+            gtk-3.0/settings.ini gtk-4.0/settings.ini xsettingsd menus \
+            dolphinrc konsolerc spectaclerc rayeshellrc; do
+            case $name in plasma-localerc) continue ;; esac
+            # a pattern that matched nothing stays as it is
+            [ -e "$name" ] || [ -L "$name" ] || continue
+            printf '%s\n' "$name"
+        done
+    )
+}
+
+# The age of a saved folder from its name: reset-20261031-142200.
+stamp_of() {
+    printf '%s\n' "${1##*/}" | sed -n 's/^[a-z]*-\([0-9]\{8\}\)-\([0-9]\{6\}\)$/\1\2/p'
+}
+
+days_between() { # from to (YYYYmmddHHMMSS each), whole days, never below 0
+    a=$(date -d "$(echo "$1" | sed 's/^\(....\)\(..\)\(..\)\(..\)\(..\)\(..\)$/\1-\2-\3 \4:\5:\6/')" +%s 2>/dev/null) || return 1
+    b=$(date -d "$(echo "$2" | sed 's/^\(....\)\(..\)\(..\)\(..\)\(..\)\(..\)$/\1-\2-\3 \4:\5:\6/')" +%s 2>/dev/null) || return 1
+    d=$(( (b - a) / 86400 ))
+    [ "$d" -lt 0 ] && d=0
+    echo "$d"
+}
+
+# Saved settings older than 30 days go for good.
+prune() {
+    for dir in "$state"/reset-* "$state"/undone-*; do
+        [ -d "$dir" ] || continue
+        stamp=$(stamp_of "$dir")
+        [ -n "$stamp" ] || continue
+        age=$(days_between "$stamp" "$now") || continue
+        [ "$age" -ge "$keep_days" ] && rm -rf -- "$dir"
+    done
+}
+
+# The newest saved reset that can still be put back, or nothing.
+last_reset() {
+    newest=
+    for dir in "$state"/reset-*; do
+        [ -d "$dir" ] || continue
+        stamp=$(stamp_of "$dir")
+        [ -n "$stamp" ] || continue
+        age=$(days_between "$stamp" "$now") || continue
+        [ "$age" -lt "$keep_days" ] || continue
+        newest=$dir
+    done
+    [ -n "$newest" ] && printf '%s\n' "$newest"
+}
+
+# Move the settings named by settings_list from one tree to another.
+move_settings() { # from to
+    from=$1 to=$2
+    settings_list | while IFS= read -r rel; do
+        parent=$(dirname -- "$rel")
+        mkdir -p -- "$to/$parent" || exit 1
+        mv -- "$from/$rel" "$to/$rel" || exit 1
+    done
+}
+
+wallpaper_of() { # appletsrc: the first picture of a desktop
+    awk '
+        /^\[/ { inside = index($0, "[Wallpaper][org.kde.image][General]") > 0; next }
+        inside && /^Image=/ { sub(/^Image=/, ""); print; exit }
+    ' "$1" 2>/dev/null | sed 's|^file://||'
+}
+
+lockscreen_picture() { # kscreenlockerrc: only what draws the picture
+    awk '
+        /^\[/ {
+            wall = index($0, "[Greeter][Wallpaper]") == 1
+            greeter = $0 == "[Greeter]"
+            if (wall) print
+            next
+        }
+        wall { print }
+        greeter && /^WallpaperPlugin=/ { print "[Greeter]"; print }
+    ' "$1" 2>/dev/null
+}
+
+write_hook() {
+    mkdir -p -- "$(dirname -- "$hook")" || return 1
+    {
+        echo "# Written by Raye Settings: runs once, at the next sign-in."
+        printf "'%s' apply-pending\n" "$(printf '%s' "$self" | sed "s/'/'\\\\''/g")"
+    } > "$hook.new" && mv -- "$hook.new" "$hook"
+}
+
+do_reset() { # [keep-wallpaper]
+    saved=$state/reset-$(echo "$now" | sed 's/^\(........\)\(......\)$/\1-\2/')
+    [ -e "$saved" ] && { echo "reset-settings: $saved exists" >&2; return 1; }
+    mkdir -p -- "$saved/config" || return 1
+    if [ "${1:-}" = keep-wallpaper ]; then
+        picture=$(wallpaper_of "$config/plasma-org.kde.plasma.desktop-appletsrc")
+        lock=$(lockscreen_picture "$config/kscreenlockerrc")
+    else
+        picture= lock=
+    fi
+    move_settings "$config" "$saved/config" || return 1
+    if [ -n "$lock" ]; then
+        printf '%s\n' "$lock" > "$config/kscreenlockerrc"
+    fi
+    if [ -n "$picture" ] && [ -f "$picture" ]; then
+        printf '%s\n' "$picture" > "$state/keep-wallpaper"
+        mkdir -p -- "$(dirname -- "$autostart")"
+        cat > "$autostart" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Raye Settings
+Exec="$self" restore-wallpaper
+NoDisplay=true
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2
+EOF
+    fi
+    return 0
+}
+
+do_undo() {
+    saved=$(last_reset) || saved=
+    [ -n "$saved" ] || { echo "reset-settings: nothing to undo" >&2; return 1; }
+    undone=$state/undone-$(echo "$now" | sed 's/^\(........\)\(......\)$/\1-\2/')
+    mkdir -p -- "$undone/config" || return 1
+    # what Plasma wrote since the reset steps aside (kept 30 days too)
+    move_settings "$config" "$undone/config" || return 1
+    config_saved=$saved/config
+    (
+        cd "$config_saved" || exit 1
+        find . -mindepth 1 -maxdepth 1 | while IFS= read -r entry; do
+            rel=${entry#./}
+            if [ "$rel" = gtk-3.0 ] || [ "$rel" = gtk-4.0 ]; then
+                mkdir -p -- "$config/$rel"
+                for f in "$rel"/*; do [ -e "$f" ] && mv -- "$f" "$config/$f"; done
+            else
+                mv -- "$rel" "$config/$rel"
+            fi
+        done
+    ) || return 1
+    rm -rf -- "$saved"
+    rm -f -- "$autostart" "$state/keep-wallpaper"
+}
+
+status() {
+    if [ -f "$pending" ]; then
+        echo "pending $(cat "$pending")"
+    else
+        echo "pending none"
+    fi
+    saved=$(last_reset) || saved=
+    if [ -n "$saved" ]; then
+        stamp=$(stamp_of "$saved")
+        age=$(days_between "$stamp" "$now")
+        echo "undo $stamp $((keep_days - age))"
+    fi
+}
+
+case ${1:-} in
+status)
+    prune
+    status
+    ;;
+schedule)
+    case ${2:-} in
+    '') what=reset ;;
+    --keep-wallpaper) what=reset-keep-wallpaper ;;
+    *) echo "reset-settings: unknown option $2" >&2; exit 2 ;;
+    esac
+    mkdir -p -- "$state" || exit 1
+    write_hook || exit 1
+    echo "$what" > "$pending"
+    ;;
+schedule-undo)
+    [ -n "$(last_reset)" ] || { echo "reset-settings: nothing to undo" >&2; exit 1; }
+    mkdir -p -- "$state" || exit 1
+    write_hook || exit 1
+    echo undo > "$pending"
+    ;;
+cancel)
+    rm -f -- "$pending" "$hook"
+    ;;
+apply-pending)
+    # the script runs once, whatever happens next
+    rm -f -- "$hook"
+    [ -f "$pending" ] || exit 0
+    what=$(cat "$pending")
+    rm -f -- "$pending"
+    prune
+    case $what in
+    reset) do_reset ;;
+    reset-keep-wallpaper) do_reset keep-wallpaper ;;
+    undo) do_undo ;;
+    *) echo "reset-settings: unknown plan $what" >&2; exit 1 ;;
+    esac
+    ;;
+restore-wallpaper)
+    rm -f -- "$autostart"
+    [ -f "$state/keep-wallpaper" ] || exit 0
+    picture=$(cat "$state/keep-wallpaper")
+    rm -f -- "$state/keep-wallpaper"
+    [ -f "$picture" ] || exit 0
+    exec plasma-apply-wallpaperimage "$picture"
+    ;;
+*)
+    echo "usage: reset-settings status|schedule [--keep-wallpaper]|schedule-undo|cancel|apply-pending" >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,17 @@
+[
+  {"id": "home#raye-account", "label": "Raye account", "label_fr": "Compte Raye",
+   "keywords": ["account", "sign in", "online accounts", "cloud"],
+   "keywords_fr": ["compte", "se connecter", "comptes en ligne", "cloud"]},
+  {"id": "home#update", "label": "Raye Update status", "label_fr": "État de Raye Update",
+   "keywords": ["up to date", "last checked", "restart to update"],
+   "keywords_fr": ["à jour", "dernière vérification", "redémarrer pour mettre à jour"]},
+  {"id": "home#your-device", "label": "Your device", "label_fr": "Votre appareil",
+   "keywords": ["this pc", "specs", "processor", "memory", "ram", "storage left"],
+   "keywords_fr": ["ce pc", "caractéristiques", "processeur", "mémoire", "espace restant"]},
+  {"id": "home#bluetooth-devices", "label": "Recent Bluetooth devices", "label_fr": "Appareils Bluetooth récents",
+   "keywords": ["headphones battery", "paired devices"],
+   "keywords_fr": ["batterie du casque", "appareils associés"]},
+  {"id": "home#make-it-yours", "label": "Make it yours", "label_fr": "Personnalisez-le",
+   "keywords": ["raye night", "raye day", "light theme", "dark theme", "look"],
+   "keywords_fr": ["thème clair", "thème sombre", "apparence"]}
+]

@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "entries": [
+        {"id": "system/advanced#developer-mode", "label": "Developer Mode", "label_fr": "Mode développeur",
+         "keywords": ["developer mode", "developer", "for developers", "debug logs", "dev mode"],
+         "keywords_fr": ["mode développeur", "développeur", "pour les développeurs", "journaux de débogage"]},
+        {"id": "system/advanced#device-portal", "label": "Device Portal", "label_fr": "Portail d'appareil",
+         "keywords": ["device portal", "remote management", "web page", "manage from browser", "remote diagnostics"],
+         "keywords_fr": ["portail d'appareil", "gestion à distance", "page web", "gérer depuis un navigateur", "diagnostic à distance"]},
+        {"id": "system/advanced#device-discovery", "label": "Device discovery", "label_fr": "Découverte d'appareil",
+         "keywords": ["device discovery", "mdns", "bonjour", "find this pc", "network name"],
+         "keywords_fr": ["découverte d'appareil", "mdns", "trouver ce pc", "nom réseau"]},
+        {"id": "system/advanced#windows-debug", "label": "Debug messages from Windows programs", "label_fr": "Messages de débogage des programmes Windows",
+         "keywords": ["debug", "debug messages", "windows programs", "exe", "logs", "fixme", "terminal output"],
+         "keywords_fr": ["débogage", "messages de débogage", "programmes windows", "exe", "journaux", "sortie du terminal"]},
+        {"id": "system/advanced#ssh-server", "label": "OpenSSH server", "label_fr": "Serveur OpenSSH",
+         "keywords": ["ssh", "openssh", "ssh server", "sshd", "remote shell", "secure shell"],
+         "keywords_fr": ["ssh", "openssh", "serveur ssh", "shell à distance", "connexion à distance"]}
+    ]
+}

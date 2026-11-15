@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "entries": [
+        {"id": "system/about#rename-pc", "label": "Rename this PC", "label_fr": "Renommer ce PC", "keywords": ["pc name", "computer name", "hostname", "device name", "rename computer"], "keywords_fr": ["nom du pc", "nom de l'ordinateur", "nom de l'appareil", "renommer l'ordinateur"]},
+        {"id": "system/about#device-specifications", "label": "Device specifications", "label_fr": "Spécifications de l'appareil", "keywords": ["processor", "cpu", "ram", "memory", "graphics card", "gpu", "system type", "64-bit", "device id", "specs", "model"], "keywords_fr": ["processeur", "mémoire", "ram", "carte graphique", "type du système", "64 bits", "caractéristiques", "modèle"]},
+        {"id": "system/about#raye-specifications", "label": "Raye Linux specifications", "label_fr": "Spécifications de Raye Linux", "keywords": ["version", "edition", "kernel", "installed on", "build", "os version"], "keywords_fr": ["version", "édition", "noyau", "installé le", "version du système"]},
+        {"id": "system/about#hardware-details", "label": "Hardware details", "label_fr": "Détails du matériel", "keywords": ["system information", "device manager", "hardware info"], "keywords_fr": ["informations système", "gestionnaire de périphériques", "informations matérielles"]},
+        {"id": "system/about#licence", "label": "Raye Linux is free software", "label_fr": "Raye Linux est un logiciel libre", "keywords": ["license", "licence", "activation", "product key", "open source", "gpl"], "keywords_fr": ["licence", "activation", "clé de produit", "logiciel libre", "gpl"]},
+        {"id": "system/hardware-details#hardware-processor", "label": "Processor details", "label_fr": "Détails du processeur", "keywords": ["cpu", "cores", "threads", "processor speed"], "keywords_fr": ["processeur", "cœurs", "threads"]},
+        {"id": "system/hardware-details#hardware-memory", "label": "Memory details", "label_fr": "Détails de la mémoire", "keywords": ["ram", "memory usage"], "keywords_fr": ["ram", "utilisation de la mémoire"]},
+        {"id": "system/hardware-details#hardware-vulkan", "label": "Graphics (Vulkan)", "label_fr": "Graphismes (Vulkan)", "keywords": ["vulkan", "gpu", "graphics card"], "keywords_fr": ["vulkan", "carte graphique"]},
+        {"id": "system/hardware-details#hardware-opengl", "label": "Graphics (OpenGL)", "label_fr": "Graphismes (OpenGL)", "keywords": ["opengl", "egl", "graphics driver"], "keywords_fr": ["opengl", "pilote graphique"]},
+        {"id": "system/hardware-details#hardware-monitors", "label": "Monitors", "label_fr": "Moniteurs", "keywords": ["edid", "monitor model", "display information"], "keywords_fr": ["modèle du moniteur", "informations de l'écran"]},
+        {"id": "system/hardware-details#hardware-drive-health", "label": "Drive health", "label_fr": "État des disques", "keywords": ["smart", "disk health", "failing drive", "ssd health"], "keywords_fr": ["smart", "santé du disque", "disque défaillant"]},
+        {"id": "system/hardware-details#hardware-drives", "label": "Drives and partitions", "label_fr": "Disques et partitions", "keywords": ["partitions", "block devices", "disks"], "keywords_fr": ["partitions", "disques"]},
+        {"id": "system/hardware-details#hardware-usb", "label": "USB devices", "label_fr": "Périphériques USB", "keywords": ["usb", "plugged devices"], "keywords_fr": ["usb", "périphériques branchés"]},
+        {"id": "system/hardware-details#hardware-pci", "label": "Internal devices", "label_fr": "Périphériques internes", "keywords": ["pci", "device manager", "cards"], "keywords_fr": ["pci", "gestionnaire de périphériques", "cartes"]},
+        {"id": "system/hardware-details#hardware-sound", "label": "Sound devices", "label_fr": "Périphériques audio", "keywords": ["sound card", "audio information"], "keywords_fr": ["carte son", "informations audio"]},
+        {"id": "system/hardware-details#hardware-battery", "label": "Battery details", "label_fr": "Détails de la batterie", "keywords": ["battery health", "battery capacity", "energy information"], "keywords_fr": ["santé de la batterie", "capacité de la batterie"]},
+        {"id": "system/hardware-details#hardware-firmware", "label": "Firmware security", "label_fr": "Sécurité du micrologiciel", "keywords": ["firmware", "uefi", "bios security", "hsi"], "keywords_fr": ["micrologiciel", "uefi", "sécurité du bios"]}
+    ]
+}

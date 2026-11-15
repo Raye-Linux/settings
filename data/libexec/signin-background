@@ -1,0 +1,82 @@
+#!/bin/sh
+# Personalization > Lock screen: the picture on the sign-in screen. The
+# sign-in screen runs before anyone is signed in and cannot read a home
+# folder, so the picture is kept here and named in the theme's
+# theme.conf.user. Run through pkexec (org.raye.settings.signin).
+#
+#   signin-background --set     the picture comes on the standard input
+#   signin-background --clear   back to the Raye picture
+#
+# It reads the picture from its standard input and never opens a path it
+# is given: Settings opens the file as the user. Only PNG, JPEG and WebP are
+# kept, 32 MiB at most. Exit 3: not such a picture; 4: no sign-in theme here.
+set -u
+umask 022
+
+root=
+# the tests point it at a folder of their own; never under pkexec
+if [ -z "${PKEXEC_UID:-}" ] && [ -n "${RAYE_ROOT:-}" ]; then
+    root=$RAYE_ROOT
+fi
+store=$root/var/lib/raye-settings/signin
+theme=$root/usr/share/sddm/themes/raye
+conf=$theme/theme.conf.user
+max=$((32 * 1024 * 1024))
+
+[ -d "$theme" ] || { echo "signin-background: no sign-in theme ($theme)" >&2; exit 4; }
+
+# what theme.conf.user says, on one atomic rename
+write_conf() {
+    new=$(mktemp "$theme/.theme.conf.user.XXXXXX") || exit 1
+    printf '[General]\nbackground=%s\n' "$1" > "$new" || { rm -f "$new"; exit 1; }
+    chmod 644 "$new"
+    mv -f "$new" "$conf" || { rm -f "$new"; exit 1; }
+}
+
+case ${1:-} in
+--clear)
+    [ $# -eq 1 ] || { echo "usage: signin-background --set|--clear" >&2; exit 2; }
+    rm -f "$conf"
+    rm -f "$store"/picture.png "$store"/picture.jpg "$store"/picture.webp
+    exit 0
+    ;;
+--set)
+    [ $# -eq 1 ] || { echo "usage: signin-background --set|--clear" >&2; exit 2; }
+    ;;
+*)
+    echo "usage: signin-background --set|--clear" >&2
+    exit 2
+    ;;
+esac
+
+mkdir -p "$store" || exit 1
+chmod 755 "$root/var/lib/raye-settings" "$store" || exit 1
+tmp=$(mktemp "$store/.new.XXXXXX") || exit 1
+trap 'rm -f "$tmp"' EXIT
+
+head -c $((max + 1)) > "$tmp" || exit 1
+size=$(stat -c %s "$tmp") || exit 1
+if [ "$size" -gt "$max" ]; then
+    echo "signin-background: the picture is too large" >&2
+    exit 3
+fi
+
+magic=$(head -c 12 "$tmp" | od -An -tx1 | tr -d ' \n')
+case $magic in
+89504e470d0a1a0a*) kind=png ;;
+ffd8ff*) kind=jpg ;;
+52494646????????57454250) kind=webp ;;
+*)
+    echo "signin-background: not a PNG, JPEG or WebP picture" >&2
+    exit 3
+    ;;
+esac
+
+chmod 644 "$tmp" || exit 1
+mv -f "$tmp" "$store/picture.$kind" || exit 1
+trap - EXIT
+for other in png jpg webp; do
+    [ "$other" = "$kind" ] || rm -f "$store/picture.$other"
+done
+# the path the sign-in screen will read, without the test's folder
+write_conf "/var/lib/raye-settings/signin/picture.$kind"

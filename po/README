@@ -1,0 +1,8 @@
+Translations of Raye Settings.
+
+One folder per language, holding raye-settings.po:
+
+    po/fr/raye-settings.po
+
+The build installs every catalogue it finds here; nothing in
+CMakeLists.txt has to change when a language is added.

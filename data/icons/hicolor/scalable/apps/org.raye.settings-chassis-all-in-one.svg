@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <defs>
+    <linearGradient id="screen" x1="12" y1="13" x2="84" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17151c"/>
+      <stop offset="0.6" stop-color="#1f1e24"/>
+      <stop offset="1" stop-color="#2c2b31"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="48" cy="33.5" r="39.6" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7b3cff" stop-opacity="0.5"/>
+      <stop offset="0.45" stop-color="#7b3cff" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#7b3cff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e6e5ea"/>
+      <stop offset="1" stop-color="#a4a2ab"/>
+    </linearGradient>
+    <radialGradient id="shadow" cx="48" cy="84" r="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M18 82 A30 3.5 0 1 0 78 82 A30 3.5 0 1 0 18 82 Z" fill="url(#shadow)"/>
+  <path d="M40 60 L36 76 H60 L56 60 Z" fill="url(#metal)"/>
+  <path d="M32 75 H64 A2 2 0 0 1 66 77 V77 A2 2 0 0 1 64 79 H32 A2 2 0 0 1 30 77 V77 A2 2 0 0 1 32 75 Z" fill="url(#metal)"/>
+  <path d="M12.5 9 H83.5 A4.5 4.5 0 0 1 88 13.5 V58.5 A4.5 4.5 0 0 1 83.5 63 H12.5 A4.5 4.5 0 0 1 8 58.5 V13.5 A4.5 4.5 0 0 1 12.5 9 Z" fill="#222127"/>
+  <path d="M8 56 H88 V58.5 C88 61 86 63 83.5 63 H12.5 C10 63 8 61 8 58.5 Z" fill="url(#metal)"/>
+  <path d="M13.5 13 H82.5 A1.5 1.5 0 0 1 84 14.5 V52.5 A1.5 1.5 0 0 1 82.5 54 H13.5 A1.5 1.5 0 0 1 12 52.5 V14.5 A1.5 1.5 0 0 1 13.5 13 Z" fill="url(#screen)"/>
+  <path d="M13.5 13 H82.5 A1.5 1.5 0 0 1 84 14.5 V52.5 A1.5 1.5 0 0 1 82.5 54 H13.5 A1.5 1.5 0 0 1 12 52.5 V14.5 A1.5 1.5 0 0 1 13.5 13 Z" fill="url(#glow)"/>
+  <path d="M39.39 33.5 Q48 24.89 56.61 33.5 Q48 42.11 39.39 33.5 Z" fill="none" stroke="#f1f0f4" stroke-width="1.44" stroke-linejoin="round" stroke-opacity="0.9"/>
+  <path d="M45.13 33.5 A2.87 2.87 0 1 0 50.87 33.5 A2.87 2.87 0 1 0 45.13 33.5 Z" fill="#f1f0f4"/>
+</svg>

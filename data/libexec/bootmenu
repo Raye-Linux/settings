@@ -1,0 +1,56 @@
+#!/bin/sh
+# Recovery › Advanced startup › Start-up menu: show the boot menu at the
+# next start, once, then boot as usual again. Run through pkexec
+# (org.raye.settings.bootmenu); Settings restarts the computer after.
+#
+#   bootmenu            ask for the menu at the next start
+#   bootmenu --check    say how it would be asked, change nothing
+#
+# Prints the way it is done: "menu_show_once" when the boot menu reads
+# that variable (Raye's own boot entries), else "recordfail" (the stock
+# boot menu shows itself after a start that did not finish). Exit 3: the
+# boot menu here can be shown neither way.
+set -u
+
+grubdir=/boot/grub
+# the tests point it at a folder of their own; never under pkexec
+if [ -z "${PKEXEC_UID:-}" ] && [ -n "${RAYE_GRUB_DIR:-}" ]; then
+    grubdir=$RAYE_GRUB_DIR
+fi
+envfile=$grubdir/grubenv
+cfg=$grubdir/grub.cfg
+
+case ${1:-} in
+''|--check) ;;
+*) echo "usage: bootmenu [--check]" >&2; exit 2 ;;
+esac
+
+[ -r "$cfg" ] || { echo "bootmenu: no boot menu found ($cfg)" >&2; exit 3; }
+
+if grep -q 'menu_show_once' "$cfg"; then
+    how=menu_show_once
+elif grep -q '"${recordfail}" = 1' "$cfg"; then
+    # the menu only shows if it waits a little after a failed start
+    wait=$(awk '/"\$\{recordfail\}" = 1/ { getline; if ($1 == "set" && $2 ~ /^timeout=/) { sub(/^timeout=/, "", $2); print $2 } exit }' "$cfg")
+    case $wait in
+    ''|0|*[!0-9]*) echo "bootmenu: the boot menu does not wait after a failed start" >&2; exit 3 ;;
+    esac
+    how=recordfail
+else
+    echo "bootmenu: this boot menu cannot be asked to show" >&2
+    exit 3
+fi
+
+if [ "${1:-}" = --check ]; then
+    echo "$how"
+    exit 0
+fi
+
+if [ ! -e "$envfile" ]; then
+    grub-editenv "$envfile" create || exit 1
+fi
+case $how in
+menu_show_once) grub-editenv "$envfile" set menu_show_once=1 || exit 1 ;;
+recordfail) grub-editenv "$envfile" set recordfail=1 || exit 1 ;;
+esac
+echo "$how"

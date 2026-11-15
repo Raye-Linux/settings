@@ -1,0 +1,232 @@
+#!/bin/sh
+# Recovery › Go back to an earlier state. Run through pkexec
+# (org.raye.settings.snapshot).
+#
+#   snapshot-restore --check       can the system go back here? (exit 0/3)
+#   snapshot-restore list          the snapshots, as snapper prints them (JSON)
+#   snapshot-restore go-back <n>   make snapshot <n> the system at the next start
+#   snapshot-restore create <name> a restore point now, kept like the update ones
+#
+# Raye's system is the btrfs subvolume @, named in /etc/fstab and on the
+# kernel line. snapper's own rollback changes the default subvolume,
+# which a system mounted by name never looks at, so going back is done
+# here: a writable copy of the snapshot takes the name @, and the system
+# of today stays next to it as @.raye-before-<date> until the next go
+# back. The home folder (@home), logs and caches are other subvolumes:
+# they do not move. Settings restarts the computer after.
+#
+# Lines printed: "done", or "error <reason>" (not-supported, no-snapshot,
+# failed). The tests stand in for the computer with RAYE_GO_BACK_ROOT
+# (where / is) and RAYE_GO_BACK_TOP (the whole btrfs volume, mounted);
+# both are ignored under pkexec.
+set -u
+
+root=
+top=
+if [ -z "${PKEXEC_UID:-}" ]; then
+    root=${RAYE_GO_BACK_ROOT:-}
+    top=${RAYE_GO_BACK_TOP:-}
+fi
+log=${root:-}/var/log/raye/go-back.log
+
+say() { printf '%s\n' "$*"; }
+note() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$log" 2>/dev/null; }
+fail() { say "error $1"; note "error $1: ${2:-}"; exit "${3:-1}"; }
+
+# The system's volume, and the subvolume / is: "@" on a Raye install.
+layout() {
+    [ "$(findmnt -no FSTYPE /)" = btrfs ] || return 1
+    fsroot=$(findmnt -no FSROOT /)
+    sub=${fsroot#/}
+    [ -n "$sub" ] || return 1          # / is the volume itself: nothing to swap
+    case $sub in */*) return 1 ;; esac # a subvolume inside another one
+    device=$(findmnt -no SOURCE /)
+    device=${device%%\[*}
+    [ -n "$device" ] || return 1
+    # a system mounted by number would keep starting the old one
+    if grep -Eq '^[^#[:space:]]+[[:space:]]+/[[:space:]].*subvolid=' "${root:-}/etc/fstab" 2>/dev/null; then
+        return 1
+    fi
+    if grep -q 'subvolid=' "${root:-}/proc/cmdline" 2>/dev/null; then
+        return 1
+    fi
+    [ -e "${root:-}/etc/snapper/configs/root" ] || return 1
+    return 0
+}
+
+case ${1:-} in
+--check)
+    layout || { say "error not-supported"; exit 3; }
+    say ok
+    exit 0
+    ;;
+list)
+    layout || { say "error not-supported"; exit 3; }
+    exec snapper --no-dbus -c root --jsonout list --disable-used-space
+    ;;
+create)
+    name=${2:-}
+    [ $# -eq 2 ] && [ -n "$name" ] || { echo "usage: snapshot-restore create <name>" >&2; exit 2; }
+    # one line of plain words, as long as a title can show
+    if [ ${#name} -gt 60 ] || printf '%s' "$name" | LC_ALL=C grep -q '[[:cntrl:]]'; then
+        echo "snapshot-restore: the name is too long or has control characters" >&2
+        exit 2
+    fi
+    layout || { say "error not-supported"; exit 3; }
+    mkdir -p "$(dirname "$log")" 2>/dev/null
+    made=$(snapper --no-dbus -c root create -c number -p -d "$name" \
+        -u important=yes,raye=manual) || fail failed "snapper could not make the restore point"
+    note "restore point $made made by hand"
+    say "done $made"
+    exit 0
+    ;;
+go-back)
+    number=${2:-}
+    case $number in
+    ''|*[!0-9]*) echo "usage: snapshot-restore go-back <number>" >&2; exit 2 ;;
+    esac
+    [ "$number" -gt 0 ] || { echo "snapshot-restore: snapshot 0 is the system of today" >&2; exit 2; }
+    [ $# -eq 2 ] || { echo "usage: snapshot-restore go-back <number>" >&2; exit 2; }
+    ;;
+*)
+    echo "usage: snapshot-restore --check | list | create <name> | go-back <number>" >&2
+    exit 2
+    ;;
+esac
+
+mkdir -p "$(dirname "$log")" 2>/dev/null
+layout || fail not-supported "the system is not on a btrfs subvolume named in fstab" 3
+
+mounted=
+if [ -z "$top" ]; then
+    top=$(mktemp -d /run/raye-go-back.XXXXXX) || fail failed "no temporary folder"
+    mount -o subvolid=5 "$device" "$top" || { rmdir -- "${top:?}"; fail failed "cannot mount the volume"; }
+    mounted=yes
+fi
+finish() {
+    if [ -n "$mounted" ]; then
+        umount "$top" && rmdir -- "${top:?}"
+    fi
+}
+trap finish EXIT
+
+system=$top/$sub
+snapshot=$system/.snapshots/$number/snapshot
+[ -d "$snapshot" ] || fail no-snapshot "snapshot $number not found"
+stamp=$(date +%Y%m%d-%H%M%S)
+new=$top/$sub.raye-new
+before=$top/$sub.raye-before-$stamp
+note "going back to snapshot $number"
+
+# a copy left by an attempt that stopped half way
+if [ -e "$new" ]; then
+    btrfs subvolume delete "$new" >/dev/null 2>&1 || fail failed "cannot remove $new"
+fi
+btrfs subvolume snapshot "$snapshot" "$new" >/dev/null || fail failed "cannot copy snapshot $number"
+
+# Raye Update takes its "before" point with the install already armed:
+# copied as is, the next start would install the same updates again.
+# A link that another tool owns stays.
+if [ -L "$new/system-update" ] && [ "$(readlink "$new/system-update")" = /var/lib/raye-update/offline ]; then
+    rm -f -- "$new/system-update"
+    note "snapshot $number had updates waiting for a restart; they will not install"
+fi
+rm -f -- "$new/var/lib/raye-update/offline" "$new/var/lib/raye-update/restore-point"
+state=$new/var/lib/raye-update/state.json
+if [ -f "$state" ] && [ ! -L "$state" ]; then
+    python3 -I - "$state" <<'EOF' || note "could not reset the update state of snapshot $number"
+import json, os, sys
+path = sys.argv[1]
+with open(path) as f:
+    state = json.load(f)
+if state.get("armed") or state.get("phase") in ("armed", "installing"):
+    state.update(armed=None, phase="idle", readyId="", installAttempts=0, installPercent=0)
+    tmp = path + ".go-back"
+    with open(tmp, "w") as f:
+        json.dump(state, f, indent=2)
+    os.chmod(tmp, os.stat(path).st_mode & 0o7777)
+    os.replace(tmp, path)
+EOF
+fi
+
+# Subvolumes inside the system of today (the snapshots themselves, the
+# containers' folders) are not in a snapshot: they move to the new one.
+# A subvolume inside one that moves goes with it, so only the outer ones
+# are listed.
+children=$(btrfs subvolume list -o "$system" 2>/dev/null |
+    sed -n 's/^ID [0-9]* gen [0-9]* top level [0-9]* path //p' | sort |
+    awk -v prefix="$sub/" '
+        index($0, prefix) != 1 { next }
+        { inner = substr($0, length(prefix) + 1) }
+        inner == "" { next }
+        { for (i = 1; i <= n; i++) if (index(inner "/", kept[i] "/") == 1) next }
+        { kept[++n] = inner; print inner }')
+moved=
+undo_moves() {
+    printf '%s\n' "$moved" | while IFS= read -r inner; do
+        [ -n "$inner" ] || continue
+        mv -- "$new/$inner" "$system/$inner"
+    done
+    btrfs subvolume delete "$new" >/dev/null 2>&1
+}
+# first look, then move: a full folder where a subvolume goes stops here
+while IFS= read -r inner; do
+    [ -n "$inner" ] || continue
+    if [ -d "$new/$inner" ] && [ -n "$(ls -A "$new/$inner" 2>/dev/null)" ]; then
+        btrfs subvolume delete "$new" >/dev/null 2>&1
+        fail failed "$inner is not empty in snapshot $number"
+    fi
+done <<EOF
+$children
+EOF
+while IFS= read -r inner; do
+    [ -n "$inner" ] || continue
+    # the empty folder the snapshot holds in its place
+    if [ -d "${new:?}/${inner:?}" ]; then
+        rmdir -- "${new:?}/${inner:?}" 2>/dev/null
+    fi
+    mkdir -p "$(dirname "$new/$inner")"
+    if ! mv -- "$system/$inner" "$new/$inner"; then
+        undo_moves
+        fail failed "cannot move $inner"
+    fi
+    moved="$moved
+$inner"
+done <<EOF
+$children
+EOF
+
+# With /boot on its own partition the kernels stay as they are today:
+# the system going back keeps the modules they need.
+if mountpoint -q "${root:-}/boot" 2>/dev/null; then
+    for kernel in "${root:-}"/boot/vmlinuz-*; do
+        [ -e "$kernel" ] || continue
+        version=${kernel##*/vmlinuz-}
+        modules=${root:-}/usr/lib/modules/$version
+        [ -d "$modules" ] || continue
+        [ -d "$new/usr/lib/modules/$version" ] && continue
+        mkdir -p "$new/usr/lib/modules"
+        cp -a --reflink=auto "$modules" "$new/usr/lib/modules/$version" ||
+            note "could not keep the modules of $version"
+    done
+fi
+
+if ! mv -- "$system" "$before"; then
+    undo_moves
+    fail failed "cannot rename the system of today"
+fi
+if ! mv -- "$new" "$system"; then
+    mv -- "$before" "$system"
+    undo_moves
+    fail failed "cannot put snapshot $number in place"
+fi
+
+# only the last system before a go back is kept
+for old in "$top/$sub".raye-before-*; do
+    [ -d "$old" ] || continue
+    [ "$old" = "$before" ] && continue
+    btrfs subvolume delete "$old" >/dev/null 2>&1 || note "could not remove $old"
+done
+
+note "done: snapshot $number is the system at the next start; today's is ${before##*/}"
+say done

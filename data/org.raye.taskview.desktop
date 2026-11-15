@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Task view
+Name[fr]=Affichage des tâches
+Comment=See your open windows and desktops
+Comment[fr]=Voir vos fenêtres ouvertes et vos bureaux
+Icon=org.raye.settings-multitasking
+# the taskbar's Task view button (Settings > Personalization > Taskbar)
+Exec=dbus-send --session --type=method_call --dest=org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut string:Overview
+NoDisplay=true
+StartupNotify=false

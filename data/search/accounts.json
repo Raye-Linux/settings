@@ -1,0 +1,147 @@
+{
+    "version": 1,
+    "entries": [
+        {
+            "id": "accounts/your-info#picture",
+            "label": "Change your picture",
+            "label_fr": "Changer votre image",
+            "keywords": [
+                "avatar",
+                "profile picture",
+                "photo"
+            ],
+            "keywords_fr": [
+                "photo de profil",
+                "avatar"
+            ]
+        },
+        {
+            "id": "accounts/your-info#raye-pictures",
+            "label": "Pick a Raye picture",
+            "label_fr": "Choisir une image Raye",
+            "keywords": [
+                "avatar"
+            ],
+            "keywords_fr": [
+                "avatar"
+            ]
+        },
+        {
+            "id": "accounts/your-info#name",
+            "label": "Your name",
+            "label_fr": "Votre nom",
+            "keywords": [
+                "change name",
+                "full name",
+                "display name"
+            ],
+            "keywords_fr": [
+                "changer de nom",
+                "nom complet"
+            ]
+        },
+        {
+            "id": "accounts/your-info#account-type",
+            "label": "Account type",
+            "label_fr": "Type de compte",
+            "keywords": [
+                "administrator",
+                "root",
+                "sudo",
+                "standard"
+            ],
+            "keywords_fr": [
+                "administrateur",
+                "root",
+                "sudo",
+                "standard"
+            ]
+        },
+        {
+            "id": "accounts/sign-in#password",
+            "label": "Change your password",
+            "label_fr": "Changer votre mot de passe",
+            "keywords": [
+                "password",
+                "reset password"
+            ],
+            "keywords_fr": [
+                "mot de passe"
+            ]
+        },
+        {
+            "id": "accounts/sign-in#fingerprint",
+            "label": "Fingerprint",
+            "label_fr": "Empreinte digitale",
+            "keywords": [
+                "biometric",
+                "finger",
+                "reader"
+            ],
+            "keywords_fr": [
+                "biométrie",
+                "doigt",
+                "lecteur"
+            ]
+        },
+        {
+            "id": "accounts/sign-in#automatic-sign-in",
+            "label": "Sign in automatically",
+            "label_fr": "Se connecter automatiquement",
+            "keywords": [
+                "auto login",
+                "autologin",
+                "no password"
+            ],
+            "keywords_fr": [
+                "connexion automatique",
+                "sans mot de passe"
+            ]
+        },
+        {
+            "id": "accounts/sign-in#when-away",
+            "label": "Ask to sign in again when away",
+            "label_fr": "Redemander la connexion en cas d'absence",
+            "keywords": [
+                "lock screen",
+                "require password",
+                "lock"
+            ],
+            "keywords_fr": [
+                "écran de verrouillage",
+                "verrouiller"
+            ]
+        },
+        {
+            "id": "accounts/email#online-accounts",
+            "label": "Online accounts",
+            "label_fr": "Comptes en ligne",
+            "keywords": [
+                "email",
+                "cloud",
+                "nextcloud"
+            ],
+            "keywords_fr": [
+                "courrier",
+                "nuage"
+            ]
+        },
+        {
+            "id": "accounts/other-users#add-user",
+            "label": "Add someone else to this PC",
+            "label_fr": "Ajouter une autre personne à ce PC",
+            "keywords": [
+                "new account",
+                "family",
+                "create user",
+                "remove user"
+            ],
+            "keywords_fr": [
+                "nouveau compte",
+                "famille",
+                "créer un utilisateur",
+                "supprimer un utilisateur"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,23 @@
+#!/bin/sh
+# Turns Raye's firewall on or off, for Device security in Settings.
+# Run as root through pkexec (org.raye.settings.firewall).
+#
+#   firewall on     block the connections other computers start, let
+#                   this PC's own go out
+#   firewall off
+set -eu
+
+case "${1:-}" in
+on)
+    # --force: ufw would otherwise ask on the terminal whether SSH
+    # connections may be cut
+    exec ufw --force enable
+    ;;
+off)
+    exec ufw disable
+    ;;
+*)
+    echo "usage: firewall on|off" >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,69 @@
+#!/bin/sh
+# Plasma's "Configure..." links, and the settings KRunner finds, start
+# KDE System Settings on a module. In Raye they open the Raye page for
+# that module, and KDE's window never shows: a module with no Raye page
+# opens on its own, the way kcmshell6 shows it, so the link still does
+# what it says.
+# RAYE_SETTINGS_SYSTEMSETTINGS_REAL and RAYE_SETTINGS_KCMSHELL_REAL let
+# the relay be tried before it is installed (tests/test_router.cpp).
+real=${RAYE_SETTINGS_SYSTEMSETTINGS_REAL:-/usr/bin/systemsettings.kde}
+single=${RAYE_SETTINGS_KCMSHELL_REAL:-/usr/bin/kcmshell6.kde}
+
+if [ "$RAYE_SETTINGS_KCMSHELL" = pass-through ]; then
+    [ -x "$real" ] && exec "$real" "$@"
+    exit 1
+fi
+
+# kinfocenter is a link to systemsettings, and KDE's program becomes Info
+# Center by that name: start it under the name it was called by, or the
+# link lands in this relay and Info Center never opens.
+if [ "${0##*/}" = kinfocenter ] || [ "$RAYE_SETTINGS_AS" = kinfocenter ]; then
+    if [ -x "$real" ]; then
+        RAYE_SETTINGS_KCMSHELL=pass-through exec python3 -c \
+            'import os, sys; os.execv(sys.argv[1], ["kinfocenter"] + sys.argv[2:])' "$real" "$@"
+    fi
+    exec raye-settings --page system/about
+fi
+
+payload=
+module=
+next=
+own=
+for arg in "$@"; do
+    case $next in
+    payload) payload=$arg; next=; continue ;;
+    skip) next=; continue ;;
+    esac
+    case $arg in
+    --args=*) payload=${arg#--args=} ;;
+    --args) next=payload ;;
+    -platform|--platform|-display|--display|-style|--style|-qwindowtitle|--qwindowtitle|-qwindowicon|--qwindowicon|-qwindowgeometry|--qwindowgeometry|-session|--session|-name|--name)
+        next=skip ;;
+    --list|--list=*|--help|--help-all|-h|--version|-v|--author|--license) own=1 ;;
+    -*) ;;
+    *) [ -z "$module" ] && module=$arg ;;
+    esac
+done
+
+# a listing or the help: only KDE's command can print them
+if [ -n "$own" ]; then
+    [ -x "$real" ] && exec "$real" "$@"
+    exit 1
+fi
+
+# no module at all: the window the user asked for is ours
+[ -z "$module" ] && exec raye-settings
+
+if raye-settings --knows "$module"; then
+    [ -n "$payload" ] && module="$module#$payload"
+    exec raye-settings --page "$module"
+fi
+
+if [ -x "$single" ]; then
+    if [ -n "$payload" ]; then
+        RAYE_SETTINGS_KCMSHELL=pass-through exec "$single" --args "$payload" "$module"
+    fi
+    RAYE_SETTINGS_KCMSHELL=pass-through exec "$single" "$module"
+fi
+[ -x "$real" ] && exec "$real" "$@"
+exec raye-settings

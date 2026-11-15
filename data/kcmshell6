@@ -1,0 +1,55 @@
+#!/bin/sh
+# KDE's command opens one settings module in a window of its own. In
+# Raye, a module that has a Raye page opens that page in Raye Settings;
+# everything else is handed to KDE's command, which the package moved
+# next to this one, with its arguments exactly as they came.
+#
+# Raye Settings sets RAYE_SETTINGS_KCMSHELL for everything it starts, so
+# a module it could not show inside its window goes straight to the real
+# command instead of coming back here.
+# RAYE_SETTINGS_KCMSHELL_REAL lets the relay be tried before it is
+# installed; tests/test_router.cpp is what uses it.
+real=${RAYE_SETTINGS_KCMSHELL_REAL:-/usr/bin/kcmshell6.kde}
+
+if [ "$RAYE_SETTINGS_KCMSHELL" = pass-through ]; then
+    [ -x "$real" ] && exec "$real" "$@"
+    exit 1
+fi
+
+# The options that take a value carry it in the next word, which must
+# not be read as a module id. --args is what the caller wants the
+# module opened on; it rides to the Raye page as its anchor. A listing,
+# the help, or another language can only come from KDE's command.
+payload=
+module=
+next=
+own=
+for arg in "$@"; do
+    case $next in
+    payload) payload=$arg; next=; continue ;;
+    skip) next=; continue ;;
+    esac
+    case $arg in
+    --args=*) payload=${arg#--args=} ;;
+    --args) next=payload ;;
+    --icon|--caption|--desktopfile|-platform|--platform|-display|--display|-style|--style|-qwindowtitle|--qwindowtitle|-qwindowicon|--qwindowicon|-qwindowgeometry|--qwindowgeometry|-session|--session|-name|--name)
+        next=skip ;;
+    --lang) own=1; next=skip ;;
+    --list|--list=*|--help|--help-all|-h|--version|-v|--author|--license|--lang=*) own=1 ;;
+    -*) ;;
+    *) [ -z "$module" ] && module=$arg ;;
+    esac
+done
+
+# Several modules in one call (KCMLauncher.open with a list): the first
+# one decides. When it has a Raye page the window opens on it and the
+# others are left out, the way a link opens one page.
+if [ -z "$own" ] && [ -n "$module" ] && raye-settings --knows "$module"; then
+    [ -n "$payload" ] && module="$module#$payload"
+    exec raye-settings --page "$module"
+fi
+
+# KDE's command is gone for a moment while the package is being
+# unpacked: open the Raye window rather than failing.
+[ -x "$real" ] && exec "$real" "$@"
+exec raye-settings

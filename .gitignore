@@ -1,0 +1,23 @@
+out/
+*.deb
+*.buildinfo
+*.changes
+debian/.debhelper/
+debian/files
+debian/*.substvars
+debian/*/
+!debian/source/
+packages/*/debian/.debhelper/
+packages/*/debian/files
+packages/*/debian/*.substvars
+build/
+obj-*/
+
+# A test that imports a module leaves bytecode beside it. The launcher
+# sets PYTHONDONTWRITEBYTECODE=1, but `python3 -I` ignores it, and a
+# plain `pytest` run from a shell is not the launcher. Without this
+# line a `git add -A` commits .pyc files -- and in this tree one of
+# those folders is PACKAGED.
+__pycache__/
+*.pyc
+.pytest_cache/

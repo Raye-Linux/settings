@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Raye Linux</vendor>
+  <action id="org.raye.settings.printing">
+    <description>Turn on printing</description>
+    <description xml:lang="fr">Activer l'impression</description>
+    <message>Turning on printing needs your password</message>
+    <message xml:lang="fr">Activer l'impression demande votre mot de passe</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/raye-settings/printing</annotate>
+  </action>
+</policyconfig>

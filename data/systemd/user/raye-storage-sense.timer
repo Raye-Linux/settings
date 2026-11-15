@@ -1,0 +1,11 @@
+# Started by Settings > System > Storage when Storage Sense is on.
+[Unit]
+Description=Storage Sense, once a week
+
+[Timer]
+OnCalendar=weekly
+RandomizedDelaySec=2h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

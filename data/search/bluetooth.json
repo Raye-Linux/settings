@@ -1,0 +1,7 @@
+{
+    "version": 1,
+    "entries": [
+        {"id": "devices/bluetooth#bluetooth", "label": "Bluetooth", "label_fr": "Bluetooth", "keywords": ["turn on bluetooth", "turn off bluetooth", "bluetooth switch", "discoverable", "visible to other devices", "bluetooth name", "forget device", "unpair", "disconnect", "battery level", "headphones battery", "mouse battery"], "keywords_fr": ["activer le bluetooth", "désactiver le bluetooth", "interrupteur bluetooth", "détectable", "visible par les autres appareils", "nom bluetooth", "oublier l'appareil", "dissocier", "déconnecter", "niveau de batterie", "batterie du casque", "batterie de la souris"]},
+        {"id": "devices/bluetooth#add-device", "label": "Add device", "label_fr": "Ajouter un appareil", "keywords": ["pair", "pairing", "connect headphones", "connect a mouse", "connect a keyboard", "earbuds", "speaker", "controller", "new device"], "keywords_fr": ["associer", "association", "connecter un casque", "connecter une souris", "connecter un clavier", "écouteurs", "enceinte", "manette", "nouvel appareil"]}
+    ]
+}

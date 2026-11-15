@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="sheen" x1="0" y1="4" x2="0" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M19 4 H45 A15 15 0 0 1 60 19 V45 A15 15 0 0 1 45 60 H19 A15 15 0 0 1 4 45 V19 A15 15 0 0 1 19 4 Z" fill="#7b3cff"/>
+  <path d="M19 4 H45 A15 15 0 0 1 60 19 V45 A15 15 0 0 1 45 60 H19 A15 15 0 0 1 4 45 V19 A15 15 0 0 1 19 4 Z" fill="url(#sheen)"/>
+  <path d="M27.23 18.31 L28.21 13.38 L35.79 13.38 L36.77 18.31 L37.15 18.45 L41.06 15.3 L46.87 20.18 L44.45 24.58 L44.66 24.93 L49.68 25.03 L50.99 32.5 L46.31 34.32 L46.24 34.72 L50.02 38.02 L46.23 44.59 L41.47 42.98 L41.16 43.24 L41.93 48.2 L34.8 50.79 L32.2 46.5 L31.8 46.5 L29.2 50.79 L22.07 48.2 L22.84 43.24 L22.53 42.98 L17.77 44.59 L13.98 38.02 L17.76 34.72 L17.69 34.32 L13.01 32.5 L14.32 25.03 L19.34 24.93 L19.55 24.58 L17.13 20.18 L22.94 15.3 L26.85 18.45 Z M23.5 32 A8.5 8.5 0 1 0 40.5 32 A8.5 8.5 0 1 0 23.5 32 Z" fill="#ffffff" fill-rule="evenodd"/>
+  <path d="M25.5 32 Q32 26 38.5 32 Q32 38 25.5 32 Z" fill="#7b3cff"/>
+  <path d="M30 32 A2 2 0 1 0 34 32 A2 2 0 1 0 30 32 Z" fill="#ffffff"/>
+</svg>

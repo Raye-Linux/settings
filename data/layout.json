@@ -1,0 +1,1321 @@
+{
+    "version": 2,
+    "home": {
+        "aliases": [
+            "kcm_landingpage"
+        ]
+    },
+    "tiles": [
+        {
+            "target": "system"
+        },
+        {
+            "target": "devices"
+        },
+        {
+            "target": "network"
+        },
+        {
+            "target": "personalization"
+        },
+        {
+            "target": "apps"
+        },
+        {
+            "target": "accounts"
+        },
+        {
+            "target": "time"
+        },
+        {
+            "target": "gaming"
+        },
+        {
+            "target": "accessibility"
+        },
+        {
+            "target": "privacy"
+        },
+        {
+            "target": "update"
+        },
+        {
+            "target": "gaming/windows-programs",
+            "summary": "See and remove the Windows programs you have run",
+            "summary_fr": "Voir et retirer vos programmes Windows"
+        }
+    ],
+    "categories": [
+        {
+            "id": "system",
+            "icon": "org.raye.settings-system",
+            "icon_fallback": "preferences-system",
+            "name": "System",
+            "name_fr": "Système",
+            "summary": "Display, sound, notifications, power",
+            "summary_fr": "Écran, son, notifications, alimentation",
+            "landing": "pages/system/SystemPage.qml",
+            "pages": [
+                {
+                    "id": "system/display",
+                    "icon": "org.raye.settings-display",
+                    "icon_fallback": "preferences-desktop-display",
+                    "name": "Display",
+                    "name_fr": "Écran",
+                    "summary": "Monitors, brightness, night light, scale",
+                    "summary_fr": "Moniteurs, luminosité, éclairage nocturne, échelle",
+                    "type": "qml",
+                    "component": "pages/system/DisplayPage.qml",
+                    "aliases": [
+                        "kcm_kscreen",
+                        "kcm_displayconfiguration"
+                    ]
+                },
+                {
+                    "id": "system/night-light",
+                    "icon": "org.raye.settings-night-light",
+                    "icon_fallback": "redshift-status-on",
+                    "name": "Night light",
+                    "name_fr": "Éclairage nocturne",
+                    "summary": "Warmer colors in the evening",
+                    "summary_fr": "Des couleurs plus chaudes le soir",
+                    "type": "qml",
+                    "component": "pages/system/NightLightPage.qml",
+                    "aliases": [
+                        "kcm_nightlight",
+                        "kcm_nighttime"
+                    ]
+                },
+                {
+                    "id": "system/graphics",
+                    "icon": "org.raye.settings-graphics",
+                    "icon_fallback": "preferences-desktop-display",
+                    "name": "Graphics",
+                    "name_fr": "Graphismes",
+                    "summary": "Choose which graphics card an app uses",
+                    "summary_fr": "Choisir la carte graphique utilisée par une application",
+                    "type": "qml",
+                    "component": "pages/system/GraphicsPage.qml",
+                    "requires": "two-gpus"
+                },
+                {
+                    "id": "system/sound",
+                    "icon": "org.raye.settings-sound",
+                    "icon_fallback": "audio-volume-high",
+                    "name": "Sound",
+                    "name_fr": "Son",
+                    "summary": "Volume, output and input devices",
+                    "summary_fr": "Volume, périphériques de sortie et d'entrée",
+                    "type": "qml",
+                    "component": "pages/system/SoundPage.qml",
+                    "aliases": [
+                        "kcm_pulseaudio"
+                    ]
+                },
+                {
+                    "id": "system/volume-mixer",
+                    "icon": "org.raye.settings-volume-mixer",
+                    "icon_fallback": "audio-volume-medium",
+                    "name": "Volume mixer",
+                    "name_fr": "Mélangeur de volume",
+                    "summary": "Set the volume of each app",
+                    "summary_fr": "Régler le volume de chaque application",
+                    "type": "qml",
+                    "component": "pages/system/VolumeMixerPage.qml"
+                },
+                {
+                    "id": "system/sound-devices",
+                    "icon": "org.raye.settings-sound-devices",
+                    "icon_fallback": "audio-card",
+                    "name": "All sound devices",
+                    "name_fr": "Tous les périphériques audio",
+                    "summary": "Turn devices on or off, and choose their profile",
+                    "summary_fr": "Activer ou désactiver les périphériques et choisir leur profil",
+                    "type": "qml",
+                    "component": "pages/system/SoundDevicesPage.qml"
+                },
+                {
+                    "id": "system/notifications",
+                    "icon": "org.raye.settings-notifications",
+                    "icon_fallback": "preferences-desktop-notification-bell",
+                    "name": "Notifications",
+                    "name_fr": "Notifications",
+                    "summary": "Alerts from apps and the system",
+                    "summary_fr": "Alertes des applications et du système",
+                    "type": "qml",
+                    "component": "pages/system/NotificationsPage.qml",
+                    "aliases": [
+                        "kcm_notifications"
+                    ]
+                },
+                {
+                    "id": "system/focus",
+                    "icon": "org.raye.settings-focus",
+                    "icon_fallback": "clock",
+                    "name": "Focus",
+                    "name_fr": "Concentration",
+                    "summary": "Quiet time to get things done",
+                    "summary_fr": "Du calme pour avancer",
+                    "type": "qml",
+                    "component": "pages/system/FocusPage.qml"
+                },
+                {
+                    "id": "system/power",
+                    "icon": "org.raye.settings-power",
+                    "icon_fallback": "battery",
+                    "name": "Power & battery",
+                    "name_fr": "Alimentation et batterie",
+                    "summary": "Sleep, battery usage, power mode",
+                    "summary_fr": "Veille, utilisation de la batterie, mode d'alimentation",
+                    "type": "qml",
+                    "component": "pages/system/PowerPage.qml",
+                    "aliases": [
+                        "kcm_powerdevilprofilesconfig",
+                        "kcm_powerdevilactivitiesconfig",
+                        "kcm_energyinfo",
+                        "kcm_mobile_power"
+                    ]
+                },
+                {
+                    "id": "system/storage",
+                    "icon": "org.raye.settings-storage",
+                    "icon_fallback": "drive-harddisk",
+                    "name": "Storage",
+                    "name_fr": "Stockage",
+                    "summary": "Space used, clean up, Storage Sense",
+                    "summary_fr": "Espace utilisé, nettoyage, Assistant Stockage",
+                    "type": "qml",
+                    "component": "pages/system/StoragePage.qml"
+                },
+                {
+                    "id": "system/multitasking",
+                    "icon": "org.raye.settings-multitasking",
+                    "icon_fallback": "preferences-system-windows-effect-presentwindows",
+                    "name": "Multitasking",
+                    "name_fr": "Multitâche",
+                    "summary": "Snap windows, desktops, Alt+Tab",
+                    "summary_fr": "Ancrer les fenêtres, bureaux, Alt+Tab",
+                    "type": "qml",
+                    "component": "pages/system/MultitaskingPage.qml",
+                    "aliases": [
+                        "kcm_kwin_virtualdesktops",
+                        "kcm_kwinscreenedges",
+                        "kcm_kwintabbox"
+                    ]
+                },
+                {
+                    "id": "system/clipboard",
+                    "icon": "org.raye.settings-clipboard",
+                    "icon_fallback": "edit-paste",
+                    "name": "Clipboard",
+                    "name_fr": "Presse-papiers",
+                    "summary": "Clipboard history and clearing",
+                    "summary_fr": "Historique du presse-papiers et effacement",
+                    "type": "qml",
+                    "component": "pages/system/ClipboardPage.qml"
+                },
+                {
+                    "id": "system/remote-desktop",
+                    "icon": "org.raye.settings-remote-desktop",
+                    "icon_fallback": "krdc",
+                    "name": "Remote Desktop",
+                    "name_fr": "Bureau à distance",
+                    "summary": "Connect to this PC from another one",
+                    "summary_fr": "Se connecter à ce PC depuis un autre",
+                    "type": "qml",
+                    "component": "pages/system/RemoteDesktopPage.qml",
+                    "aliases": [
+                        "kcm_krdpserver"
+                    ]
+                },
+                {
+                    "id": "system/advanced",
+                    "icon": "org.raye.settings-advanced",
+                    "icon_fallback": "preferences-other",
+                    "name": "Advanced",
+                    "name_fr": "Avancé",
+                    "summary": "File extensions, hidden files, terminal",
+                    "summary_fr": "Extensions de fichiers, fichiers cachés, terminal",
+                    "type": "qml",
+                    "component": "pages/system/AdvancedPage.qml"
+                },
+                {
+                    "id": "system/troubleshoot",
+                    "icon": "org.raye.settings-troubleshoot",
+                    "icon_fallback": "tools-wizard",
+                    "name": "Troubleshoot",
+                    "name_fr": "Dépannage",
+                    "summary": "Find and fix common problems",
+                    "summary_fr": "Trouver et résoudre les problèmes courants",
+                    "type": "qml",
+                    "component": "pages/system/TroubleshootPage.qml"
+                },
+                {
+                    "id": "system/recovery",
+                    "icon": "org.raye.settings-recovery",
+                    "icon_fallback": "system-reboot",
+                    "name": "Recovery",
+                    "name_fr": "Récupération",
+                    "summary": "Repair Raye, go back, advanced startup",
+                    "summary_fr": "Réparer Raye, revenir en arrière, démarrage avancé",
+                    "type": "qml",
+                    "component": "pages/system/RecoveryPage.qml"
+                },
+                {
+                    "id": "system/about",
+                    "icon": "org.raye.settings-about",
+                    "icon_fallback": "help-about",
+                    "name": "About",
+                    "name_fr": "Informations système",
+                    "summary": "Device name, specifications, Raye version",
+                    "summary_fr": "Nom de l'appareil, caractéristiques, version de Raye",
+                    "type": "qml",
+                    "component": "pages/system/AboutPage.qml",
+                    "aliases": [
+                        "kcm_about-distro"
+                    ]
+                },
+                {
+                    "id": "system/hardware-details",
+                    "icon": "org.raye.settings-hardware",
+                    "icon_fallback": "preferences-system-hardware",
+                    "name": "Hardware details",
+                    "name_fr": "Détails du matériel",
+                    "summary": "Processor, memory, disks, graphics",
+                    "summary_fr": "Processeur, mémoire, disques, graphismes",
+                    "type": "qml",
+                    "component": "pages/system/HardwareDetailsPage.qml",
+                    "aliases": [
+                        "kcm_cpu",
+                        "kcm_memory",
+                        "kcm_pci",
+                        "kcm_usb",
+                        "kcm_vulkan",
+                        "kcm_firmware_security",
+                        "kcm_devinfo",
+                        "kcm_glx",
+                        "kcm_egl",
+                        "kcm_wayland",
+                        "kcm_xserver",
+                        "kcm_interrupts",
+                        "kcm_block_devices",
+                        "kcm_audio_information",
+                        "kcm_kwinsupportinfo",
+                        "kcm_edid",
+                        "kcm_disks",
+                        "kcm_network",
+                        "kcm_samba"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "devices",
+            "icon": "org.raye.settings-devices",
+            "icon_fallback": "preferences-system-bluetooth",
+            "name": "Bluetooth & devices",
+            "name_fr": "Bluetooth et appareils",
+            "summary": "Printers, mouse, phone, Bluetooth",
+            "summary_fr": "Imprimantes, souris, téléphone, Bluetooth",
+            "landing": "pages/devices/DevicesPage.qml",
+            "pages": [
+                {
+                    "id": "devices/bluetooth",
+                    "icon": "org.raye.settings-bluetooth",
+                    "icon_fallback": "preferences-system-bluetooth",
+                    "name": "Bluetooth",
+                    "name_fr": "Bluetooth",
+                    "summary": "Turn Bluetooth on and add devices",
+                    "summary_fr": "Activer le Bluetooth et ajouter des appareils",
+                    "type": "qml",
+                    "component": "pages/devices/BluetoothPage.qml",
+                    "aliases": [
+                        "kcm_bluetooth"
+                    ],
+                    "requires": "bluetooth"
+                },
+                {
+                    "id": "devices/printers",
+                    "icon": "org.raye.settings-printers",
+                    "icon_fallback": "printer",
+                    "name": "Printers & scanners",
+                    "name_fr": "Imprimantes et scanneurs",
+                    "summary": "Add a printer, see the queue",
+                    "summary_fr": "Ajouter une imprimante, voir la file d'attente",
+                    "type": "qml",
+                    "component": "pages/devices/PrintersPage.qml",
+                    "aliases": [
+                        "kcm_printer_manager"
+                    ]
+                },
+                {
+                    "id": "devices/phone",
+                    "icon": "org.raye.settings-phone",
+                    "icon_fallback": "smartphone",
+                    "name": "Phone",
+                    "name_fr": "Téléphone",
+                    "summary": "Link your phone, send files",
+                    "summary_fr": "Associer votre téléphone, envoyer des fichiers",
+                    "type": "qml",
+                    "component": "pages/devices/PhonePage.qml",
+                    "aliases": [
+                        "kcm_kdeconnect"
+                    ]
+                },
+                {
+                    "id": "devices/cameras",
+                    "icon": "org.raye.settings-cameras",
+                    "icon_fallback": "camera-web",
+                    "name": "Cameras",
+                    "name_fr": "Caméras",
+                    "summary": "Connected cameras and preview",
+                    "summary_fr": "Caméras connectées et aperçu",
+                    "type": "qml",
+                    "component": "pages/devices/CamerasPage.qml"
+                },
+                {
+                    "id": "devices/mouse",
+                    "icon": "org.raye.settings-mouse",
+                    "icon_fallback": "input-mouse",
+                    "name": "Mouse",
+                    "name_fr": "Souris",
+                    "summary": "Buttons, pointer speed, scrolling",
+                    "summary_fr": "Boutons, vitesse du pointeur, défilement",
+                    "type": "qml",
+                    "component": "pages/devices/MousePage.qml",
+                    "aliases": [
+                        "kcm_mouse"
+                    ]
+                },
+                {
+                    "id": "devices/touchpad",
+                    "icon": "org.raye.settings-touchpad",
+                    "icon_fallback": "input-touchpad",
+                    "name": "Touchpad",
+                    "name_fr": "Pavé tactile",
+                    "summary": "Taps, scrolling, gestures",
+                    "summary_fr": "Appuis, défilement, gestes",
+                    "type": "qml",
+                    "component": "pages/devices/TouchpadPage.qml",
+                    "aliases": [
+                        "kcm_touchpad"
+                    ],
+                    "requires": "touchpad"
+                },
+                {
+                    "id": "devices/pen",
+                    "icon": "org.raye.settings-pen",
+                    "icon_fallback": "input-tablet",
+                    "name": "Pen & tablet",
+                    "name_fr": "Stylet et tablette",
+                    "summary": "Drawing tablets and pens",
+                    "summary_fr": "Tablettes graphiques et stylets",
+                    "type": "qml",
+                    "component": "pages/devices/PenPage.qml",
+                    "aliases": [
+                        "kcm_tablet"
+                    ],
+                    "requires": "tablet"
+                },
+                {
+                    "id": "devices/autoplay",
+                    "icon": "org.raye.settings-autoplay",
+                    "icon_fallback": "media-removable",
+                    "name": "AutoPlay",
+                    "name_fr": "Exécution automatique",
+                    "summary": "What happens when you plug something in",
+                    "summary_fr": "Ce qui se passe quand vous branchez un appareil",
+                    "type": "qml",
+                    "component": "pages/devices/AutoPlayPage.qml",
+                    "aliases": [
+                        "kcm_device_automounter",
+                        "kcm_solid_actions"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "network",
+            "icon": "org.raye.settings-network",
+            "icon_fallback": "preferences-system-network",
+            "name": "Network & internet",
+            "name_fr": "Réseau et Internet",
+            "summary": "Wi-Fi, Ethernet, VPN, hotspot",
+            "summary_fr": "Wi-Fi, Ethernet, VPN, point d'accès",
+            "summary_without": {
+                "requires": "wifi",
+                "summary": "Ethernet, VPN, proxy",
+                "summary_fr": "Ethernet, VPN, proxy"
+            },
+            "landing": "pages/network/NetworkPage.qml",
+            "pages": [
+                {
+                    "id": "network/wifi",
+                    "icon": "org.raye.settings-wifi",
+                    "icon_fallback": "network-wireless",
+                    "name": "Wi-Fi",
+                    "name_fr": "Wi-Fi",
+                    "summary": "Networks nearby and known networks",
+                    "summary_fr": "Réseaux à proximité et réseaux connus",
+                    "type": "qml",
+                    "component": "pages/network/WifiPage.qml",
+                    "requires": "wifi",
+                    "aliases": [
+                        "kcm_mobile_wifi"
+                    ]
+                },
+                {
+                    "id": "network/known-networks",
+                    "icon": "org.raye.settings-known-networks",
+                    "icon_fallback": "network-wireless-connected-100",
+                    "name": "Manage known networks",
+                    "name_fr": "Gérer les réseaux connus",
+                    "summary": "Forget a network, or change how it connects",
+                    "summary_fr": "Oublier un réseau ou modifier sa connexion",
+                    "type": "qml",
+                    "component": "pages/network/KnownNetworksPage.qml",
+                    "requires": "wifi"
+                },
+                {
+                    "id": "network/ethernet",
+                    "icon": "org.raye.settings-ethernet",
+                    "icon_fallback": "network-wired",
+                    "name": "Ethernet",
+                    "name_fr": "Ethernet",
+                    "summary": "Wired connection, IP and DNS",
+                    "summary_fr": "Connexion filaire, IP et DNS",
+                    "type": "qml",
+                    "component": "pages/network/EthernetPage.qml",
+                    "aliases": [
+                        "kcm_mobile_wired"
+                    ]
+                },
+                {
+                    "id": "network/vpn",
+                    "icon": "org.raye.settings-vpn",
+                    "icon_fallback": "network-vpn",
+                    "name": "VPN",
+                    "name_fr": "VPN",
+                    "summary": "Add and connect to a VPN",
+                    "summary_fr": "Ajouter un VPN et s'y connecter",
+                    "type": "qml",
+                    "component": "pages/network/VpnPage.qml"
+                },
+                {
+                    "id": "network/hotspot",
+                    "icon": "org.raye.settings-hotspot",
+                    "icon_fallback": "network-wireless-hotspot",
+                    "name": "Mobile hotspot",
+                    "name_fr": "Point d'accès mobile",
+                    "summary": "Share this connection with other devices",
+                    "summary_fr": "Partager cette connexion avec d'autres appareils",
+                    "type": "qml",
+                    "component": "pages/network/HotspotPage.qml",
+                    "requires": "wifi",
+                    "aliases": [
+                        "kcm_mobile_hotspot"
+                    ]
+                },
+                {
+                    "id": "network/airplane-mode",
+                    "icon": "org.raye.settings-airplane-mode",
+                    "icon_fallback": "airplane-mode",
+                    "name": "Airplane mode",
+                    "name_fr": "Mode avion",
+                    "summary": "Stop all wireless communication",
+                    "summary_fr": "Arrêter toutes les communications sans fil",
+                    "type": "qml",
+                    "component": "pages/network/AirplaneModePage.qml",
+                    "requires": "wifi|bluetooth"
+                },
+                {
+                    "id": "network/proxy",
+                    "icon": "org.raye.settings-proxy",
+                    "icon_fallback": "preferences-system-network-proxy",
+                    "name": "Proxy",
+                    "name_fr": "Proxy",
+                    "summary": "Proxy server for apps that use one",
+                    "summary_fr": "Serveur proxy pour les applications qui en utilisent un",
+                    "type": "qml",
+                    "component": "pages/network/ProxyPage.qml",
+                    "aliases": [
+                        "kcm_proxy"
+                    ]
+                },
+                {
+                    "id": "network/advanced",
+                    "icon": "org.raye.settings-network-advanced",
+                    "icon_fallback": "preferences-system-network",
+                    "name": "Advanced network settings",
+                    "name_fr": "Paramètres réseau avancés",
+                    "summary": "Adapters, more options, network reset",
+                    "summary_fr": "Cartes réseau, autres options, réinitialisation",
+                    "type": "qml",
+                    "component": "pages/network/AdvancedNetworkPage.qml",
+                    "aliases": [
+                        "kcm_networkmanagement"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "personalization",
+            "icon": "org.raye.settings-personalization",
+            "icon_fallback": "preferences-desktop-theme-global",
+            "name": "Personalization",
+            "name_fr": "Personnalisation",
+            "summary": "Background, colors, themes, taskbar",
+            "summary_fr": "Fond, couleurs, thèmes, barre des tâches",
+            "landing": "pages/personalization/PersonalizationPage.qml",
+            "pages": [
+                {
+                    "id": "personalization/background",
+                    "icon": "org.raye.settings-background",
+                    "icon_fallback": "preferences-desktop-wallpaper",
+                    "name": "Background",
+                    "name_fr": "Arrière-plan",
+                    "summary": "Picture, solid color or slideshow",
+                    "summary_fr": "Image, couleur unie ou diaporama",
+                    "type": "qml",
+                    "component": "pages/personalization/BackgroundPage.qml",
+                    "aliases": [
+                        "kcm_wallpaper"
+                    ]
+                },
+                {
+                    "id": "personalization/colors",
+                    "icon": "org.raye.settings-colors",
+                    "icon_fallback": "preferences-desktop-color",
+                    "name": "Colors",
+                    "name_fr": "Couleurs",
+                    "summary": "Dark or light, accent color, transparency",
+                    "summary_fr": "Sombre ou clair, couleur d'accentuation, transparence",
+                    "type": "qml",
+                    "component": "pages/personalization/ColorsPage.qml",
+                    "aliases": [
+                        "kcm_colors"
+                    ]
+                },
+                {
+                    "id": "personalization/themes",
+                    "icon": "org.raye.settings-themes",
+                    "icon_fallback": "preferences-desktop-theme-global",
+                    "name": "Themes",
+                    "name_fr": "Thèmes",
+                    "summary": "Raye Night, Raye Day and your own",
+                    "summary_fr": "Raye Nuit, Raye Jour et les vôtres",
+                    "type": "qml",
+                    "component": "pages/personalization/ThemesPage.qml",
+                    "aliases": [
+                        "kcm_lookandfeel",
+                        "kcm_desktoptheme",
+                        "kcm_style",
+                        "kcm_icons",
+                        "kcm_splashscreen",
+                        "kcm_kwindecoration"
+                    ]
+                },
+                {
+                    "id": "personalization/lock-screen",
+                    "icon": "org.raye.settings-lock-screen",
+                    "icon_fallback": "system-lock-screen",
+                    "name": "Lock screen",
+                    "name_fr": "Écran de verrouillage",
+                    "summary": "Picture on the lock and sign-in screens",
+                    "summary_fr": "Image des écrans de verrouillage et de connexion",
+                    "type": "qml",
+                    "component": "pages/personalization/LockScreenPage.qml"
+                },
+                {
+                    "id": "personalization/text-input",
+                    "icon": "org.raye.settings-text-input",
+                    "icon_fallback": "input-keyboard-virtual",
+                    "name": "Text input",
+                    "name_fr": "Saisie de texte",
+                    "summary": "On-screen keyboard",
+                    "summary_fr": "Clavier visuel",
+                    "type": "qml",
+                    "component": "pages/personalization/TextInputPage.qml",
+                    "aliases": [
+                        "kcm_virtualkeyboard"
+                    ]
+                },
+                {
+                    "id": "personalization/start",
+                    "icon": "org.raye.settings-start",
+                    "icon_fallback": "start-here",
+                    "name": "Start",
+                    "name_fr": "Démarrer",
+                    "summary": "Layout, recent apps, folders",
+                    "summary_fr": "Disposition, applications récentes, dossiers",
+                    "type": "qml",
+                    "component": "pages/personalization/StartPage.qml"
+                },
+                {
+                    "id": "personalization/start-folders",
+                    "icon": "org.raye.settings-start-folders",
+                    "icon_fallback": "folder",
+                    "name": "Folders",
+                    "name_fr": "Dossiers",
+                    "summary": "Folders next to the power button on Start",
+                    "summary_fr": "Dossiers à côté du bouton d'alimentation dans Démarrer",
+                    "type": "qml",
+                    "component": "pages/personalization/StartFoldersPage.qml"
+                },
+                {
+                    "id": "personalization/taskbar",
+                    "icon": "org.raye.settings-taskbar",
+                    "icon_fallback": "configure",
+                    "name": "Taskbar",
+                    "name_fr": "Barre des tâches",
+                    "summary": "Buttons, corner icons, behaviors",
+                    "summary_fr": "Boutons, icônes du coin, comportements",
+                    "type": "qml",
+                    "component": "pages/personalization/TaskbarPage.qml"
+                },
+                {
+                    "id": "personalization/fonts",
+                    "icon": "org.raye.settings-fonts",
+                    "icon_fallback": "preferences-desktop-font",
+                    "name": "Fonts",
+                    "name_fr": "Polices",
+                    "summary": "Installed fonts, install new ones",
+                    "summary_fr": "Polices installées, en installer d'autres",
+                    "type": "qml",
+                    "component": "pages/personalization/FontsPage.qml",
+                    "aliases": [
+                        "kcm_fonts",
+                        "kcm_fontinst"
+                    ]
+                },
+                {
+                    "id": "personalization/sounds",
+                    "icon": "org.raye.settings-sounds",
+                    "icon_fallback": "preferences-desktop-notification",
+                    "name": "Sounds",
+                    "name_fr": "Sons",
+                    "summary": "Sounds the system plays",
+                    "summary_fr": "Sons joués par le système",
+                    "type": "qml",
+                    "component": "pages/personalization/SoundsPage.qml",
+                    "aliases": [
+                        "kcm_soundtheme"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "apps",
+            "icon": "org.raye.settings-apps",
+            "icon_fallback": "preferences-desktop-default-applications",
+            "name": "Apps",
+            "name_fr": "Applications",
+            "summary": "Installed apps, default apps, startup",
+            "summary_fr": "Installées, par défaut, au démarrage",
+            "pages": [
+                {
+                    "id": "apps/installed",
+                    "icon": "org.raye.settings-installed-apps",
+                    "icon_fallback": "applications-other",
+                    "name": "Installed apps",
+                    "name_fr": "Applications installées",
+                    "summary": "See, repair and remove apps",
+                    "summary_fr": "Voir, réparer et supprimer des applications",
+                    "type": "qml",
+                    "component": "pages/apps/InstalledAppsPage.qml",
+                    "aliases": [
+                        "kcm_flatpak"
+                    ]
+                },
+                {
+                    "id": "apps/default",
+                    "icon": "org.raye.settings-default-apps",
+                    "icon_fallback": "preferences-desktop-default-applications",
+                    "name": "Default apps",
+                    "name_fr": "Applications par défaut",
+                    "summary": "Which app opens which file",
+                    "summary_fr": "Quelle application ouvre quel fichier",
+                    "type": "qml",
+                    "component": "pages/apps/DefaultAppsPage.qml",
+                    "aliases": [
+                        "kcm_componentchooser",
+                        "kcm_filetypes"
+                    ]
+                },
+                {
+                    "id": "apps/startup",
+                    "icon": "org.raye.settings-startup",
+                    "icon_fallback": "system-run",
+                    "name": "Startup",
+                    "name_fr": "Démarrage",
+                    "summary": "Apps that start when you sign in",
+                    "summary_fr": "Applications lancées à l'ouverture de session",
+                    "type": "qml",
+                    "component": "pages/apps/StartupAppsPage.qml",
+                    "aliases": [
+                        "kcm_autostart"
+                    ]
+                },
+                {
+                    "id": "apps/features",
+                    "icon": "org.raye.settings-features",
+                    "icon_fallback": "package-x-generic",
+                    "name": "Optional features",
+                    "name_fr": "Fonctionnalités facultatives",
+                    "summary": "Extra packs you can add or remove",
+                    "summary_fr": "Modules supplémentaires à ajouter ou retirer",
+                    "type": "qml",
+                    "component": "pages/apps/FeaturesPage.qml"
+                }
+            ]
+        },
+        {
+            "id": "accounts",
+            "icon": "org.raye.settings-accounts",
+            "icon_fallback": "system-users",
+            "name": "Accounts",
+            "name_fr": "Comptes",
+            "summary": "Your info, sign-in options, other users",
+            "summary_fr": "Vos infos, connexion, autres utilisateurs",
+            "landing": "pages/accounts/AccountsPage.qml",
+            "pages": [
+                {
+                    "id": "accounts/your-info",
+                    "icon": "org.raye.settings-your-info",
+                    "icon_fallback": "user-identity",
+                    "name": "Your info",
+                    "name_fr": "Vos informations",
+                    "summary": "Your picture, name and account type",
+                    "summary_fr": "Votre image, votre nom et votre type de compte",
+                    "type": "qml",
+                    "component": "pages/accounts/YourInfoPage.qml",
+                    "aliases": [
+                        "kcm_users"
+                    ]
+                },
+                {
+                    "id": "accounts/raye-account",
+                    "icon": "org.raye.settings-your-info",
+                    "icon_fallback": "user-identity",
+                    "name": "Raye account",
+                    "name_fr": "Compte Raye",
+                    "summary": "Sign in, sync your settings across your PCs",
+                    "summary_fr": "Se connecter, synchroniser vos paramètres entre vos PC",
+                    "type": "qml",
+                    "component": "pages/accounts/RayeAccountPage.qml",
+                    "requires": "raye-account"
+                },
+                {
+                    "id": "accounts/raye-backup",
+                    "icon": "org.raye.settings-backup",
+                    "icon_fallback": "folder-sync",
+                    "name": "Raye backup",
+                    "name_fr": "Sauvegarde Raye",
+                    "summary": "What follows you to your other PCs",
+                    "summary_fr": "Ce qui vous suit sur vos autres PC",
+                    "type": "qml",
+                    "component": "pages/accounts/RayeBackupPage.qml",
+                    "requires": "raye-account"
+                },
+                {
+                    "id": "accounts/your-devices",
+                    "icon": "org.raye.settings-devices",
+                    "icon_fallback": "computer",
+                    "name": "Your devices",
+                    "name_fr": "Vos appareils",
+                    "summary": "The PCs signed in to your Raye account",
+                    "summary_fr": "Les PC connectés à votre compte Raye",
+                    "type": "qml",
+                    "component": "pages/accounts/YourDevicesPage.qml",
+                    "requires": "raye-account"
+                },
+                {
+                    "id": "accounts/sign-in",
+                    "icon": "org.raye.settings-sign-in",
+                    "icon_fallback": "preferences-desktop-user-password",
+                    "name": "Sign-in options",
+                    "name_fr": "Options de connexion",
+                    "summary": "Password, fingerprint, automatic sign-in",
+                    "summary_fr": "Mot de passe, empreinte, connexion automatique",
+                    "type": "qml",
+                    "component": "pages/accounts/SignInPage.qml"
+                },
+                {
+                    "id": "accounts/email",
+                    "icon": "org.raye.settings-email",
+                    "icon_fallback": "preferences-system-users",
+                    "name": "Email & accounts",
+                    "name_fr": "Courrier et comptes",
+                    "summary": "Your online accounts",
+                    "summary_fr": "Vos comptes en ligne",
+                    "type": "qml",
+                    "component": "pages/accounts/EmailAccountsPage.qml",
+                    "aliases": [
+                        "kcm_kaccounts"
+                    ],
+                    "requires": "online-accounts"
+                },
+                {
+                    "id": "accounts/other-users",
+                    "icon": "org.raye.settings-other-users",
+                    "icon_fallback": "system-users",
+                    "name": "Other users",
+                    "name_fr": "Autres utilisateurs",
+                    "summary": "Add and remove people on this PC",
+                    "summary_fr": "Ajouter et retirer des personnes sur ce PC",
+                    "type": "qml",
+                    "component": "pages/accounts/OtherUsersPage.qml"
+                }
+            ]
+        },
+        {
+            "id": "time",
+            "icon": "org.raye.settings-time",
+            "icon_fallback": "preferences-system-time",
+            "name": "Time & language",
+            "name_fr": "Heure et langue",
+            "summary": "Date and time, language, typing",
+            "summary_fr": "Date et heure, langue, saisie",
+            "pages": [
+                {
+                    "id": "time/date-time",
+                    "icon": "org.raye.settings-date-time",
+                    "icon_fallback": "preferences-system-time",
+                    "name": "Date & time",
+                    "name_fr": "Date et heure",
+                    "summary": "Time zone, clock, set the time",
+                    "summary_fr": "Fuseau horaire, horloge, régler l'heure",
+                    "type": "qml",
+                    "component": "pages/time/DateTimePage.qml",
+                    "aliases": [
+                        "kcm_clock"
+                    ]
+                },
+                {
+                    "id": "time/language",
+                    "icon": "org.raye.settings-language",
+                    "icon_fallback": "preferences-desktop-locale",
+                    "name": "Language & region",
+                    "name_fr": "Langue et région",
+                    "summary": "Display language, region, formats",
+                    "summary_fr": "Langue d'affichage, région, formats",
+                    "type": "qml",
+                    "component": "pages/time/LanguagePage.qml",
+                    "aliases": [
+                        "kcm_regionandlang",
+                        "kcm_translations",
+                        "kcm_formats"
+                    ]
+                },
+                {
+                    "id": "time/typing",
+                    "icon": "org.raye.settings-typing",
+                    "icon_fallback": "input-keyboard",
+                    "name": "Typing",
+                    "name_fr": "Saisie",
+                    "summary": "Keyboard layouts and key repeat",
+                    "summary_fr": "Dispositions du clavier et répétition des touches",
+                    "type": "qml",
+                    "component": "pages/time/TypingPage.qml",
+                    "aliases": [
+                        "kcm_keyboard"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "gaming",
+            "icon": "org.raye.settings-gaming",
+            "icon_fallback": "applications-games",
+            "name": "Gaming",
+            "name_fr": "Jeux",
+            "summary": "Game Mode, controllers, Windows programs",
+            "summary_fr": "Mode jeu, manettes, programmes Windows",
+            "pages": [
+                {
+                    "id": "gaming/game-mode",
+                    "icon": "org.raye.settings-game-mode",
+                    "icon_fallback": "applications-games",
+                    "name": "Game Mode",
+                    "name_fr": "Mode jeu",
+                    "summary": "Performance while you play",
+                    "summary_fr": "Les performances pendant que vous jouez",
+                    "type": "qml",
+                    "component": "pages/gaming/GamingPage.qml",
+                    "kcm": "raye:gaming"
+                },
+                {
+                    "id": "gaming/controllers",
+                    "icon": "org.raye.settings-controllers",
+                    "icon_fallback": "input-gamepad",
+                    "name": "Controllers",
+                    "name_fr": "Manettes",
+                    "summary": "Game controllers connected to this PC",
+                    "summary_fr": "Manettes connectées à ce PC",
+                    "type": "qml",
+                    "component": "pages/gaming/ControllersPage.qml",
+                    "aliases": [
+                        "kcm_gamecontroller"
+                    ]
+                },
+                {
+                    "id": "gaming/captures",
+                    "icon": "org.raye.settings-captures",
+                    "icon_fallback": "folder-videos",
+                    "name": "Captures",
+                    "name_fr": "Captures",
+                    "summary": "Where recordings and screenshots go",
+                    "summary_fr": "Où vont les enregistrements et les captures",
+                    "type": "qml",
+                    "component": "pages/gaming/CapturesPage.qml"
+                },
+                {
+                    "id": "gaming/windows-programs",
+                    "icon": "org.raye.settings-windows-programs",
+                    "icon_fallback": "application-x-ms-dos-executable",
+                    "name": "Windows programs",
+                    "name_fr": "Programmes Windows",
+                    "summary": "Windows programs you have run",
+                    "summary_fr": "Les programmes Windows que vous avez lancés",
+                    "type": "qml",
+                    "component": "pages/gaming/WindowsProgramsPage.qml"
+                }
+            ]
+        },
+        {
+            "id": "accessibility",
+            "icon": "org.raye.settings-accessibility",
+            "icon_fallback": "preferences-desktop-accessibility",
+            "name": "Accessibility",
+            "name_fr": "Accessibilité",
+            "summary": "Text size, magnifier, screen reader",
+            "summary_fr": "Taille du texte, loupe, lecteur d'écran",
+            "pages": [
+                {
+                    "id": "accessibility/text-size",
+                    "icon": "org.raye.settings-text-size",
+                    "icon_fallback": "format-font-size-more",
+                    "name": "Text size",
+                    "name_fr": "Taille du texte",
+                    "summary": "Make text bigger everywhere",
+                    "summary_fr": "Agrandir le texte partout",
+                    "type": "qml",
+                    "component": "pages/accessibility/TextSizePage.qml"
+                },
+                {
+                    "id": "accessibility/visual-effects",
+                    "icon": "org.raye.settings-visual-effects",
+                    "icon_fallback": "preferences-desktop-effects",
+                    "name": "Visual effects",
+                    "name_fr": "Effets visuels",
+                    "summary": "Transparency, animations, notifications",
+                    "summary_fr": "Transparence, animations, notifications",
+                    "type": "qml",
+                    "component": "pages/accessibility/VisualEffectsPage.qml",
+                    "aliases": [
+                        "kcm_animations"
+                    ]
+                },
+                {
+                    "id": "accessibility/mouse-pointer",
+                    "icon": "org.raye.settings-mouse-pointer",
+                    "icon_fallback": "cursor-arrow",
+                    "name": "Mouse pointer and touch",
+                    "name_fr": "Pointeur de souris et toucher",
+                    "summary": "Pointer style and size",
+                    "summary_fr": "Style et taille du pointeur",
+                    "type": "qml",
+                    "component": "pages/accessibility/MousePointerPage.qml",
+                    "aliases": [
+                        "kcm_cursortheme"
+                    ]
+                },
+                {
+                    "id": "accessibility/magnifier",
+                    "icon": "org.raye.settings-magnifier",
+                    "icon_fallback": "zoom-in",
+                    "name": "Magnifier",
+                    "name_fr": "Loupe",
+                    "summary": "Zoom into part of the screen",
+                    "summary_fr": "Agrandir une partie de l'écran",
+                    "type": "qml",
+                    "component": "pages/accessibility/MagnifierPage.qml"
+                },
+                {
+                    "id": "accessibility/color-filters",
+                    "icon": "org.raye.settings-color-filters",
+                    "icon_fallback": "preferences-desktop-color",
+                    "name": "Color filters",
+                    "name_fr": "Filtres de couleur",
+                    "summary": "Make colors easier to tell apart",
+                    "summary_fr": "Distinguer les couleurs plus facilement",
+                    "type": "qml",
+                    "component": "pages/accessibility/ColorFiltersPage.qml"
+                },
+                {
+                    "id": "accessibility/screen-reader",
+                    "icon": "org.raye.settings-screen-reader",
+                    "icon_fallback": "preferences-desktop-accessibility",
+                    "name": "Screen reader",
+                    "name_fr": "Lecteur d'écran",
+                    "summary": "Have the screen read out to you",
+                    "summary_fr": "Faire lire l'écran à voix haute",
+                    "type": "qml",
+                    "component": "pages/accessibility/ScreenReaderPage.qml"
+                },
+                {
+                    "id": "accessibility/audio",
+                    "icon": "org.raye.settings-accessibility-audio",
+                    "icon_fallback": "audio-volume-high",
+                    "name": "Audio",
+                    "name_fr": "Audio",
+                    "summary": "Flash the screen when an alert sound plays",
+                    "summary_fr": "Faire clignoter l'écran pour les alertes sonores",
+                    "type": "qml",
+                    "component": "pages/accessibility/AudioPage.qml"
+                },
+                {
+                    "id": "accessibility/keyboard",
+                    "icon": "org.raye.settings-accessibility-keyboard",
+                    "icon_fallback": "input-keyboard",
+                    "name": "Keyboard",
+                    "name_fr": "Clavier",
+                    "summary": "Sticky keys, filter keys, on-screen keyboard",
+                    "summary_fr": "Touches rémanentes, touches filtres, clavier visuel",
+                    "type": "qml",
+                    "component": "pages/accessibility/KeyboardPage.qml",
+                    "aliases": [
+                        "kcm_access"
+                    ]
+                },
+                {
+                    "id": "accessibility/mouse",
+                    "icon": "org.raye.settings-accessibility-mouse",
+                    "icon_fallback": "input-mouse",
+                    "name": "Mouse",
+                    "name_fr": "Souris",
+                    "summary": "Move the pointer with the number pad",
+                    "summary_fr": "Déplacer le pointeur avec le pavé numérique",
+                    "type": "qml",
+                    "component": "pages/accessibility/MouseKeysPage.qml"
+                }
+            ]
+        },
+        {
+            "id": "privacy",
+            "icon": "org.raye.settings-privacy",
+            "icon_fallback": "preferences-security",
+            "name": "Privacy & security",
+            "name_fr": "Confidentialité et sécurité",
+            "summary": "Device security, app permissions",
+            "summary_fr": "Sécurité, autorisations des applications",
+            "pages": [
+                {
+                    "id": "privacy/device-security",
+                    "icon": "org.raye.settings-device-security",
+                    "icon_fallback": "security-high",
+                    "name": "Device security",
+                    "name_fr": "Sécurité de l'appareil",
+                    "summary": "Secure Boot, disk encryption, firewall",
+                    "summary_fr": "Démarrage sécurisé, chiffrement du disque, pare-feu",
+                    "type": "qml",
+                    "component": "pages/privacy/DeviceSecurityPage.qml",
+                    "kcm": "raye:security",
+                    "aliases": [
+                        "kcm_firewall"
+                    ]
+                },
+                {
+                    "id": "privacy/virus",
+                    "icon": "org.raye.settings-virus",
+                    "icon_fallback": "security-high",
+                    "name": "Virus & threat protection",
+                    "name_fr": "Protection contre les virus et les menaces",
+                    "summary": "How Raye keeps your PC safe",
+                    "summary_fr": "Comment Raye protège votre PC",
+                    "type": "qml",
+                    "component": "pages/privacy/VirusPage.qml"
+                },
+                {
+                    "id": "privacy/location",
+                    "icon": "org.raye.settings-location",
+                    "icon_fallback": "mark-location",
+                    "name": "Location",
+                    "name_fr": "Localisation",
+                    "summary": "Which apps know where you are",
+                    "summary_fr": "Quelles applications connaissent votre position",
+                    "type": "qml",
+                    "component": "pages/privacy/LocationPage.qml"
+                },
+                {
+                    "id": "privacy/camera",
+                    "icon": "org.raye.settings-privacy-camera",
+                    "icon_fallback": "camera-web",
+                    "name": "Camera",
+                    "name_fr": "Caméra",
+                    "summary": "Which apps can use the camera",
+                    "summary_fr": "Quelles applications peuvent utiliser la caméra",
+                    "type": "qml",
+                    "component": "pages/privacy/CameraPage.qml"
+                },
+                {
+                    "id": "privacy/microphone",
+                    "icon": "org.raye.settings-microphone",
+                    "icon_fallback": "audio-input-microphone",
+                    "name": "Microphone",
+                    "name_fr": "Microphone",
+                    "summary": "Which apps can use the microphone",
+                    "summary_fr": "Quelles applications peuvent utiliser le microphone",
+                    "type": "qml",
+                    "component": "pages/privacy/MicrophonePage.qml"
+                },
+                {
+                    "id": "privacy/screenshots",
+                    "icon": "org.raye.settings-screenshots",
+                    "icon_fallback": "camera-photo",
+                    "name": "Screenshots",
+                    "name_fr": "Captures d'écran",
+                    "summary": "Which apps can record the screen",
+                    "summary_fr": "Quelles applications peuvent enregistrer l'écran",
+                    "type": "qml",
+                    "component": "pages/privacy/ScreenshotsPage.qml"
+                },
+                {
+                    "id": "privacy/background-apps",
+                    "icon": "org.raye.settings-background-apps",
+                    "icon_fallback": "system-run",
+                    "name": "Background apps",
+                    "name_fr": "Applications en arrière-plan",
+                    "summary": "Which apps keep running in the background",
+                    "summary_fr": "Quelles applications continuent en arrière-plan",
+                    "type": "qml",
+                    "component": "pages/privacy/BackgroundAppsPage.qml"
+                },
+                {
+                    "id": "privacy/files",
+                    "icon": "org.raye.settings-privacy-files",
+                    "icon_fallback": "folder",
+                    "name": "File system",
+                    "name_fr": "Système de fichiers",
+                    "summary": "Which apps can reach all your files",
+                    "summary_fr": "Quelles applications accèdent à tous vos fichiers",
+                    "type": "qml",
+                    "component": "pages/privacy/FilesPage.qml"
+                },
+                {
+                    "id": "privacy/diagnostics",
+                    "icon": "org.raye.settings-diagnostics",
+                    "icon_fallback": "help-feedback",
+                    "name": "Diagnostics & feedback",
+                    "name_fr": "Diagnostics et retours",
+                    "summary": "What Raye sends, and what it does not",
+                    "summary_fr": "Ce que Raye envoie, et ce qu'il n'envoie pas",
+                    "type": "qml",
+                    "component": "pages/privacy/DiagnosticsPage.qml",
+                    "aliases": [
+                        "kcm_feedback"
+                    ]
+                },
+                {
+                    "id": "privacy/activity-history",
+                    "icon": "org.raye.settings-activity-history",
+                    "icon_fallback": "document-open-recent",
+                    "name": "Activity history",
+                    "name_fr": "Historique d'activité",
+                    "summary": "Recently opened files",
+                    "summary_fr": "Fichiers ouverts récemment",
+                    "type": "qml",
+                    "component": "pages/privacy/ActivityHistoryPage.qml",
+                    "aliases": [
+                        "kcm_activities",
+                        "kcm_recentFiles"
+                    ]
+                },
+                {
+                    "id": "privacy/file-search",
+                    "icon": "org.raye.settings-file-search",
+                    "icon_fallback": "search",
+                    "name": "Searching your files",
+                    "name_fr": "Recherche dans vos fichiers",
+                    "summary": "Index your files so search is instant",
+                    "summary_fr": "Indexer vos fichiers pour une recherche instantanée",
+                    "type": "qml",
+                    "component": "pages/privacy/FileSearchPage.qml",
+                    "aliases": [
+                        "kcm_baloofile",
+                        "kcm_plasmasearch"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "update",
+            "icon": "org.raye.settings-update",
+            "icon_fallback": "system-software-update",
+            "name": "Raye Update",
+            "name_fr": "Raye Update",
+            "summary": "Updates, drivers, firmware",
+            "summary_fr": "Mises à jour, pilotes, micrologiciels",
+            "landing": "pages/update/UpdatePage.qml",
+            "pages": [
+                {
+                    "id": "update/raye-update",
+                    "icon": "org.raye.settings-raye-update",
+                    "icon_fallback": "system-software-update",
+                    "name": "Raye Update",
+                    "name_fr": "Raye Update",
+                    "summary": "Check for updates and install them",
+                    "summary_fr": "Rechercher des mises à jour et les installer",
+                    "type": "qml",
+                    "component": "pages/update/UpdatePage.qml",
+                    "kcm": "raye:update"
+                },
+                {
+                    "id": "update/history",
+                    "icon": "org.raye.settings-update-history",
+                    "icon_fallback": "view-history",
+                    "name": "Update history",
+                    "name_fr": "Historique des mises à jour",
+                    "summary": "What was installed, and when",
+                    "summary_fr": "Ce qui a été installé, et quand",
+                    "type": "qml",
+                    "component": "pages/update/HistoryPage.qml"
+                },
+                {
+                    "id": "update/drivers",
+                    "icon": "org.raye.settings-drivers",
+                    "icon_fallback": "preferences-system-hardware",
+                    "name": "Optional updates",
+                    "name_fr": "Mises à jour facultatives",
+                    "summary": "Drivers for your hardware",
+                    "summary_fr": "Pilotes pour votre matériel",
+                    "type": "qml",
+                    "component": "pages/update/DriversPage.qml",
+                    "kcm": "raye:drivers"
+                },
+                {
+                    "id": "update/firmware",
+                    "icon": "org.raye.settings-firmware",
+                    "icon_fallback": "cpu",
+                    "name": "Firmware updates",
+                    "name_fr": "Mises à jour du micrologiciel",
+                    "summary": "Updates for the hardware itself",
+                    "summary_fr": "Mises à jour du matériel lui-même",
+                    "type": "qml",
+                    "component": "pages/update/FirmwarePage.qml"
+                },
+                {
+                    "id": "update/advanced",
+                    "icon": "org.raye.settings-update-advanced",
+                    "icon_fallback": "preferences-other",
+                    "name": "Advanced options",
+                    "name_fr": "Options avancées",
+                    "summary": "Pause updates, restart hours, kernel",
+                    "summary_fr": "Suspendre, heures de redémarrage, noyau",
+                    "type": "qml",
+                    "component": "pages/update/UpdateAdvancedPage.qml"
+                }
+            ]
+        }
+    ]
+}

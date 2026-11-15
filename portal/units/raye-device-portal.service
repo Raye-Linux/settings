@@ -1,0 +1,29 @@
+# Started by raye-device-portal.socket; it stops by itself after 30
+# minutes without a visit.
+[Unit]
+Description=Raye Device Portal
+Requires=raye-device-portal.socket
+After=raye-device-portal.socket
+
+[Service]
+ExecStart=/usr/libexec/raye-settings/device-portal serve
+NoNewPrivileges=yes
+ProtectSystem=strict
+# uploads land in the home folder; nothing else is written
+ReadWritePaths=%h
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+UMask=0077
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+MemoryMax=512M
+TasksMax=64
+Nice=5

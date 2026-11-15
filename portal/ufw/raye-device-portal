@@ -1,0 +1,4 @@
+[raye-device-portal]
+title=Raye Device Portal
+description=Manage this PC from a browser on the same network
+ports=50443/tcp

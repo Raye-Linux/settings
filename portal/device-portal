@@ -1,0 +1,12 @@
+#!/usr/bin/python3 -I
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Raye Device Portal: see rayeportal/cli.py for the commands.
+import os
+import sys
+
+here = os.path.dirname(os.path.abspath(__file__))
+# installed, the library is in /usr/share; in the source tree it is next to this file
+sys.path.insert(0, "/usr/share/raye-settings/device-portal" if here.startswith("/usr/") else here)
+from rayeportal import cli  # noqa: E402
+
+sys.exit(cli.main())

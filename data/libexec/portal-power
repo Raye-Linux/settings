@@ -1,0 +1,46 @@
+#!/bin/sh
+# Device Portal: the root actions a browser can ask for. Run through
+# pkexec (org.raye.settings.portal-power), with the sudo password the
+# person typed in the portal; the portal itself never runs as root.
+#
+#   portal-power reboot|poweroff [--delay]   --delay: in 3 seconds, so
+#                                            the page gets its answer
+#   portal-power kill PID                    end a process of any user
+set -u
+
+usage() { echo "usage: portal-power reboot|poweroff [--delay] | kill PID" >&2; exit 2; }
+
+case ${1:-} in
+reboot|poweroff)
+    action=$1
+    case ${2:-} in
+    "") exec systemctl "$action" ;;
+    --delay)
+        [ $# -eq 2 ] || usage
+        exec systemd-run --quiet --collect --unit="raye-portal-$action" --on-active=3 \
+            --timer-property=AccuracySec=1s systemctl "$action"
+        ;;
+    *) usage ;;
+    esac
+    ;;
+kill)
+    [ $# -eq 2 ] || usage
+    case $2 in
+    ''|*[!0-9]*|0*) usage ;;
+    esac
+    pid=$2
+    [ "$pid" -gt 1 ] || usage
+    [ -d "/proc/$pid" ] || { echo "portal-power: no process $pid" >&2; exit 3; }
+    kill -TERM "$pid" 2>/dev/null
+    n=0
+    while [ $n -lt 20 ] && [ -d "/proc/$pid" ]; do
+        sleep 0.1
+        n=$((n + 1))
+    done
+    [ -d "/proc/$pid" ] && kill -KILL "$pid" 2>/dev/null
+    exit 0
+    ;;
+*)
+    usage
+    ;;
+esac

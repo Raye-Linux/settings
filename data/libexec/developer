@@ -1,0 +1,95 @@
+#!/bin/sh
+# System > Advanced > For developers: the parts that need root. Run
+# through pkexec (org.raye.settings.developer).
+#
+#   developer ssh on [keys|passwords]   start the OpenSSH server now and at
+#                                       every start; keys only unless told
+#   developer ssh off
+#   developer ssh keys-only on|off      refuse or accept passwords
+#   developer portal-firewall allow|deny
+#                                       open the Device Portal's port when
+#                                       the firewall is on
+set -u
+
+root=
+# the tests point it at a folder of their own; never under pkexec
+if [ -z "${PKEXEC_UID:-}" ] && [ -n "${RAYE_ROOT:-}" ]; then
+    root=$RAYE_ROOT
+fi
+# sshd keeps the first value it reads, and the drop-ins are read in
+# name order: 01 comes before anything a package or cloud-init drops
+keys=$root/etc/ssh/sshd_config.d/01-raye-keys-only.conf
+
+usage() {
+    echo "usage: developer ssh on [keys|passwords] | ssh off | ssh keys-only on|off | portal-firewall allow|deny" >&2
+    exit 2
+}
+
+# Device Portal answers only the PC's own networks; the firewall lets in
+# no more than private and link-local addresses
+portal_networks="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16 fc00::/7 fe80::/10"
+
+firewall_on() {
+    grep -qix 'enabled=yes' "$root/etc/ufw/ufw.conf" 2>/dev/null
+}
+
+keys_only() {
+    if [ "$1" = on ]; then
+        mkdir -p "$(dirname "$keys")"
+        printf '%s\n' "# Settings > System > Advanced: sign in with a key only" \
+            "PasswordAuthentication no" "KbdInteractiveAuthentication no" > "$keys.new" &&
+            chmod 644 "$keys.new" && mv -f "$keys.new" "$keys"
+    else
+        rm -f "$keys"
+    fi
+}
+
+# Ubuntu starts sshd from ssh.socket; older setups from ssh.service
+ssh_unit() {
+    if systemctl cat ssh.socket >/dev/null 2>&1; then echo ssh.socket; else echo ssh.service; fi
+}
+
+case ${1:-}:${2:-} in
+ssh:on)
+    [ $# -le 3 ] || usage
+    case ${3:-keys} in
+    keys) keys_only on ;;
+    passwords) keys_only off ;;
+    *) usage ;;
+    esac
+    [ -x "$root/usr/sbin/sshd" ] || { echo "developer: the OpenSSH server is not installed" >&2; exit 3; }
+    systemctl enable --now "$(ssh_unit)" || exit 1
+    # a running sshd reads its settings again
+    systemctl try-reload-or-restart ssh.service >/dev/null 2>&1
+    if firewall_on; then ufw allow OpenSSH >/dev/null || exit 1; fi
+    ;;
+ssh:off)
+    [ $# -eq 2 ] || usage
+    systemctl disable --now ssh.socket ssh.service >/dev/null 2>&1
+    if systemctl is-active --quiet ssh.socket || systemctl is-active --quiet ssh.service; then
+        exit 1
+    fi
+    if firewall_on; then ufw delete allow OpenSSH >/dev/null 2>&1; fi
+    ;;
+ssh:keys-only)
+    [ $# -eq 3 ] || usage
+    case $3 in on|off) keys_only "$3" ;; *) usage ;; esac
+    systemctl try-reload-or-restart ssh.service >/dev/null 2>&1
+    ;;
+portal-firewall:allow|portal-firewall:deny)
+    [ $# -eq 2 ] || usage
+    firewall_on || exit 0
+    # 0.3 opened the port to Anywhere: that rule goes either way
+    ufw delete allow raye-device-portal >/dev/null 2>&1
+    for net in $portal_networks; do
+        if [ "$2" = allow ]; then
+            ufw allow from "$net" to any app raye-device-portal >/dev/null || exit 1
+        else
+            ufw delete allow from "$net" to any app raye-device-portal >/dev/null 2>&1
+        fi
+    done
+    ;;
+*)
+    usage
+    ;;
+esac

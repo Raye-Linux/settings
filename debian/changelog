@@ -1,0 +1,162 @@
+raye-settings (0.5.4~beta1) resolute; urgency=medium
+
+  * Your info shows your Raye account like Windows shows a Microsoft
+    account, with a way to sign in to one instead of a local account.
+    The header shows the account's name, email and picture.
+    The phone page starts phone linking when it isn't running.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Sat, 14 Nov 2026 21:00:00 +0000
+
+raye-settings (0.5.3~beta1) resolute; urgency=medium
+
+  * Raye backup has a fifth switch, Other settings: sound, notifications,
+    power, privacy, default apps, multitasking and the rest now follow
+    your account too.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Sat, 14 Nov 2026 15:00:00 +0000
+
+raye-settings (0.5~beta1) resolute; urgency=medium
+
+  * New For developers section in System > Advanced: Developer Mode,
+    Device Portal (a web page to manage this PC from the local network,
+    with pairing, sessions and a connection log), device discovery and
+    OpenSSH with keys only.
+  * Menus, drop-down lists, flyouts and tooltips are solid again, and
+    "..." menus open with nothing picked.
+  * No Wi-Fi card: no Wi-Fi, Known networks or Mobile hotspot pages, and
+    the network pages stop mentioning Wi-Fi. A USB Wi-Fi key plugged in
+    brings them back.
+  * Password prompts ask for root access; account types are Sudo user
+    and Standard user.
+  * Going back to the point before an update no longer installs that
+    update again.
+  * Install now says when it waits for the charger: "Plug in your PC to
+    install these updates."
+  * Greyed-out settings are easier to read, and the placeholder, night
+    light, AutoPlay and app list pages are tidier.
+  * A newer background choice is kept when a video finishes converting.
+  * American spelling in page names, summaries and messages.
+  * A Windows program's page says which profile it runs with: Optimized
+    for Raye, or Default.
+  * Restart, Shut down and End task in Device Portal take the sudo
+    password typed in the page; no prompt shows up on the PC instead.
+  * Sounds and Controllers are Raye pages now: pick and hear the sound
+    scheme, turn event sounds off, see each controller and try its
+    buttons and sticks.
+  * Virus & threat protection shows the firewall, security updates, Store
+    apps and Windows programs and how each stands, instead of a
+    placeholder.
+  * New switch in For developers: debug messages of Windows programs.
+  * On a PC without Wi-Fi the Network tile says "Ethernet, VPN, proxy".
+  * Rows for features Raye doesn't have (dynamic lighting, widgets,
+    casting, mono audio, voice typing) and the More accessibility options
+    module are gone; Email & accounts only shows when an account service
+    is installed.
+  * Device security: turn device encryption on or off with the PC on,
+    with its progress, a recovery key shown once (save it to a file or
+    print it), the Secure Boot steps with a restart into the firmware
+    settings, and the TPM version.
+  * Sound has a switch for the sound played when you change the volume,
+    and the Volume slider plays it when you let go.
+  * Encryption progress reads "50%" in English.
+  * Identify shows one number on each screen, in its bottom left corner,
+    for three seconds; clicking again no longer stacks a second one. The
+    line under your name says Standard user for a non-sudo account.
+  * Device security shows the disk as encrypted as soon as the
+    background run ends, without opening the page again.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 12 Nov 2026 20:42:05 +0000
+
+raye-settings (0.3~beta1) resolute; urgency=medium
+
+  * Raye Update marks each update that needs a restart, offers Install
+    now when none does, and shows the install progress.
+  * Firmware that is already up to date is listed as up to date, and
+    raye-kernel no longer counts as a second kernel.
+  * Recovery: restore points are named after what made them, Create a
+    restore point is one click away, and Go back shows on a real
+    install.
+  * Personalization > Background can show an animation, Raye's or your
+    own GIF, MP4 or WebM. A video is trimmed once to 30 frames a second
+    and 1080 lines.
+  * The background type no longer says "Picture" when a slideshow is on.
+  * Calmer greys, with the navigation tiles and page glyphs in the flat
+    accent colour.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Wed, 11 Nov 2026 13:00:18 +0000
+
+raye-settings (0.2~beta2.1) resolute; urgency=medium
+
+  * Raye Update: the status icon stays upright after a check.
+  * Battery: hide estimates longer than a day ("full in 978 h").
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Mon, 09 Nov 2026 03:30:00 +0000
+
+raye-settings (0.2~beta1) resolute; urgency=medium
+
+  * New pages: Start, Lock screen, Text input, Gaming, Mouse, Touchpad and
+    Pen, Printers, Phone, Cameras, Drivers, Firmware, AutoPlay, Raye Update
+    and Taskbar.
+  * Account pages: your info, sign-in options and other users. Automatic
+    sign-in follows what the sign-in screen really reads.
+  * A new display language brings its formats and reaches the sign-in
+    screen, even when the password takes a while.
+  * Every new page is in English and French.
+  * A system wallpaper can be chosen for the lock screen, and the Recovery
+    key card shows again.
+  * Settings no longer says you are up to date when the Raye archive could
+    not be read.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Sun, 08 Nov 2026 11:07:43 +0000
+
+raye-settings (0.1~dev6) resolute; urgency=medium
+
+  * Layout v2 with every page of the new Settings, a router with back and
+    forward, settings: links and --page, one window only.
+  * kcmshell6 now opens Raye pages too; a link to a settings module opens
+    that module.
+  * Meta+I opens Settings.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Fri, 30 Oct 2026 08:20:00 +0000
+
+raye-settings (0.1~dev5) resolute; urgency=medium
+
+  * Raye Update page: pause updates for one to five weeks, and resume.
+  * Opening a page directly (raye-settings raye:update) selects its
+    category in the side bar.
+  * Raye Settings answers for KDE System Settings: Plasma's "Configure..."
+    links and the settings KRunner finds open it on the same module; KDE's
+    window leaves the menu and stays one click away as "Advanced settings".
+  * Drivers page: a Raye kernel card to switch to it or back, with the
+    one-time code to type at the key enrollment screen.
+  * The Raye kernel card follows the trial boot: it says when a restart
+    tries the kernel (and that an encrypted disk asks for its password
+    that one time), and offers to try again if it did not start.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 29 Oct 2026 02:20:00 -0400
+
+raye-settings (0.1~dev4) resolute; urgency=medium
+
+  * The window opens again: QML module moved where Qt looks for it.
+  * Build test that loads the interface, so this cannot come back.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 29 Oct 2026 00:16:00 -0400
+
+raye-settings (0.1~dev3) resolute; urgency=medium
+
+  * Device security, Drivers and Gaming pages.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Wed, 28 Oct 2026 21:18:25 -0400
+
+raye-settings (0.1~dev2) resolute; urgency=medium
+
+  * Raye Update page: what is waiting, check now, restart to install.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Wed, 28 Oct 2026 21:04:30 -0400
+
+raye-settings (0.1~dev1) resolute; urgency=medium
+
+  * First version: the window, the categories and the cards, opening
+    Plasma's settings modules inside the window.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Wed, 28 Oct 2026 21:00:00 -0400

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="sheen" x1="0" y1="1" x2="0" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M11 1 H29 A10 10 0 0 1 39 11 V29 A10 10 0 0 1 29 39 H11 A10 10 0 0 1 1 29 V11 A10 10 0 0 1 11 1 Z" fill="#7b3cff"/>
+  <path d="M11 1 H29 A10 10 0 0 1 39 11 V29 A10 10 0 0 1 29 39 H11 A10 10 0 0 1 1 29 V11 A10 10 0 0 1 11 1 Z" fill="url(#sheen)"/>
+  <path d="M11 1.5 H29 A9.5 9.5 0 0 1 38.5 11 V29 A9.5 9.5 0 0 1 29 38.5 H11 A9.5 9.5 0 0 1 1.5 29 V11 A9.5 9.5 0 0 1 11 1.5 Z" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+  <g transform="translate(7.5 7.5) scale(1.25)">
+    <path d="M7.4 10 A2.6 2.6 0 1 0 12.6 10 A2.6 2.6 0 1 0 7.4 10 Z" fill="#ffffff" fill-opacity="0.28" fill-rule="evenodd"/>
+    <path d="M15.6 8.4 A5.9 5.9 0 0 0 4.7 7.2" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15.9 4.7 V8.5 H12.1" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.4 11.6 A5.9 5.9 0 0 0 15.3 12.8" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4.1 15.3 V11.5 H7.9" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

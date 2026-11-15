@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+Name[fr]=Paramètres
+GenericName=System settings
+GenericName[fr]=Paramètres du système
+Comment=Change how Raye Linux looks and works
+Comment[fr]=Changer l'apparence et le fonctionnement de Raye Linux
+Exec=raye-settings %u
+Icon=preferences-system
+Categories=Qt;KDE;Settings;
+Keywords=settings;preferences;control panel;
+Keywords[fr]=paramètres;préférences;panneau de configuration;
+MimeType=x-scheme-handler/settings;
+StartupNotify=true
+SingleMainWindow=true
+# the keys KDE System Settings had, now that its own entry is moved aside
+X-KDE-Shortcuts=Tools,Meta+I

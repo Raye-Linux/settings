@@ -1,0 +1,13 @@
+# Storage Sense: frees space once a week with the choices made in
+# Settings > System > Storage (old files in the trash, thumbnails not
+# looked at for 30 days). Turned on and off from that page.
+[Unit]
+Description=Storage Sense
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/raye-settings/storage-clean --apply --sense
+Nice=19
+IOSchedulingClass=idle
+CPUSchedulingPolicy=idle
+NoNewPrivileges=yes

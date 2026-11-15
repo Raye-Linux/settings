@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.raye.settings.runner
+Exec=/usr/libexec/raye-settings/raye-settings-runner

@@ -1,0 +1,24 @@
+#!/usr/bin/make -f
+# ctest prints "No tests were found!!!" and exits 0. A package whose
+# tests stop being registered -- a renamed tests/ folder, a find_package
+# that quietly goes missing, BUILD_TESTING flipped -- then BUILDS GREEN
+# with nothing run, and the only trace is one line in an 8 MB log.
+# Measured in the resolute chroot: bare ctest on an empty tree exits 0,
+# with this set it exits 8. iso/tools/tests/test_ctest_no_tests_guard.py
+# fails if any debian/rules that runs dh_auto_test loses this line.
+export CTEST_NO_TESTS_ACTION = error
+# Ubuntu's flags carry -flto=auto: with no make jobserver every link forks
+# one ltrans per CPU, and the test programs link side by side. A 5 GB scope
+# ran out of memory on 28 CPUs. Settings has no library ABI to keep, so a
+# fixed number of partitions is safe here.
+export DEB_CXXFLAGS_MAINT_APPEND = -flto=2
+export DEB_LDFLAGS_MAINT_APPEND = -flto=2
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DBUILD_TESTING=ON
+
+# Device Portal stays off until it is turned on in Settings, for each account
+override_dh_installsystemduser:
+	dh_installsystemduser -X'raye-device-portal.*'

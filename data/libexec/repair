@@ -1,0 +1,167 @@
+#!/bin/sh
+# Recovery › Repair Raye: put Raye's system files back as they came,
+# from the Raye and Ubuntu archives. Files, apps and settings stay; it
+# never removes a package, never upgrades one, and leaves changed
+# configuration files alone. Run through pkexec (org.raye.settings.repair).
+#
+#   repair            check, then reinstall what is damaged
+#   repair --check    only say what would be reinstalled
+#
+# What is damaged: every package debsums finds a changed or missing file
+# in; without debsums, Raye's own packages and what they depend on.
+# Each package goes back at the version installed today.
+#
+# Lines printed, for Settings to show:
+#   stage update|check|download|install
+#   progress <0-100>
+#   package <name>          (one per package found)
+#   found <count>
+#   done <count>
+#   error network|locked|apt
+# The full apt output goes to /var/log/raye/repair.log.
+set -u
+
+log=/var/log/raye/repair.log
+# the tests keep their log elsewhere; never under pkexec
+if [ -z "${PKEXEC_UID:-}" ] && [ -n "${RAYE_REPAIR_LOG:-}" ]; then
+    log=$RAYE_REPAIR_LOG
+fi
+metapackages="raye-system raye-desktop"
+
+case ${1:-} in
+''|--check) ;;
+*) echo "usage: repair [--check]" >&2; exit 2 ;;
+esac
+
+export DEBIAN_FRONTEND=noninteractive LC_ALL=C.UTF-8
+mkdir -p "$(dirname "$log")"
+: > "$log"
+chmod 600 "$log" 2>/dev/null
+
+say() { printf '%s\n' "$*"; }
+
+installed() { # package -> exit 0 when installed (for any architecture)
+    dpkg-query -W -f '${db:Status-Status}\n' "$1" 2>/dev/null | grep -qx installed
+}
+
+# Packages with a changed or missing file. debsums prints the changed
+# files on stdout and "missing file /x (from pkg package)" on stderr.
+damaged_by_debsums() {
+    debsums -c 2>&1 | while IFS= read -r line; do
+        case $line in
+        /*)
+            # "pkg: /file", "pkg1, pkg2: /file"; diversions are not packages
+            dpkg-query -S "$line" 2>/dev/null | grep -v '^diversion by' |
+                sed -n 's/^\(.*\): \/.*$/\1/p' | tr ',' '\n' | sed 's/^ *//; s/ *$//'
+            ;;
+        *"(from "*" package)"*)
+            printf '%s\n' "$line" | sed -n 's/.*(from \(.*\) package).*/\1/p'
+            ;;
+        esac
+    done
+}
+
+# Without debsums: Raye's packages and the ones they depend on.
+raye_set() {
+    for meta in $metapackages; do
+        installed "$meta" || continue
+        echo "$meta"
+        dpkg-query -W -f '${Depends}\n${Pre-Depends}\n' "$meta" 2>/dev/null |
+            tr ',' '\n' | while IFS= read -r alternatives; do
+                # "a (>= 1) | b": the first one that is installed
+                printf '%s\n' "$alternatives" | tr '|' '\n' |
+                    sed 's/([^)]*)//g; s/\[[^]]*\]//g; s/^ *//; s/ *$//' |
+                    while IFS= read -r name; do
+                        [ -n "$name" ] || continue
+                        if installed "$name"; then echo "$name"; break; fi
+                    done
+            done
+    done
+}
+
+# Can apt download the version installed today? A package installed by
+# hand, or one whose version left the archive, cannot be put back.
+downloadable() {
+    apt-cache policy "$1" 2>/dev/null | awk '
+        /^ \*\*\* / { mine = 1; next }
+        /^     [^ ]/ { mine = 0; next }
+        mine && /^        / && $0 !~ /\/var\/lib\/dpkg\/status/ { found = 1 }
+        END { exit found ? 0 : 1 }'
+}
+
+if [ "${1:-}" != --check ]; then
+    say "stage update"
+    say "progress 2"
+    # no network: carry on, the packages may be in the cache already
+    apt-get -q update >> "$log" 2>&1 || echo "apt-get update failed, going on" >> "$log"
+fi
+
+say "stage check"
+say "progress 10"
+if command -v debsums >/dev/null 2>&1; then
+    candidates=$(damaged_by_debsums | sed 's/:[a-z0-9]*$//' | sort -u)
+else
+    echo "debsums is not installed: reinstalling Raye's packages" >> "$log"
+    candidates=$(raye_set | sed 's/:[a-z0-9]*$//' | sort -u)
+fi
+
+targets=
+count=0
+for name in $candidates; do
+    case $name in *[!a-z0-9.+-]*|'') continue ;; esac
+    installed "$name" || continue
+    if ! downloadable "$name"; then
+        echo "skipped $name: this version cannot be downloaded" >> "$log"
+        continue
+    fi
+    # the exact version installed today, for each architecture it has
+    specs=$(dpkg-query -W -f '${db:Status-Status} ${binary:Package}=${Version}\n' "$name" 2>/dev/null |
+        sed -n 's/^installed //p')
+    [ -n "$specs" ] || continue
+    for spec in $specs; do
+        case $spec in *[!a-z0-9.+:=~-]*) continue 2 ;; esac
+    done
+    targets="$targets $specs"
+    count=$((count + 1))
+    say "package $name"
+done
+say "found $count"
+say "progress 20"
+
+if [ "${1:-}" = --check ] || [ "$count" -eq 0 ]; then
+    say "done 0"
+    exit 0
+fi
+
+rc_file=$(mktemp)
+trap 'rm -f -- "${rc_file:?}"' EXIT
+# apt's status lines on fd 3 become our progress: downloading is 20-60,
+# installing 60-100
+{
+    # shellcheck disable=SC2086
+    apt-get install --reinstall -y -q --no-remove --no-install-recommends \
+        -o DPkg::Lock::Timeout=120 \
+        -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
+        -o APT::Status-Fd=3 -- $targets 3>&1 >> "$log" 2>&1
+    echo $? > "$rc_file"
+} | awk -F: '
+    function show(p) { p = int(p); if (p > last) { last = p; print "progress " p; fflush() } }
+    # "pmstatus:bash:45:..." or "pmstatus:libc6:amd64:45:...": the first number
+    function percent(   i) { for (i = 3; i <= NF; i++) if ($i ~ /^[0-9]+(\.[0-9]+)?$/) return $i; return -1 }
+    BEGIN { last = 20 }
+    $1 == "dlstatus" { if (!dl) { print "stage download"; dl = 1; fflush() } p = percent(); if (p >= 0) show(20 + p * 0.4) }
+    $1 == "pmstatus" { if (!pm) { print "stage install"; pm = 1; fflush() } p = percent(); if (p >= 0) show(60 + p * 0.4) }
+'
+rc=$(cat "$rc_file" 2>/dev/null)
+if [ "${rc:-1}" -ne 0 ]; then
+    if grep -q 'Could not get lock\|Unable to acquire the dpkg' "$log"; then
+        say "error locked"
+    elif grep -q 'Failed to fetch\|Temporary failure resolving\|Could not resolve' "$log"; then
+        say "error network"
+    else
+        say "error apt"
+    fi
+    exit 1
+fi
+say "progress 100"
+say "done $count"

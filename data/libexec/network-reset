@@ -1,0 +1,34 @@
+#!/bin/sh
+# Network reset, run by Raye Settings through pkexec: forget every saved
+# Wi-Fi network, VPN and hotspot, then restart NetworkManager. Wired
+# connections stay, so a PC on a cable comes back online by itself.
+#
+# It takes no argument: nothing the caller says can change what it does.
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH LC_ALL=C
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "network-reset: run me through pkexec" >&2
+    exit 1
+fi
+if [ $# -ne 0 ]; then
+    echo "network-reset: takes no argument" >&2
+    exit 2
+fi
+
+# UUID:TYPE, one saved connection per line (nmcli escapes ':' in values)
+nmcli -t -f UUID,TYPE connection show | while IFS=: read -r uuid type; do
+    case $type in
+    802-11-wireless|wifi|vpn|wireguard)
+        case $uuid in
+        *[!0-9a-fA-F-]*|'') continue ;;
+        esac
+        nmcli connection delete uuid "$uuid" >/dev/null || true
+        ;;
+    esac
+done
+
+# Wi-Fi back on, airplane mode off: a fresh start, as Windows does
+nmcli radio wifi on || true
+systemctl restart NetworkManager.service

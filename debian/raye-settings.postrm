@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+if [ "$1" = remove ] || [ "$1" = abort-install ] || [ "$1" = disappear ]; then
+    dpkg-divert --package raye-settings --remove --rename \
+        --divert /usr/bin/systemsettings.kde /usr/bin/systemsettings
+    dpkg-divert --package raye-settings --remove --rename \
+        --divert /usr/bin/kcmshell6.kde /usr/bin/kcmshell6
+    dpkg-divert --package raye-settings --remove --rename \
+        --divert /usr/share/raye-settings/kde/systemsettings.desktop \
+        /usr/share/applications/systemsettings.desktop
+    rmdir /usr/share/raye-settings/kde 2>/dev/null || true
+fi
+# an upgrade stopped half way, from a version that did not answer for
+# these yet: it has no relay of its own to put in their place
+if [ "$1" = abort-upgrade ] && dpkg --compare-versions "$2" lt-nl 0.1~dev6; then
+    dpkg-divert --package raye-settings --remove --rename \
+        --divert /usr/bin/kcmshell6.kde /usr/bin/kcmshell6
+fi
+if [ "$1" = abort-upgrade ] && dpkg --compare-versions "$2" lt-nl 0.1~dev5; then
+    dpkg-divert --package raye-settings --remove --rename \
+        --divert /usr/bin/systemsettings.kde /usr/bin/systemsettings
+    dpkg-divert --package raye-settings --remove --rename \
+        --divert /usr/share/raye-settings/kde/systemsettings.desktop \
+        /usr/share/applications/systemsettings.desktop
+    rmdir /usr/share/raye-settings/kde 2>/dev/null || true
+fi
+#DEBHELPER#

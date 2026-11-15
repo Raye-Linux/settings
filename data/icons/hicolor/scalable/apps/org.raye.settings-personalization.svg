@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="sheen" x1="0" y1="1" x2="0" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M11 1 H29 A10 10 0 0 1 39 11 V29 A10 10 0 0 1 29 39 H11 A10 10 0 0 1 1 29 V11 A10 10 0 0 1 11 1 Z" fill="#7b3cff"/>
+  <path d="M11 1 H29 A10 10 0 0 1 39 11 V29 A10 10 0 0 1 29 39 H11 A10 10 0 0 1 1 29 V11 A10 10 0 0 1 11 1 Z" fill="url(#sheen)"/>
+  <path d="M11 1.5 H29 A9.5 9.5 0 0 1 38.5 11 V29 A9.5 9.5 0 0 1 29 38.5 H11 A9.5 9.5 0 0 1 1.5 29 V11 A9.5 9.5 0 0 1 11 1.5 Z" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+  <g transform="translate(7.5 7.5) scale(1.25)">
+    <path d="M10 4.25 C6.4 4.25 4.25 6.9 4.25 10 C4.25 13.2 6.7 15.75 9.5 15.75 C10.5 15.75 10.9 15.1 10.5 14.3 C9.8 12.9 10.8 11.75 12.4 11.75 H14 C15.1 11.75 15.75 10.9 15.75 9.6 C15.75 6.6 13.3 4.25 10 4.25 Z" fill="#ffffff" fill-opacity="0.28" fill-rule="evenodd"/>
+    <path d="M10 2.75 C5.6 2.75 2.75 6.1 2.75 10 C2.75 14 5.9 17.25 9.5 17.25 C11.2 17.25 12 15.9 11.3 14.6 C10.8 13.6 11.4 13 12.4 13 H14 C16 13 17.25 11.5 17.25 9.6 C17.25 5.7 14.1 2.75 10 2.75 Z" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5.7 8.75 A1.05 1.05 0 1 0 7.8 8.75 A1.05 1.05 0 1 0 5.7 8.75 Z" fill="#ffffff"/>
+    <path d="M8.7 6.25 A1.05 1.05 0 1 0 10.8 6.25 A1.05 1.05 0 1 0 8.7 6.25 Z" fill="#ffffff"/>
+    <path d="M12.2 7.75 A1.05 1.05 0 1 0 14.3 7.75 A1.05 1.05 0 1 0 12.2 7.75 Z" fill="#ffffff"/>
+    <path d="M5.7 12.25 A1.05 1.05 0 1 0 7.8 12.25 A1.05 1.05 0 1 0 5.7 12.25 Z" fill="#ffffff"/>
+  </g>
+</svg>

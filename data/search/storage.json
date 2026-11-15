@@ -1,0 +1,138 @@
+{
+    "version": 1,
+    "entries": [
+        {
+            "id": "system/storage#cleanup",
+            "label": "Cleanup recommendations",
+            "label_fr": "Recommandations de nettoyage",
+            "keywords": [
+                "clean up",
+                "cleanup",
+                "disk cleanup",
+                "free up space",
+                "temporary files",
+                "trash",
+                "recycle bin",
+                "thumbnails",
+                "package files",
+                "old logs",
+                "restore points",
+                "delete"
+            ],
+            "keywords_fr": [
+                "nettoyer",
+                "nettoyage",
+                "nettoyage de disque",
+                "libérer de l'espace",
+                "fichiers temporaires",
+                "corbeille",
+                "miniatures",
+                "paquets",
+                "anciens journaux",
+                "points de restauration",
+                "supprimer"
+            ]
+        },
+        {
+            "id": "system/storage#storage-sense",
+            "label": "Storage Sense",
+            "label_fr": "Assistant Stockage",
+            "keywords": [
+                "automatic",
+                "empty trash",
+                "free up space automatically",
+                "schedule",
+                "weekly"
+            ],
+            "keywords_fr": [
+                "automatique",
+                "vider la corbeille",
+                "libérer de l'espace automatiquement",
+                "planifier",
+                "chaque semaine"
+            ]
+        },
+        {
+            "id": "system/storage#trash-days",
+            "label": "Delete files in my trash",
+            "label_fr": "Supprimer les fichiers de ma corbeille",
+            "keywords": [
+                "trash",
+                "recycle bin",
+                "empty trash",
+                "days"
+            ],
+            "keywords_fr": [
+                "corbeille",
+                "vider la corbeille",
+                "jours"
+            ]
+        },
+        {
+            "id": "system/storage#sense-thumbnails",
+            "label": "Clean up thumbnails I haven't looked at for 30 days",
+            "label_fr": "Nettoyer les miniatures que je n'ai pas regardées depuis 30 jours",
+            "keywords": [
+                "thumbnails",
+                "previews",
+                "cache"
+            ],
+            "keywords_fr": [
+                "miniatures",
+                "aperçus",
+                "cache"
+            ]
+        },
+        {
+            "id": "system/storage#run-sense",
+            "label": "Run Storage Sense now",
+            "label_fr": "Exécuter l'Assistant Stockage maintenant",
+            "keywords": [
+                "free up space now",
+                "clean now"
+            ],
+            "keywords_fr": [
+                "libérer de l'espace maintenant",
+                "nettoyer maintenant"
+            ]
+        },
+        {
+            "id": "system/storage#other-drives",
+            "label": "Storage used on other drives",
+            "label_fr": "Stockage utilisé sur d'autres lecteurs",
+            "keywords": [
+                "usb drive",
+                "external drive",
+                "other disks",
+                "windows drive",
+                "free space"
+            ],
+            "keywords_fr": [
+                "clé usb",
+                "disque externe",
+                "autres disques",
+                "lecteur windows",
+                "espace libre"
+            ]
+        },
+        {
+            "id": "system/storage#disks-volumes",
+            "label": "Disks & volumes",
+            "label_fr": "Disques et volumes",
+            "keywords": [
+                "partition",
+                "partitions",
+                "format",
+                "disk management",
+                "volume"
+            ],
+            "keywords_fr": [
+                "partition",
+                "partitions",
+                "formater",
+                "gestion des disques",
+                "volume"
+            ]
+        }
+    ]
+}

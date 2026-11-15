@@ -1,0 +1,9 @@
+{
+    "version": 1,
+    "entries": [
+        {"id": "gaming/game-mode#game-mode", "label": "Game Mode", "label_fr": "Mode jeu", "keywords": ["performance while playing", "gamemode", "game booster"], "keywords_fr": ["performances en jeu", "optimiser les jeux"]},
+        {"id": "gaming/game-mode#frame-rate-overlay", "label": "Frame rate overlay", "label_fr": "Affichage du nombre d'images par seconde", "keywords": ["fps counter", "frames per second", "temperatures in games", "fps"], "keywords_fr": ["compteur fps", "images par seconde", "températures en jeu", "fps"]},
+        {"id": "gaming/captures#screenshots-folder", "label": "Where screenshots go", "label_fr": "Où vont les captures d'écran", "keywords": ["screenshots folder", "save location", "print screen"], "keywords_fr": ["dossier des captures d'écran", "emplacement d'enregistrement", "impression écran"]},
+        {"id": "gaming/captures#recordings-folder", "label": "Where screen recordings go", "label_fr": "Où vont les enregistrements de l'écran", "keywords": ["video captures", "record screen", "screencasts folder"], "keywords_fr": ["captures vidéo", "enregistrer l'écran", "dossier des enregistrements"]}
+    ]
+}

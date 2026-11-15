@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>Raye Linux</vendor>
+  <action id="org.raye.settings.developer">
+    <description>Change the settings for developers</description>
+    <description xml:lang="fr">Modifier les paramètres pour les développeurs</description>
+    <message>Changing the SSH server or the firewall needs your sudo password</message>
+    <message xml:lang="fr">Modifier le serveur SSH ou le pare-feu demande votre mot de passe sudo</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/raye-settings/developer</annotate>
+  </action>
+  <!-- asked from a browser, through Device Portal: the password every time -->
+  <action id="org.raye.settings.portal-power">
+    <description>Restart, shut down or end a process from Device Portal</description>
+    <description xml:lang="fr">Redémarrer, arrêter ou terminer un processus depuis le portail d'appareil</description>
+    <message>Device Portal needs your sudo password</message>
+    <message xml:lang="fr">Le portail d'appareil demande votre mot de passe sudo</message>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/libexec/raye-settings/portal-power</annotate>
+  </action>
+</policyconfig>

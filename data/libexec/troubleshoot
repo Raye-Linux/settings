@@ -1,0 +1,382 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The troubleshooters of Settings > System > Troubleshoot.
+#
+#   troubleshoot check audio|network|printer|update|bluetooth|display
+#       runs the checks of one troubleshooter, as the user
+#   troubleshoot fix REMEDY...
+#       runs fixes; the ones for the user's session as the user, the
+#       ones for the system as root only (pkexec, org.raye.settings.troubleshoot)
+#
+# One line each, read by Settings (src/backends/troubleshoot.h):
+#   begin CHECK
+#   check CHECK ok|unknown
+#   check CHECK problem REMEDY user|admin|none   ("none": only advice)
+#   fixed REMEDY | failed REMEDY
+# Exit status: 0 done, 2 wrong use.
+#
+# The tests set RAYE_TROUBLESHOOT_TEST, and then RAYE_TROUBLESHOOT_UID
+# (who to act as) and RAYE_TROUBLESHOOT_ROOT (a folder standing for /).
+# pkexec never passes them on.
+set -u
+LC_ALL=C
+export LC_ALL
+
+uid=$(id -u)
+root=
+if [ -n "${RAYE_TROUBLESHOOT_TEST:-}" ]; then
+    uid=${RAYE_TROUBLESHOOT_UID:-$uid}
+    root=${RAYE_TROUBLESHOOT_ROOT:-}
+elif [ "$uid" -eq 0 ]; then
+    PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    export PATH
+fi
+
+begin() { echo "begin $1"; }
+result() { echo "check $1 $2"; }
+problem() { echo "check $1 problem $2 $3"; }
+have() { command -v "$1" >/dev/null 2>&1; }
+# a tool that hangs must not hang the troubleshooter
+run() { timeout 20 "$@"; }
+
+# --- Audio -----------------------------------------------------------
+check_audio() {
+    begin audio-service
+    if ! have systemctl; then
+        result audio-service unknown
+    elif run systemctl --user is-active --quiet pipewire.service \
+        && run systemctl --user is-active --quiet wireplumber.service; then
+        result audio-service ok
+    else
+        problem audio-service restart-audio user
+    fi
+
+    begin audio-output
+    if ! have wpctl; then
+        result audio-output unknown
+    elif ! sink=$(run wpctl inspect @DEFAULT_AUDIO_SINK@ 2>/dev/null) \
+        || printf '%s\n' "$sink" | grep -q 'node.name = "auto_null"'; then
+        problem audio-output plug-in-audio none
+    else
+        result audio-output ok
+    fi
+
+    begin audio-volume
+    volume=
+    have wpctl && volume=$(run wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null)
+    case $volume in
+        "")
+            result audio-volume unknown ;;
+        *MUTED*|"Volume: 0.00"*|"Volume: 0.01"*|"Volume: 0.02"*|"Volume: 0.03"*|"Volume: 0.04"*)
+            problem audio-volume unmute user ;;
+        *)
+            result audio-volume ok ;;
+    esac
+}
+
+# --- Internet connections ---------------------------------------------
+check_network() {
+    begin network-service
+    if have systemctl && run systemctl is-active --quiet NetworkManager.service; then
+        result network-service ok
+    elif have systemctl; then
+        problem network-service restart-network admin
+    else
+        result network-service unknown
+    fi
+
+    if ! have nmcli; then
+        begin network-connected
+        result network-connected unknown
+        return
+    fi
+
+    begin network-enabled
+    case $(run nmcli networking 2>/dev/null) in
+        enabled) result network-enabled ok ;;
+        disabled) problem network-enabled enable-networking user ;;
+        *) result network-enabled unknown ;;
+    esac
+
+    # only when this PC has Wi-Fi at all
+    if run nmcli -t -f TYPE device 2>/dev/null | grep -qx wifi; then
+        begin network-wifi
+        case $(run nmcli radio wifi 2>/dev/null) in
+            enabled) result network-wifi ok ;;
+            disabled) problem network-wifi wifi-on user ;;
+            *) result network-wifi unknown ;;
+        esac
+    fi
+
+    begin network-connected
+    case $(run nmcli networking connectivity check 2>/dev/null) in
+        full) result network-connected ok ;;
+        portal) problem network-connected sign-in none ;;
+        none|limited) problem network-connected restart-network admin ;;
+        *) result network-connected unknown ;;
+    esac
+}
+
+# --- Bluetooth -------------------------------------------------------
+check_bluetooth() {
+    begin bluetooth-service
+    if have systemctl && run systemctl is-active --quiet bluetooth.service; then
+        result bluetooth-service ok
+    elif have systemctl; then
+        problem bluetooth-service restart-bluetooth admin
+    else
+        result bluetooth-service unknown
+    fi
+
+    begin bluetooth-adapter
+    adapter=0
+    for hci in "$root"/sys/class/bluetooth/hci*; do
+        [ -e "$hci" ] && adapter=1
+    done
+    if [ $adapter -eq 1 ]; then
+        result bluetooth-adapter ok
+    else
+        problem bluetooth-adapter no-adapter none
+    fi
+
+    begin bluetooth-blocked
+    blocked=
+    have rfkill && blocked=$(run rfkill list bluetooth 2>/dev/null)
+    if [ -z "$blocked" ]; then
+        result bluetooth-blocked unknown
+    elif printf '%s\n' "$blocked" | grep -q 'Hard blocked: yes'; then
+        problem bluetooth-blocked hardware-switch none
+    elif printf '%s\n' "$blocked" | grep -q 'Soft blocked: yes'; then
+        problem bluetooth-blocked unblock-bluetooth user
+    else
+        result bluetooth-blocked ok
+    fi
+
+    # whether it is on means nothing without an adapter
+    [ $adapter -eq 1 ] || return 0
+    begin bluetooth-powered
+    shown=
+    have bluetoothctl && shown=$(run bluetoothctl show 2>/dev/null)
+    if printf '%s\n' "$shown" | grep -q 'Powered: yes'; then
+        result bluetooth-powered ok
+    elif printf '%s\n' "$shown" | grep -q 'Powered: no'; then
+        problem bluetooth-powered power-bluetooth user
+    else
+        result bluetooth-powered unknown
+    fi
+}
+
+# --- Printer ---------------------------------------------------------
+check_printer() {
+    begin printer-service
+    if have systemctl && { run systemctl is-active --quiet cups.service \
+        || run systemctl is-active --quiet cups.socket; }; then
+        result printer-service ok
+    elif have systemctl && have lpstat; then
+        problem printer-service restart-printing admin
+    else
+        result printer-service unknown
+    fi
+
+    have lpstat || return 0
+    begin printer-found
+    if [ -z "$(run lpstat -e 2>/dev/null)" ]; then
+        problem printer-found add-printer none
+        return 0
+    fi
+    result printer-found ok
+
+    begin printer-paused
+    if [ -n "$(paused_printers)" ]; then
+        problem printer-paused resume-printers admin
+    else
+        result printer-paused ok
+    fi
+}
+
+# the printers that are stopped, by their plain names only
+paused_printers() {
+    run lpstat -p 2>/dev/null | awk '$1 == "printer" && $3 == "disabled" { print $2 }' \
+        | grep -E '^[A-Za-z0-9_.@-]+$'
+}
+
+# --- Display ---------------------------------------------------------
+check_display() {
+    begin display-screens
+    if ! have kscreen-doctor || ! have python3 \
+        || ! layout=$(run kscreen-doctor -j 2>/dev/null) || [ -z "$layout" ]; then
+        result display-screens unknown
+        return 0
+    fi
+    # a screen that is plugged in and dark, or no screen lit at all
+    state=$(printf '%s' "$layout" | python3 -I -c '
+import json, sys
+try:
+    outputs = json.load(sys.stdin).get("outputs", [])
+except Exception:
+    print("unknown"); sys.exit()
+connected = [o for o in outputs if o.get("connected")]
+lit = [o for o in connected if o.get("enabled")]
+print("ok" if connected and len(lit) == len(connected) else "problem")
+' 2>/dev/null)
+    case $state in
+        ok) result display-screens ok ;;
+        problem) problem display-screens reset-display user ;;
+        *) result display-screens unknown ;;
+    esac
+}
+
+# --- Raye Update -----------------------------------------------------
+check_update() {
+    begin update-service
+    if ! have systemctl; then
+        result update-service unknown
+    elif run systemctl is-enabled --quiet raye-update.timer && run systemctl is-active --quiet raye-update.timer; then
+        result update-service ok
+    else
+        problem update-service repair-updates admin
+    fi
+
+    begin update-state
+    state_file="$root/var/lib/raye-update/state.json"
+    if [ -r "$state_file" ] && grep -q '"phase": *"error"' "$state_file"; then
+        problem update-state repair-updates admin
+    else
+        result update-state ok
+    fi
+
+    # an install that stopped half way leaves files here
+    begin update-packages
+    if [ -n "$(ls -A "$root/var/lib/dpkg/updates" 2>/dev/null)" ]; then
+        problem update-packages repair-updates admin
+    else
+        result update-packages ok
+    fi
+
+    # updates need about a gigabyte to download and unpack
+    begin update-space
+    free=$(df -Pk "$root/" 2>/dev/null | awk 'NR == 2 { print $4 }')
+    case $free in
+        ''|*[!0-9]*) result update-space unknown ;;
+        *) if [ "$free" -lt 1048576 ]; then
+               problem update-space free-space none
+           else
+               result update-space ok
+           fi ;;
+    esac
+}
+
+# --- Fixes -----------------------------------------------------------
+fix_restart_audio() {
+    run systemctl --user restart pipewire.service pipewire-pulse.service wireplumber.service || return 1
+    sleep 1
+}
+
+fix_unmute() {
+    run wpctl set-mute @DEFAULT_AUDIO_SINK@ 0 || return 1
+    case $(run wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null) in
+        "Volume: 0.0"*) run wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5 ;;
+    esac
+    return 0
+}
+
+fix_reset_display() {
+    data=${XDG_DATA_HOME:-$HOME/.local/share}
+    case $data in
+        /?*) ;;
+        *) return 1 ;;
+    esac
+    saved="$data/kscreen"
+    # put the saved layouts aside (one copy kept) and let the display
+    # service start again from what is plugged in
+    if [ -d "$saved" ]; then
+        rm -rf "$saved.before-reset"
+        mv "$saved" "$saved.before-reset" || return 1
+    fi
+    run busctl --user call org.kde.kded6 /kded org.kde.kded6 unloadModule s kscreen >/dev/null 2>&1
+    run busctl --user call org.kde.kded6 /kded org.kde.kded6 loadModule s kscreen >/dev/null
+}
+
+fix_restart_network() {
+    run systemctl restart NetworkManager.service || return 1
+    run systemctl try-restart systemd-resolved.service
+    # wait for a connection to come back before checking again
+    timeout 25 nm-online -s -q -t 20 >/dev/null 2>&1
+    return 0
+}
+
+fix_restart_bluetooth() {
+    run systemctl restart bluetooth.service || return 1
+    sleep 2
+}
+
+fix_restart_printing() {
+    run systemctl restart cups.service
+}
+
+fix_resume_printers() {
+    ok=0
+    for printer in $(paused_printers); do
+        run cupsenable "$printer" || ok=1
+        run cupsaccept "$printer" || ok=1
+    done
+    return $ok
+}
+
+fix_repair_updates() {
+    # finish what an interrupted install left half done
+    DEBIAN_FRONTEND=noninteractive timeout 900 dpkg --configure -a --force-confdef --force-confold \
+        </dev/null >/dev/null 2>&1 || return 1
+    run systemctl reset-failed raye-update.service raye-update-install.service >/dev/null 2>&1
+    run systemctl enable --now raye-update.timer >/dev/null 2>&1 || return 1
+    # and look for updates again, in the background
+    run systemctl start --no-block raye-update.service >/dev/null 2>&1
+    return 0
+}
+
+fix() {
+    remedy=$1
+    case $remedy in
+    restart-audio) level=user; action=fix_restart_audio ;;
+    unmute) level=user; action=fix_unmute ;;
+    enable-networking) level=user; action="run nmcli networking on" ;;
+    wifi-on) level=user; action="run nmcli radio wifi on" ;;
+    unblock-bluetooth) level=user; action="run rfkill unblock bluetooth" ;;
+    power-bluetooth) level=user; action="run bluetoothctl power on" ;;
+    reset-display) level=user; action=fix_reset_display ;;
+    restart-network) level=admin; action=fix_restart_network ;;
+    restart-bluetooth) level=admin; action=fix_restart_bluetooth ;;
+    restart-printing) level=admin; action=fix_restart_printing ;;
+    resume-printers) level=admin; action=fix_resume_printers ;;
+    repair-updates) level=admin; action=fix_repair_updates ;;
+    *) echo "failed $remedy"; return ;;
+    esac
+    # the session's own services as the person, the system's as root
+    if { [ "$level" = admin ] && [ "$uid" -ne 0 ]; } || { [ "$level" = user ] && [ "$uid" -eq 0 ]; }; then
+        echo "failed $remedy"
+        return
+    fi
+    if $action >/dev/null; then
+        echo "fixed $remedy"
+    else
+        echo "failed $remedy"
+    fi
+}
+
+case ${1:-} in
+    check)
+        [ $# -eq 2 ] || exit 2
+        case $2 in
+            audio|network|printer|update|bluetooth|display) "check_$2" ;;
+            *) exit 2 ;;
+        esac ;;
+    fix)
+        shift
+        [ $# -gt 0 ] || exit 2
+        for remedy in "$@"; do
+            fix "$remedy"
+        done ;;
+    *)
+        exit 2 ;;
+esac
+exit 0

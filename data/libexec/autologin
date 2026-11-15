@@ -1,0 +1,98 @@
+#!/bin/sh
+# Accounts > Sign-in options > Sign in automatically. Writes which account
+# the sign-in screen opens by itself, or takes that back. Run through
+# pkexec (org.raye.settings.autologin), and only ever for the person who
+# asked: the account comes from PKEXEC_UID, never from the command line.
+#
+#   autologin on        sign in as me without asking
+#   autologin off       ask for my password again
+#   autologin --check   say what is set now, change nothing
+set -u
+
+dir=/etc/sddm.conf.d
+system=/usr/lib/sddm/sddm.conf.d
+main=/etc/sddm.conf
+# the tests point them at folders of their own; never under pkexec
+if [ -z "${PKEXEC_UID:-}" ]; then
+    dir=${RAYE_SDDM_CONF_DIR:-$dir}
+    system=${RAYE_SDDM_SYSTEM_DIR:-$system}
+    main=${RAYE_SDDM_MAIN:-$main}
+fi
+# read after every file the packages install in that folder
+file=$dir/zz-raye-autologin.conf
+
+# Who SDDM signs in: the system folder, then /etc/sddm.conf.d, then
+# /etc/sddm.conf, each folder in name order; the last User= wins.
+effective() {
+    set --
+    for d in "$system" "$dir"; do
+        [ -d "$d" ] || continue
+        for f in "$d"/*.conf; do
+            [ -f "$f" ] && set -- "$@" "$f"
+        done
+    done
+    [ -f "$main" ] && set -- "$@" "$main"
+    [ $# -gt 0 ] || return 0
+    awk '
+        { sub(/\r$/, ""); line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line) }
+        line ~ /^\[/ { section = line; next }
+        section == "[Autologin]" && line ~ /^User[ \t]*=/ {
+            sub(/^User[ \t]*=[ \t]*/, "", line); user = line
+        }
+        END { print user }
+    ' "$@"
+}
+
+write() { # the file we own, with this User= (empty: nobody)
+    mkdir -p "$dir" || exit 1
+    tmp=$file.new
+    umask 022
+    {
+        printf '# Written by Settings > Accounts > Sign-in options.\n'
+        if [ -n "$1" ]; then
+            printf '[Autologin]\nUser=%s\nSession=plasma\nRelogin=false\n' "$1"
+        else
+            printf '[Autologin]\nUser=\n'
+        fi
+    } > "$tmp" || exit 1
+    mv -f "$tmp" "$file" || exit 1
+}
+
+# what was asked has to be what SDDM now reads, or it failed
+verify() {
+    now=$(effective)
+    [ "$now" = "$1" ] && return 0
+    echo "autologin: set in $main, which is read last" >&2
+    exit 4
+}
+
+case ${1:-} in
+on)
+    uid=${PKEXEC_UID:-${RAYE_TEST_UID:-}}
+    case $uid in
+    ''|*[!0-9]*) echo "autologin: run me through pkexec" >&2; exit 2 ;;
+    0) echo "autologin: not for the root account" >&2; exit 2 ;;
+    esac
+    login=$(getent passwd "$uid" | cut -d: -f1)
+    [ -n "$login" ] || { echo "autologin: no account for uid $uid" >&2; exit 3; }
+    write "$login"
+    if [ "$(effective)" != "$login" ]; then
+        rm -f "$file"
+        verify "$login"
+    fi
+    ;;
+off)
+    rm -f "$file" || exit 1
+    # another file still signs someone in: ours, read after it, says nobody
+    [ -z "$(effective)" ] || write ""
+    verify ""
+    ;;
+--check)
+    effective
+    ;;
+*)
+    echo "usage: autologin on|off|--check" >&2
+    exit 2
+    ;;
+esac
+exit 0
