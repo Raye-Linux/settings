@@ -1,3 +1,10 @@
+raye-settings (0.5.6~beta1) resolute; urgency=medium
+
+  * Raye Update shows "Restart now" only once the updates that need no
+    restart are installed, so a restart never cuts them off.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Mon, 16 Nov 2026 13:24:45 +0000
+
 raye-settings (0.5.5~beta1) resolute; urgency=medium
 
   * Raye Update: a direct link to Optional updates (drivers, Raye kernel).

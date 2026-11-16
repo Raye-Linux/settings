@@ -98,8 +98,11 @@ private Q_SLOTS:
         const QString live = QStringLiteral("{phase: 'ready', state: 'idle', restartNeeded: false, pending: [{name: 'firefox', restart: false}], firmware: []}");
         QCOMPARE(state(live), QStringLiteral("install"));
         QCOMPARE(state(QStringLiteral("{phase: 'installing', installingNow: true, pending: [{restart: false}]}")), QStringLiteral("installing"));
-        // one that needs a restart is enough for the restart
-        QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: false}, {restart: true}]}")), QStringLiteral("restart"));
+        // updates that install without a restart come first: no "Restart
+        // now" while some of them are still to install
+        QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: false}, {restart: true}]}")), QStringLiteral("install"));
+        // once only the restart ones are left, the restart
+        QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: true}]}")), QStringLiteral("restart"));
         // a file from before 0.3: everything waited for the restart
         QVERIFY(call(QStringLiteral("needsRestart"), QStringLiteral("{name: 'x'}")).toBool());
         QVERIFY(call(QStringLiteral("needsRestart"), QStringLiteral("{restart: true}")).toBool());

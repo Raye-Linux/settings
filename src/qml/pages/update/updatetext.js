@@ -21,10 +21,12 @@ function pageState(u, now) {
         return "armed"
     if (u.installingNow)
         return "installing"
-    if (u.restartNeeded)
-        return "restart"
+    // updates that install without a restart come first: "Restart now"
+    // only once they are in, or a restart would cut them off
     if (phase === "ready" && (u.pending || []).some(p => !needsRestart(p)))
         return "install"
+    if (u.restartNeeded)
+        return "restart"
     if (phase === "downloading" || phase === "checking" || phase === "waiting" || phase === "error")
         return phase
     if (waitingCount(u) > 0)
