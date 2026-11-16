@@ -23,10 +23,29 @@ PageScaffold {
         onTriggered: page.now = Date.now()
     }
 
-    readonly property string state_: U.pageState(page.status, page.now)
+    readonly property string rawState: U.pageState(page.status, page.now)
+    // "Restart now" shows a moment after the updates finish, not on the
+    // same frame (U.holdsRestart)
+    property string lastRaw: rawState
+    property bool restartHeld: false
+    onRawStateChanged: {
+        if (U.holdsRestart(lastRaw, rawState)) {
+            restartHeld = true
+            restartHold.restart()
+        } else if (rawState !== "restart") {
+            restartHeld = false
+        }
+        lastRaw = rawState
+    }
+    Timer {
+        id: restartHold
+        interval: U.RESTART_HOLD_MS
+        onTriggered: page.restartHeld = false
+    }
+    readonly property string state_: restartHeld ? "installing" : rawState
     readonly property bool busy: state_ === "checking" || state_ === "downloading" || state_ === "installing"
     readonly property int updateCount: status ? status.pending.length + status.firmware.length : 0
-    readonly property real progress: state_ === "installing" ? page.status.installPercent / 100 : U.downloadProgress(page.status)
+    readonly property real progress: restartHeld ? 1 : state_ === "installing" ? page.status.installPercent / 100 : U.downloadProgress(page.status)
     // downloaded updates that install without a restart
     readonly property int liveCount: status ? status.pending.filter(p => !U.needsRestart(p)).length : 0
     UpdateNoticeText { id: notice; notice: U.sourceNotice(page.status) }

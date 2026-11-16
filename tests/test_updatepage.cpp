@@ -106,6 +106,11 @@ private Q_SLOTS:
         QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: false}, {restart: true}]}")), QStringLiteral("installing"));
         // once only the restart ones are left, the restart
         QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: true}]}")), QStringLiteral("restart"));
+        // "Restart now" waits a moment after installing, never on its own
+        QVERIFY(call(QStringLiteral("holdsRestart"), QStringLiteral("'installing', 'restart'")).toBool());
+        QVERIFY(call(QStringLiteral("holdsRestart"), QStringLiteral("'downloading', 'restart'")).toBool());
+        QVERIFY(!call(QStringLiteral("holdsRestart"), QStringLiteral("'uptodate', 'restart'")).toBool());
+        QVERIFY(!call(QStringLiteral("holdsRestart"), QStringLiteral("'installing', 'uptodate'")).toBool());
         // a file from before 0.3: everything waited for the restart
         QVERIFY(call(QStringLiteral("needsRestart"), QStringLiteral("{name: 'x'}")).toBool());
         QVERIFY(call(QStringLiteral("needsRestart"), QStringLiteral("{restart: true}")).toBool());

@@ -1,3 +1,10 @@
+raye-settings (0.5.8~beta1) resolute; urgency=medium
+
+  * Raye Update: "Restart now" shows 2.5 seconds after the updates finish,
+    not on the same frame.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Mon, 16 Nov 2026 15:56:05 +0000
+
 raye-settings (0.5.7~beta1) resolute; urgency=medium
 
   * Raye Update goes straight from downloading to installing: no "Install

@@ -38,6 +38,16 @@ function pageState(u, now) {
     return u.checkedEverything === false ? "incomplete" : "uptodate"
 }
 
+// "Restart now" waits a moment after the updates it follows: the last
+// package scripts and the status file settle in that time, and a button
+// that appears the instant the bar ends gets pressed before they do.
+var RESTART_HOLD_MS = 2500
+
+// The page goes from `prev` to `next`: does "Restart now" wait first?
+function holdsRestart(prev, next) {
+    return next === "restart" && ["installing", "install", "downloading", "checking"].indexOf(prev) >= 0
+}
+
 // One pending update installs only when the PC restarts. Written by
 // raye-update since 0.3; before that every update did.
 function needsRestart(p) {
