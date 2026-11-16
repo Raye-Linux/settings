@@ -66,6 +66,11 @@ QQC2.ApplicationWindow {
             content.searchQuery = ""
             return
         }
+        // a page with a step of its own open (a font's details) closes that
+        // step first, like its own back arrow does
+        const page = content.currentItem
+        if (page && typeof page.goBackInPage === "function" && page.goBackInPage())
+            return
         Router.back()
     }
 

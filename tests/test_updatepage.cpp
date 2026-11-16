@@ -95,12 +95,15 @@ private Q_SLOTS:
     // Downloaded updates that need no restart are installed, not restarted for
     void installsWithoutARestart()
     {
+        // right after the download they install on their own: no "Install now"
         const QString live = QStringLiteral("{phase: 'ready', state: 'idle', restartNeeded: false, pending: [{name: 'firefox', restart: false}], firmware: []}");
-        QCOMPARE(state(live), QStringLiteral("install"));
+        QCOMPARE(state(live), QStringLiteral("installing"));
+        // waiting for the charger (or a metered network, a game): the button
+        QCOMPARE(state(QStringLiteral("{phase: 'ready', waitReason: 'battery', pending: [{name: 'firefox', restart: false}]}")), QStringLiteral("install"));
         QCOMPARE(state(QStringLiteral("{phase: 'installing', installingNow: true, pending: [{restart: false}]}")), QStringLiteral("installing"));
         // updates that install without a restart come first: no "Restart
         // now" while some of them are still to install
-        QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: false}, {restart: true}]}")), QStringLiteral("install"));
+        QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: false}, {restart: true}]}")), QStringLiteral("installing"));
         // once only the restart ones are left, the restart
         QCOMPARE(state(QStringLiteral("{phase: 'ready', restartNeeded: true, pending: [{restart: true}]}")), QStringLiteral("restart"));
         // a file from before 0.3: everything waited for the restart

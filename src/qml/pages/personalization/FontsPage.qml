@@ -22,6 +22,13 @@ Item {
 
     function searchIds() { return listPage.searchIds() }
     function scrollToAnchor(anchor) { openFamily = ""; return listPage.scrollToAnchor(anchor) }
+    // Back (mouse, Alt+Left, Backspace) from a font's details: to the fonts
+    function goBackInPage() {
+        if (openFamily === "")
+            return false
+        openFamily = ""
+        return true
+    }
 
     PageScaffold {
         id: listPage

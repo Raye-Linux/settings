@@ -24,7 +24,9 @@ function pageState(u, now) {
     // updates that install without a restart come first: "Restart now"
     // only once they are in, or a restart would cut them off
     if (phase === "ready" && (u.pending || []).some(p => !needsRestart(p)))
-        return "install"
+        // they install on their own right after the download: no "Install
+        // now" in between, unless they wait (battery, metered network, game)
+        return u.waitReason ? "install" : "installing"
     if (u.restartNeeded)
         return "restart"
     if (phase === "downloading" || phase === "checking" || phase === "waiting" || phase === "error")

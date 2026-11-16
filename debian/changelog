@@ -1,3 +1,13 @@
+raye-settings (0.5.7~beta1) resolute; urgency=medium
+
+  * Raye Update goes straight from downloading to installing: no "Install
+    now" in between unless the install waits (charger, metered network,
+    game); "Restart now" comes only at the very end.
+  * Back from a font's details (mouse, Alt+Left, Backspace) goes to the
+    fonts list, not out of Personalization.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Mon, 16 Nov 2026 14:36:39 +0000
+
 raye-settings (0.5.6~beta1) resolute; urgency=medium
 
   * Raye Update shows "Restart now" only once the updates that need no

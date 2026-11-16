@@ -90,6 +90,7 @@ void UpdateStatus::reload()
         m_state = o.value(QStringLiteral("state")).toString(QStringLiteral("idle"));
         m_count = o.value(QStringLiteral("updates")).toInt();
         m_reason = o.value(QStringLiteral("reason")).toString();
+        m_waitReason = o.value(QStringLiteral("waitReason")).toString();
         m_checked = qint64(o.value(QStringLiteral("checked")).toDouble());
         m_pausedUntil = qint64(o.value(QStringLiteral("paused_until")).toDouble());
         m_packages.clear();

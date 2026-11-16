@@ -19,6 +19,9 @@ class UpdateStatus : public QObject
     Q_PROPERTY(int count READ count NOTIFY changed)
     Q_PROPERTY(QStringList packages READ packages NOTIFY changed)
     Q_PROPERTY(QString reason READ reason NOTIFY changed)
+    // why updates that need no restart are not installing yet: "battery",
+    // "metered", "game", "busy"; empty when they install on their own
+    Q_PROPERTY(QString waitReason READ waitReason NOTIFY changed)
     Q_PROPERTY(qint64 checked READ checked NOTIFY changed)
     Q_PROPERTY(qint64 pausedUntil READ pausedUntil NOTIFY changed)
     // downloaded updates wait for a restart, or something installed
@@ -62,6 +65,7 @@ public:
     int count() const { return m_count; }
     QStringList packages() const { return m_packages; }
     QString reason() const { return m_reason; }
+    QString waitReason() const { return m_waitReason; }
     qint64 checked() const { return m_checked; } // seconds since 1970, 0 = never
     qint64 pausedUntil() const { return m_pausedUntil; } // 0 = not paused
     // the set that is downloaded needs one (raye-update says so in
@@ -140,6 +144,7 @@ private:
     int m_count = 0;
     QStringList m_packages;
     QString m_reason;
+    QString m_waitReason;
     qint64 m_checked = 0;
     qint64 m_pausedUntil = 0;
     bool m_rebootRequired = false;
