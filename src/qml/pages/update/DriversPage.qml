@@ -140,11 +140,12 @@ PageScaffold {
                              ? i18n("Installed. Restart to try it: this one time the disk asks for its password, then it opens by itself again.")
                              : i18n("Installed. Restart to try it. If it does not start, the standard kernel comes back by itself."))
                        : kernel === "failed" ? i18n("The Raye kernel did not start on this computer, so the standard kernel stayed in use. Nothing was lost.")
+                       : kernel === "nvidia" ? i18n("Not available yet with NVIDIA graphics: the NVIDIA driver only works with the standard kernel for now.")
                        : i18n("Optional. The same kernel with the Raye crash screen. Using it with Secure Boot takes one restart to enroll the Raye key.")
             Button {
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                 readonly property string kernel: page.system_ ? page.system_.rayeKernel : ""
-                visible: page.system_ !== null && !page.system_.kernelBusy && kernel !== "pending"
+                visible: page.system_ !== null && !page.system_.kernelBusy && kernel !== "pending" && kernel !== "nvidia"
                 text: kernel === "off" ? i18n("Use the Raye kernel")
                     : kernel === "failed" ? i18n("Try again")
                     : i18n("Go back to the standard kernel")

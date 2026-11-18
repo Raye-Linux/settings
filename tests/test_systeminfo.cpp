@@ -43,6 +43,9 @@ private Q_SLOTS:
         // installed, waiting for its one trial boot; or that boot failed
         QCOMPARE(SystemInfo::kernelState(QStringLiteral("7.0.0-42-generic"), QStringLiteral("trial\n")), QStringLiteral("trial"));
         QCOMPARE(SystemInfo::kernelState(QStringLiteral("7.0.0-42-generic"), QStringLiteral("failed")), QStringLiteral("failed"));
+        // NVIDIA's prebuilt modules only load on the standard kernel: the
+        // switch is refused, and the page says why instead of a button
+        QCOMPARE(SystemInfo::kernelState(QStringLiteral("7.0.0-42-generic"), QStringLiteral("nvidia\n")), QStringLiteral("nvidia"));
         QCOMPARE(SystemInfo::kernelState(QStringLiteral("7.0.0-raye"), QStringLiteral("trial")), QStringLiteral("running"));
         // the helper is not installed, or says something unexpected
         QCOMPARE(SystemInfo::kernelState(QStringLiteral("7.0.0-42-generic"), QString()), QStringLiteral("unavailable"));

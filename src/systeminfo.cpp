@@ -158,14 +158,16 @@ QString SystemInfo::kernelState(const QString &uname, const QString &setupStatus
     const QString status = setupStatus.trimmed();
     static const QStringList known = {QStringLiteral("enrolled"), QStringLiteral("pending"),
                                       QStringLiteral("trial"), QStringLiteral("failed"),
-                                      QStringLiteral("not-enrolled"), QStringLiteral("no-secure-boot")};
+                                      QStringLiteral("not-enrolled"), QStringLiteral("no-secure-boot"),
+                                      QStringLiteral("nvidia")};
     if (!known.contains(status))
         return QStringLiteral("unavailable");
     if (uname.endsWith(QLatin1String("-raye")))
         return QStringLiteral("running");
     // the states the page shows as they are; the others mean "not in use"
     if (status == QLatin1String("enrolled") || status == QLatin1String("pending")
-        || status == QLatin1String("trial") || status == QLatin1String("failed"))
+        || status == QLatin1String("trial") || status == QLatin1String("failed")
+        || status == QLatin1String("nvidia"))
         return status;
     return QStringLiteral("off");
 }

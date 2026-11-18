@@ -1311,6 +1311,9 @@ msgstr "Installé. Redémarrez pour l'essayer. S'il ne démarre pas, le noyau st
 msgid "The Raye kernel did not start on this computer, so the standard kernel stayed in use. Nothing was lost."
 msgstr "Le noyau Raye n'a pas démarré sur cet ordinateur, le noyau standard est donc resté en service. Rien n'a été perdu."
 
+msgid "Not available yet with NVIDIA graphics: the NVIDIA driver only works with the standard kernel for now."
+msgstr "Pas encore disponible avec une carte graphique NVIDIA : pour l'instant, le pilote NVIDIA fonctionne seulement avec le noyau standard."
+
 msgid "Optional. The same kernel with the Raye crash screen. Using it with Secure Boot takes one restart to enroll the Raye key."
 msgstr "Facultatif. Le même noyau, avec l'écran d'erreur de Raye. Avec le démarrage sécurisé, il faut un redémarrage pour inscrire la clé Raye."
 
