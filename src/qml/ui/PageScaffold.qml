@@ -176,6 +176,7 @@ Item {
 
     Flickable {
         id: flick
+        WheelScroll { target: flick }
         anchors.fill: parent
         anchors.topMargin: headerRow.y + headerRow.height + Theme.s7
         contentWidth: width

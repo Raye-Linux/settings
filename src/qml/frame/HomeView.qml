@@ -82,6 +82,7 @@ FocusScope {
 
     Flickable {
         id: flick
+        WheelScroll { target: flick }
         anchors.fill: parent
         contentWidth: width
         contentHeight: column.implicitHeight + 2 * Theme.s7
