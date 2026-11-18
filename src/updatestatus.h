@@ -35,11 +35,20 @@ class UpdateStatus : public QObject
     Q_PROPERTY(QString phase READ phase NOTIFY changed)
     Q_PROPERTY(qint64 downloadedBytes READ downloadedBytes NOTIFY changed)
     Q_PROPERTY(qint64 totalBytes READ totalBytes NOTIFY changed)
-    // [{ name, from, to, origin, kind, restart }]; restart missing = true
+    // 0-100 while it checks; 0 = cannot be told (or a file from before the key)
+    Q_PROPERTY(int checkPercent READ checkPercent NOTIFY changed)
+    // while it downloads; secondsLeft 0 means "cannot be told", never "done"
+    Q_PROPERTY(qint64 bytesPerSecond READ bytesPerSecond NOTIFY changed)
+    Q_PROPERTY(qint64 secondsLeft READ secondsLeft NOTIFY changed)
+    // what the last install in use put in, by name (lastInstall.packages)
+    Q_PROPERTY(QStringList installedPackages READ installedPackages NOTIFY changed)
+    // [{ name, from, to, origin, kind, restart, state }]; restart missing =
+    // true; state ("queued", "installing", "installed", "failed") only
+    // while an install in use runs
     Q_PROPERTY(QVariantList pending READ pending NOTIFY changed)
     // [{ device, from, to, summary, size, needsPower }]
     Q_PROPERTY(QVariantList firmware READ firmware NOTIFY changed)
-    // { time, count, firmware, ok }, empty before the first install
+    // { time, count, firmware, ok, packages }, empty before the first install
     Q_PROPERTY(QVariantMap lastInstall READ lastInstall NOTIFY changed)
     Q_PROPERTY(QString errorCode READ errorCode NOTIFY changed)
     // the last check read every place updates come from; a file from before
@@ -77,6 +86,10 @@ public:
     QString phase() const { return m_phase; }
     qint64 downloadedBytes() const { return m_downloadedBytes; }
     qint64 totalBytes() const { return m_totalBytes; }
+    int checkPercent() const { return m_checkPercent; }
+    qint64 bytesPerSecond() const { return m_bytesPerSecond; }
+    qint64 secondsLeft() const { return m_secondsLeft; }
+    QStringList installedPackages() const { return m_installedPackages; }
     QVariantList pending() const { return m_pending; }
     QVariantList firmware() const { return m_firmware; }
     QVariantMap lastInstall() const { return m_lastInstall; }
@@ -153,6 +166,10 @@ private:
     int m_installPercent = 0;
     qint64 m_downloadedBytes = 0;
     qint64 m_totalBytes = 0;
+    int m_checkPercent = 0;
+    qint64 m_bytesPerSecond = 0;
+    qint64 m_secondsLeft = 0;
+    QStringList m_installedPackages;
     QVariantList m_pending;
     QVariantList m_firmware;
     QVariantMap m_lastInstall;

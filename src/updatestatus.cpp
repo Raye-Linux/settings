@@ -102,9 +102,15 @@ void UpdateStatus::reload()
         m_installPercent = qBound(0, o.value(QStringLiteral("installPercent")).toInt(), 100);
         m_downloadedBytes = qint64(o.value(QStringLiteral("downloadedBytes")).toDouble());
         m_totalBytes = qint64(o.value(QStringLiteral("totalBytes")).toDouble());
+        m_checkPercent = qBound(0, o.value(QStringLiteral("checkPercent")).toInt(), 100);
+        m_bytesPerSecond = std::max<qint64>(0, qint64(o.value(QStringLiteral("bytesPerSecond")).toDouble()));
+        m_secondsLeft = std::max<qint64>(0, qint64(o.value(QStringLiteral("secondsLeft")).toDouble()));
         m_pending = o.value(QStringLiteral("pending")).toArray().toVariantList();
         m_firmware = o.value(QStringLiteral("firmware")).toArray().toVariantList();
         m_lastInstall = o.value(QStringLiteral("lastInstall")).toObject().toVariantMap();
+        m_installedPackages.clear();
+        for (const QJsonValue &v : o.value(QStringLiteral("lastInstall")).toObject().value(QStringLiteral("packages")).toArray())
+            m_installedPackages.append(v.toString());
         m_errorCode = o.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString();
         m_armedThen = o.value(QStringLiteral("armed")).toObject().value(QStringLiteral("then")).toString();
         m_checkedEverything = o.value(QStringLiteral("checkedEverything")).toBool(true);

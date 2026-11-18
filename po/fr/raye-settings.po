@@ -10188,3 +10188,79 @@ msgstr "Options de performances"
 
 msgid "Turn every effect off at once on a slow PC"
 msgstr "Désactiver tous les effets d'un coup sur un PC lent"
+
+msgctxt "@info %1 percent"
+msgid "%1% done. A restart is needed to finish."
+msgstr "%1 % terminé. Un redémarrage sera nécessaire pour terminer."
+
+msgctxt "@info time left"
+msgid "%1 minute"
+msgid_plural "%1 minutes"
+msgstr[0] "%1 minute"
+msgstr[1] "%1 minutes"
+
+msgctxt "@info time left"
+msgid "%1 hour"
+msgid_plural "%1 hours"
+msgstr[0] "%1 heure"
+msgstr[1] "%1 heures"
+
+msgctxt "@info time left, %1 hours %2 minutes"
+msgid "%1 h %2 min"
+msgstr "%1 h %2 min"
+
+msgctxt "@info %1 percent, %2 and %3 sizes, %4 a size per second"
+msgid "%1% (%2 of %3) · %4/s"
+msgstr "%1 % (%2 sur %3) · %4/s"
+
+msgctxt "@info %1 percent, %2 and %3 sizes, %4 a size per second"
+msgid "%1% (%2 of %3) · %4/s · less than a minute left"
+msgstr "%1 % (%2 sur %3) · %4/s · moins d'une minute restante"
+
+msgctxt "@info %1 percent, %2 and %3 sizes, %4 a size per second, %5 a time"
+msgid "%1% (%2 of %3) · %4/s · about %5 left"
+msgstr "%1 % (%2 sur %3) · %4/s · il reste environ %5"
+
+msgctxt "@title %1 number of updates"
+msgid "Raye updates (%1)"
+msgstr "Mises à jour de Raye (%1)"
+
+msgctxt "@title %2 a size"
+msgid "One update · %2"
+msgid_plural "%1 updates · %2"
+msgstr[0] "Une mise à jour · %2"
+msgstr[1] "%1 mises à jour · %2"
+
+msgctxt "@info %1 and %2 numbers of updates"
+msgid "%1 of %2 done"
+msgid_plural "%1 of %2 done"
+msgstr[0] "%1 sur %2 terminée"
+msgstr[1] "%1 sur %2 terminées"
+
+msgctxt "@info %1 a Raye version, %2 what the updates do now"
+msgid "Raye %1 · %2"
+msgstr "Raye %1 · %2"
+
+msgctxt "@info state of one update"
+msgid "Waiting"
+msgstr "En attente"
+
+msgctxt "@info state of one update"
+msgid "Installing"
+msgstr "Installation"
+
+msgctxt "@info state of one update"
+msgid "Installed"
+msgstr "Installée"
+
+msgctxt "@info state of one update"
+msgid "Will install at restart"
+msgstr "S'installera au redémarrage"
+
+msgctxt "@info %1 a size, %2 when it last checked"
+msgid "%1 to download · %2"
+msgstr "%1 à télécharger · %2"
+
+msgctxt "@info"
+msgid "Drivers for your hardware, Raye kernel"
+msgstr "Pilotes de votre matériel, noyau Raye"

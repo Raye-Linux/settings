@@ -227,6 +227,115 @@ private Q_SLOTS:
         QCOMPARE(call(QStringLiteral("downloadProgress"), QStringLiteral("null")).toNumber(), -1.0);
     }
 
+    // the check moves the bar once apt says how far it got
+    void checkProgress()
+    {
+        QCOMPARE(call(QStringLiteral("checkProgress"), QStringLiteral("{phase: 'checking', checkPercent: 40}")).toNumber(), 0.4);
+        QCOMPARE(call(QStringLiteral("checkProgress"), QStringLiteral("{phase: 'checking', checkPercent: 0}")).toNumber(), -1.0);
+        // a file from before the key
+        QCOMPARE(call(QStringLiteral("checkProgress"), QStringLiteral("{phase: 'checking'}")).toNumber(), -1.0);
+        QCOMPARE(call(QStringLiteral("checkProgress"), QStringLiteral("{phase: 'idle', checkPercent: 40}")).toNumber(), -1.0);
+        QCOMPARE(call(QStringLiteral("checkProgress"), QStringLiteral("null")).toNumber(), -1.0);
+    }
+
+    // 0 seconds left means it cannot be told, never "done"
+    void timeLeft()
+    {
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("0")).toInt(), -1);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("undefined")).toInt(), -1);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("-3")).toInt(), -1);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("12")).toInt(), 0);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("59")).toInt(), 0);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("60")).toInt(), 1);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("61")).toInt(), 2);
+        QCOMPARE(call(QStringLiteral("minutesLeft"), QStringLiteral("3600")).toInt(), 60);
+    }
+
+    // 74a: the header says a restart is coming when any update or firmware waits for one
+    void restartAfter()
+    {
+        QVERIFY(call(QStringLiteral("restartAfter"), QStringLiteral("{pending: [{restart: false}, {restart: true}], firmware: []}")).toBool());
+        QVERIFY(call(QStringLiteral("restartAfter"), QStringLiteral("{pending: [{restart: false}], firmware: [{device: 'x'}]}")).toBool());
+        QVERIFY(!call(QStringLiteral("restartAfter"), QStringLiteral("{pending: [{restart: false, state: 'installing'}], firmware: []}")).toBool());
+        // an old row with no key waited for the restart
+        QVERIFY(call(QStringLiteral("restartAfter"), QStringLiteral("{pending: [{name: 'x'}]}")).toBool());
+        QVERIFY(!call(QStringLiteral("restartAfter"), QStringLiteral("null")).toBool());
+        // the words on the page follow it
+        QFile f(QStringLiteral(SOURCE_DIR "/src/qml/pages/update/UpdatePage.qml"));
+        QVERIFY(f.open(QIODevice::ReadOnly));
+        const QString page = QString::fromUtf8(f.readAll());
+        QVERIFY(page.contains(QStringLiteral("\"%1% done. A restart is needed to finish.\"")));
+        QVERIFY(page.contains(QStringLiteral("U.restartAfter(page.status)")));
+    }
+
+    void rowState()
+    {
+        for (const char *known : {"queued", "installing", "installed", "failed"})
+            QCOMPARE(call(QStringLiteral("rowState"), QStringLiteral("{state: '%1'}").arg(QLatin1String(known))).toString(), QLatin1String(known));
+        QCOMPARE(call(QStringLiteral("rowState"), QStringLiteral("{state: 'strange'}")).toString(), QString());
+        QCOMPARE(call(QStringLiteral("rowState"), QStringLiteral("{name: 'x'}")).toString(), QString());
+        QCOMPARE(call(QStringLiteral("rowState"), QStringLiteral("null")).toString(), QString());
+    }
+
+    // 74c: rows done in use stay on the page with their check mark, once
+    // they left the file, as long as the page saw them install
+    void installedRowsStay()
+    {
+        m_js.evaluate(QStringLiteral(
+            "var mem = remember({}, [{name: 'firefox', restart: false, state: 'installing'},"
+            "                        {name: 'raye-settings', origin: 'Raye:0.5', restart: false, state: 'queued'},"
+            "                        {name: 'libc6', restart: true}], 1000)"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("Object.keys(mem).sort().join(',')")).toString(), QStringLiteral("firefox,raye-settings"));
+        // a row seen before keeps its first time; only a new one makes a new object
+        QVERIFY(m_js.evaluate(QStringLiteral("remember(mem, [{name: 'firefox', state: 'installed'}], 2000) === mem")).toBool());
+        m_js.evaluate(QStringLiteral("var mem2 = remember(mem, [{name: 'firefox', state: 'installed'}, {name: 'vlc', state: 'queued'}], 2000)"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("mem2.firefox.since")).toInt(), 1000);
+        QCOMPARE(m_js.evaluate(QStringLiteral("mem2.vlc.since")).toInt(), 2000);
+        QVERIFY(m_js.evaluate(QStringLiteral("mem.vlc === undefined")).toBool());
+        QCOMPARE(m_js.evaluate(QStringLiteral("remember(mem, [], 3000) === mem")).toBool(), true);
+        // the run ended: firefox left pending, libc6 waits for the restart
+        m_js.evaluate(QStringLiteral(
+            "var rows = shownRows({pending: [{name: 'libc6', restart: true}],"
+            "                      lastInstall: {time: 1500, packages: ['firefox', 'raye-settings']}}, mem2)"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("rows.map(r => r.name).join(',')")).toString(), QStringLiteral("firefox,raye-settings,libc6"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("rows[0].state")).toString(), QStringLiteral("installed"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("rows[1].origin")).toString(), QStringLiteral("Raye:0.5"));
+        // an install from before the page saw the rows says nothing about them
+        QCOMPARE(m_js.evaluate(QStringLiteral(
+            "shownRows({pending: [], lastInstall: {time: 500, packages: ['firefox']}}, mem2).length")).toInt(), 0);
+        // an old file without the list
+        QCOMPARE(m_js.evaluate(QStringLiteral(
+            "shownRows({pending: [{name: 'a'}], lastInstall: {time: 1500}}, mem2).length")).toInt(), 1);
+        QCOMPARE(m_js.evaluate(QStringLiteral("shownRows(null, {}).length")).toInt(), 0);
+    }
+
+    // 74d: Raye's own packages go together, under a release number when raye-system is in the set
+    void rayeGroup()
+    {
+        m_js.evaluate(QStringLiteral(
+            "var g = groupRows([{name: 'firefox', origin: 'mozilla:mozilla'},"
+            "                   {name: 'raye-system', origin: 'Raye:0.5/resolute', to: '1:0.5.17~beta1-2'},"
+            "                   {name: 'raye-shell', origin: 'Raye:0.5/resolute', to: '0.5.9'},"
+            "                   {name: 'libc6', origin: 'Ubuntu:26.04/resolute-security'},"
+            "                   {name: 'rayetool', origin: 'Rayed:x'},"
+            "                   {name: 'nothing'}])"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("g.raye.map(r => r.name).join(',')")).toString(), QStringLiteral("raye-system,raye-shell"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("g.other.map(r => r.name).join(',')")).toString(), QStringLiteral("firefox,libc6,rayetool,nothing"));
+        QCOMPARE(call(QStringLiteral("rayeRelease"), QStringLiteral("g.raye")).toString(), QStringLiteral("0.5.17"));
+        QCOMPARE(call(QStringLiteral("rayeRelease"), QStringLiteral("[{name: 'raye-shell', origin: 'Raye', to: '0.5.9'}]")).toString(), QString());
+        QCOMPARE(call(QStringLiteral("rayeRelease"), QStringLiteral("[{name: 'raye-system', origin: 'Raye', to: '0.6'}]")).toString(), QStringLiteral("0.6"));
+        QCOMPARE(call(QStringLiteral("rayeRelease"), QStringLiteral("[]")).toString(), QString());
+    }
+
+    void groupProgress()
+    {
+        m_js.evaluate(QStringLiteral(
+            "var p = groupProgress([{state: 'installed'}, {state: 'installing'}, {state: 'queued'}, {state: 'failed'}, {name: 'x'}])"));
+        QCOMPARE(m_js.evaluate(QStringLiteral("p.done")).toInt(), 2);
+        QCOMPARE(m_js.evaluate(QStringLiteral("p.total")).toInt(), 4);
+        QCOMPARE(m_js.evaluate(QStringLiteral("groupProgress([{name: 'x'}]).total")).toInt(), 0);
+    }
+
     void historyByKind()
     {
         const QJSValue g = call(QStringLiteral("historyGroups"), QStringLiteral(

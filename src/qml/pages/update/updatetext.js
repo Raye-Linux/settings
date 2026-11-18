@@ -118,6 +118,99 @@ function downloadProgress(u) {
     return Math.max(0, Math.min(1, u.downloadedBytes / u.totalBytes))
 }
 
+// 0..1 while it checks, -1 before apt says how far it got
+function checkProgress(u) {
+    if (!u || (u.phase || u.state) !== "checking" || !(u.checkPercent > 0))
+        return -1
+    return Math.min(1, u.checkPercent / 100)
+}
+
+// Minutes left, rounded up; 0 for under a minute, -1 when it cannot be
+// told (raye-update writes 0 then, which never means done)
+function minutesLeft(seconds) {
+    if (!(seconds > 0))
+        return -1
+    return seconds < 60 ? 0 : Math.ceil(seconds / 60)
+}
+
+// Something in the set only installs at the next start-up
+function restartAfter(u) {
+    if (!u)
+        return false
+    return (u.pending || []).some(needsRestart) || (u.firmware || []).length > 0
+}
+
+// Where one update is while updates install in use, or ""
+function rowState(p) {
+    const s = p && p.state
+    return ["queued", "installing", "installed", "failed"].indexOf(s) >= 0 ? s : ""
+}
+
+// The rows of this run, by name, with the time the page first saw them.
+// Returns `memory` itself when no row is new, so the list is not redrawn.
+function remember(memory, pending, now) {
+    let out = memory
+    for (const p of pending || []) {
+        if (!rowState(p) || memory[p.name])
+            continue
+        if (out === memory)
+            out = Object.assign({}, memory)
+        // a copy: rows read from UpdateStatus follow the list by position,
+        // so the one kept would turn into whatever comes next at that place
+        out[p.name] = { row: JSON.parse(JSON.stringify(p)), since: now }
+    }
+    return out
+}
+
+// What the list shows: the pending updates, and in front of them the ones
+// the page saw install in use, once they left the file (lastInstall.packages)
+function shownRows(u, memory) {
+    if (!u)
+        return []
+    const pending = u.pending || []
+    const last = u.lastInstall || {}
+    const names = {}
+    for (const p of pending)
+        names[p.name] = true
+    const done = []
+    for (const name of last.packages || []) {
+        const seen = memory[name]
+        if (seen && !names[name] && last.time >= seen.since)
+            done.push(Object.assign({}, seen.row, { state: "installed" }))
+    }
+    return done.concat(pending)
+}
+
+// Raye's own packages, then the rest
+function groupRows(rows) {
+    const raye = [], other = []
+    for (const p of rows || [])
+        (/^Raye(:|$)/.test(p.origin || "") ? raye : other).push(p)
+    return { raye: raye, other: other }
+}
+
+// "0.5.17" for raye-system 1:0.5.17~beta1-2 in the set, else ""
+function rayeRelease(rows) {
+    const system = (rows || []).filter(p => p.name === "raye-system")[0]
+    if (!system || !system.to)
+        return ""
+    return String(system.to).replace(/^\d+:/, "").replace(/-[^-]*$/, "").replace(/~.*$/, "")
+}
+
+// How many rows of an install in use are through (installed or failed)
+function groupProgress(rows) {
+    let done = 0, total = 0
+    for (const p of rows || []) {
+        const s = rowState(p)
+        if (!s)
+            continue
+        ++total
+        if (s === "installed" || s === "failed")
+            ++done
+    }
+    return { done: done, total: total }
+}
+
 // The history as rows grouped by kind, kinds in Windows' order, newest
 // first in each: [{ kind, rows: [{ name, version, time }] }].
 // Firmware entries count devices, not packages: one row each.

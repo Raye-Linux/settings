@@ -177,6 +177,59 @@ private Q_SLOTS:
         QVERIFY2(all.contains(QStringLiteral("Not checked for updates yet")), qPrintable(all));
     }
 
+    // An update installed in use leaves the file; the page keeps it, with its
+    // check mark, under its own name. Rows read from UpdateStatus follow the
+    // list by position: a row kept as it was read turned into the next one.
+    void installedRowsKeepTheirNames()
+    {
+        const auto row = [](const char *name, bool restart, const char *state) {
+            QJsonObject o{{QStringLiteral("name"), QLatin1String(name)}, {QStringLiteral("from"), QStringLiteral("0.5.1")},
+                          {QStringLiteral("to"), QStringLiteral("0.5.6")}, {QStringLiteral("origin"), QStringLiteral("Raye:resolute")},
+                          {QStringLiteral("kind"), QStringLiteral("system")}, {QStringLiteral("restart"), restart}};
+            if (state)
+                o.insert(QStringLiteral("state"), QLatin1String(state));
+            return o;
+        };
+        QJsonObject during = nothingToInstall();
+        during.insert(QStringLiteral("phase"), QStringLiteral("installing"));
+        during.insert(QStringLiteral("installPercent"), 50);
+        during.insert(QStringLiteral("pending"), QJsonArray{row("raye-system", false, "installed"), row("raye-account", false, "installing"),
+                                                           row("raye-shell", true, nullptr)});
+        UpdateStatus status(stateFile(during));
+        status.setRebootRequiredPath(m_dir.filePath(QStringLiteral("no-reboot-required")));
+        QQuickView view;
+        view.engine()->rootContext()->setContextObject(new KLocalizedContext(view.engine()));
+        view.engine()->rootContext()->setContextProperty(QStringLiteral("updates"), &status);
+        view.setResizeMode(QQuickView::SizeRootObjectToView);
+        view.resize(1120, 1400);
+        view.setSource(QUrl(QStringLiteral("qrc:/qt/qml/org/raye/settings/pages/update/UpdatePage.qml")));
+        QCOMPARE(view.status(), QQuickView::Ready);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+
+        QJsonObject after = nothingToInstall();
+        after.insert(QStringLiteral("phase"), QStringLiteral("ready"));
+        after.insert(QStringLiteral("needsRestart"), true);
+        after.insert(QStringLiteral("pending"), QJsonArray{row("raye-shell", true, nullptr)});
+        after.insert(QStringLiteral("lastInstall"), QJsonObject{{QStringLiteral("time"), 4102444800.0}, {QStringLiteral("count"), 2},
+                                                                {QStringLiteral("ok"), true},
+                                                                {QStringLiteral("packages"), QJsonArray{QStringLiteral("raye-account"), QStringLiteral("raye-system")}}});
+        stateFile(after);
+        status.reload();
+        QObject *group = view.rootObject()->findChild<QObject *>(QStringLiteral("rayeUpdates"));
+        QVERIFY(group);
+        group->setProperty("expanded", true);
+        QTest::qWait(500);
+        QStringList words;
+        collectWords(view.rootObject(), &words);
+        const QString all = words.join(QLatin1String(" | "));
+        // each name twice: the row, and the text that draws it
+        for (const char *name : {"raye-system", "raye-account", "raye-shell"})
+            QVERIFY2(words.count(QLatin1String(name)) == 2, qPrintable(all));
+        QCOMPARE(words.count(QStringLiteral("Installed")), 2);
+        QVERIFY2(all.contains(QStringLiteral("Raye updates (3)")), qPrintable(all));
+    }
+
     // a firmware update counts: the launch screen called this "up to date"
     void launchCardCountsFirmware()
     {

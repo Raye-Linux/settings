@@ -301,6 +301,56 @@ private Q_SLOTS:
         QVERIFY(u->property("brokenSources").toList().isEmpty());
     }
 
+    void readsHowFarItGot()
+    {
+        writeRaw(R"({"version": 2, "phase": "checking", "checkPercent": 40})");
+        auto u = make();
+        QCOMPARE(u->checkPercent(), 40);
+        writeRaw(R"({"version": 2, "phase": "downloading", "downloadedBytes": 41103225, "totalBytes": 91340500,
+                     "bytesPerSecond": 4194304, "secondsLeft": 12})");
+        u->reload();
+        QCOMPARE(u->checkPercent(), 0);
+        QCOMPARE(u->bytesPerSecond(), 4194304);
+        QCOMPARE(u->secondsLeft(), 12);
+        // nonsense from a broken writer does not reach the page
+        writeRaw(R"({"version": 2, "phase": "checking", "checkPercent": 140, "bytesPerSecond": -5, "secondsLeft": -1})");
+        u->reload();
+        QCOMPARE(u->checkPercent(), 100);
+        QCOMPARE(u->bytesPerSecond(), 0);
+        QCOMPARE(u->secondsLeft(), 0);
+    }
+
+    void readsWhatTheLastInstallDid()
+    {
+        writeRaw(R"({"version": 2, "phase": "ready", "needsRestart": true,
+                     "pending": [{"name": "libc6", "restart": true}],
+                     "lastInstall": {"time": 1793376000, "count": 2, "firmware": 0, "ok": true,
+                                     "packages": ["firefox", "raye-settings"]}})");
+        auto u = make();
+        QCOMPARE(u->installedPackages(), QStringList({QStringLiteral("firefox"), QStringLiteral("raye-settings")}));
+        // per-row state rides along in pending
+        writeRaw(R"({"version": 2, "phase": "installing", "pending": [{"name": "firefox", "restart": false, "state": "installing"}]})");
+        u->reload();
+        QCOMPARE(u->pending().first().toMap().value(QStringLiteral("state")).toString(), QStringLiteral("installing"));
+        QVERIFY(u->installedPackages().isEmpty());
+    }
+
+    // files written before these keys: nothing to say, nothing breaks
+    void oldFileHasNoProgress()
+    {
+        writeRaw(R"({"version": 2, "phase": "downloading", "downloadedBytes": 5, "totalBytes": 10,
+                     "lastInstall": {"time": 1, "count": 3, "firmware": 0, "ok": true}})");
+        auto u = make();
+        QCOMPARE(u->checkPercent(), 0);
+        QCOMPARE(u->bytesPerSecond(), 0);
+        QCOMPARE(u->secondsLeft(), 0);
+        QVERIFY(u->installedPackages().isEmpty());
+        writeState("idle");
+        u->reload();
+        QCOMPARE(u->checkPercent(), 0);
+        QVERIFY(u->installedPackages().isEmpty());
+    }
+
     void versionOneFileStillReads()
     {
         writeState("idle");
