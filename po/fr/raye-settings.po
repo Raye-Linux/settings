@@ -10090,3 +10090,101 @@ msgstr "KDE Connect pour Android"
 msgctxt "@action:button"
 msgid "KDE Connect for iPhone"
 msgstr "KDE Connect pour iPhone"
+
+msgctxt "@title settings page"
+msgid "Performance options"
+msgstr "Options de performances"
+
+msgctxt "@label:listbox"
+msgid "Visual effects"
+msgstr "Effets visuels"
+
+msgctxt "@info"
+msgid "Choose how Raye balances looks and speed on this PC"
+msgstr "Choisissez entre l'apparence et la vitesse sur ce PC"
+
+msgctxt "@item:inlistbox visual effects"
+msgid "Let Raye choose what's best for this PC"
+msgstr "Laisser Raye choisir pour ce PC"
+
+msgctxt "@item:inlistbox visual effects"
+msgid "Adjust for best appearance"
+msgstr "Ajuster afin d'obtenir la meilleure apparence"
+
+msgctxt "@item:inlistbox visual effects"
+msgid "Adjust for best performance"
+msgstr "Ajuster afin d'obtenir les meilleures performances"
+
+msgctxt "@item:inlistbox visual effects"
+msgid "Custom"
+msgstr "Personnalisé"
+
+msgctxt "@info"
+msgid "Effects are off to keep this PC fast"
+msgstr "Les effets sont désactivés pour garder ce PC rapide"
+
+msgctxt "@title:group"
+msgid "Effects"
+msgstr "Effets"
+
+msgctxt "@label"
+msgid "Animate controls and elements inside windows"
+msgstr "Animer les contrôles et éléments à l'intérieur des fenêtres"
+
+msgctxt "@info"
+msgid "Turn this off to stop every animation at once"
+msgstr "Désactivez-le pour arrêter toutes les animations d'un coup"
+
+msgctxt "@label"
+msgid "Animate windows when they open and close"
+msgstr "Animer les fenêtres à l'ouverture et à la fermeture"
+
+msgctxt "@label"
+msgid "Animate windows when minimizing and maximizing"
+msgstr "Animer les fenêtres lors de la réduction et de l'agrandissement"
+
+msgctxt "@label"
+msgid "Fade or slide menus and flyouts into view"
+msgstr "Faire apparaître les menus et volets en fondu ou en glissant"
+
+msgctxt "@label"
+msgid "Slide when switching desktops"
+msgstr "Glisser lors du changement de bureau"
+
+msgctxt "@info"
+msgid "Blur and see-through surfaces on the taskbar, Start, menus and windows"
+msgstr "Flou et surfaces translucides sur la barre des tâches, le menu Démarrer, les menus et les fenêtres"
+
+msgctxt "@label"
+msgid "Show shadows under windows"
+msgstr "Afficher les ombres sous les fenêtres"
+
+msgctxt "@info"
+msgid "Also the shadows under menus"
+msgstr "Ainsi que les ombres sous les menus"
+
+msgctxt "@info"
+msgid "Turn on animating controls and elements first"
+msgstr "Activez d'abord l'animation des contrôles et éléments"
+
+msgctxt "@info"
+msgid "Light or dark mode, accent color"
+msgstr "Mode clair ou sombre, couleur d'accentuation"
+
+msgctxt "@info"
+msgid "Sleep, battery usage, power mode"
+msgstr "Veille, utilisation de la batterie, mode d'alimentation"
+
+msgctxt "@info"
+msgid "Performance while you play"
+msgstr "Les performances pendant que vous jouez"
+
+msgctxt "@info"
+msgid "Visual effects, or the best performance this PC can give"
+msgstr "Les effets visuels, ou les meilleures performances que ce PC peut offrir"
+
+msgid "Performance options"
+msgstr "Options de performances"
+
+msgid "Turn every effect off at once on a slow PC"
+msgstr "Désactiver tous les effets d'un coup sur un PC lent"

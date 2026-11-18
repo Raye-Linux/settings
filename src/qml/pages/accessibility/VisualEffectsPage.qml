@@ -57,4 +57,12 @@ PageScaffold {
         description: i18n("Light or dark mode, accent color")
         target: "personalization/colors"
     }
+
+    NavCard {
+        iconName: "org.raye.settings-performance"
+        iconFallback: "speedometer"
+        title: i18n("Performance options")
+        description: i18n("Turn every effect off at once on a slow PC")
+        target: "system/performance"
+    }
 }

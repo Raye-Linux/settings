@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "windoweffects.h"
 
+#include <KConfigGroup>
 #include <KWindowEffects>
 #include <QEvent>
 #include <QRegion>
+#include <QTimer>
 
 namespace {
 
@@ -23,7 +25,13 @@ struct SystemBackend : WindowEffects::Backend {
 WindowEffects::WindowEffects(QObject *parent)
     : QObject(parent)
     , m_backend(new SystemBackend)
+    , m_globals(KSharedConfig::openConfig(QStringLiteral("kdeglobals")))
+    , m_watcher(KConfigWatcher::create(m_globals))
 {
+    connect(m_watcher.data(), &KConfigWatcher::configChanged, this, [this](const KConfigGroup &group, const QByteArrayList &names) {
+        if (group.name() == QLatin1String("Raye") && names.contains("TransparencyEffects"))
+            settingChanged();
+    });
 }
 
 WindowEffects::~WindowEffects()
@@ -77,7 +85,22 @@ void WindowEffects::setRegion(const QRect &region)
 
 void WindowEffects::refresh()
 {
+    m_globals->reparseConfiguration();
     apply();
+}
+
+bool WindowEffects::transparencyEffects() const
+{
+    return m_globals->group(QStringLiteral("Raye")).readEntry("TransparencyEffects", true);
+}
+
+// The compositor loads or drops its blur a moment after the switch, and
+// says nothing: look now, then again once it had the time.
+void WindowEffects::settingChanged()
+{
+    apply();
+    for (int ms : {400, 1500})
+        QTimer::singleShot(ms, this, &WindowEffects::apply);
 }
 
 void WindowEffects::componentComplete()
@@ -100,7 +123,7 @@ void WindowEffects::apply()
     if (!m_complete)
         return;
     const bool available = m_backend->available();
-    const bool want = m_window && m_blurBehind && available;
+    const bool want = m_window && m_blurBehind && available && transparencyEffects();
     if (m_window && (want || m_applied)) {
         m_backend->setBlur(m_window, want, m_region);
         m_applied = want;

@@ -2,6 +2,7 @@
 #include "accessibility.h"
 
 #include "multitasking.h"
+#include "performance.h"
 
 #include <KConfig>
 #include <KConfigGroup>
@@ -192,16 +193,7 @@ void VisualEffectsSettings::setTransparency(bool on)
 {
     if (on == transparency())
         return;
-    // Raye's windows follow the key; the compositor's blur and contrast
-    // make Plasma's panels and menus see-through, so they go with it
-    writeNotify(m_globals, QStringLiteral("Raye"), QStringLiteral("TransparencyEffects"), on);
-    if (on) {
-        deleteNotify(m_kwin, plugins, QStringLiteral("blurEnabled"));
-        deleteNotify(m_kwin, plugins, QStringLiteral("contrastEnabled"));
-    } else {
-        writeNotify(m_kwin, plugins, QStringLiteral("blurEnabled"), false);
-        writeNotify(m_kwin, plugins, QStringLiteral("contrastEnabled"), false);
-    }
+    PerformanceSettings::writeTransparency(on);
     tellKwin();
     Q_EMIT changed();
 }

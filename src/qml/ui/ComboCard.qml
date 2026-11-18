@@ -23,5 +23,11 @@ Card {
         onActivated: (index) => card.activated(index)
     }
 
-    function indexOfValue(value) { return combo.indexOfValue(value) }
+    // Reading count and valueRole here ties a binding that calls this to
+    // the model: set before the model, it would stay at -1 for good.
+    function indexOfValue(value) {
+        void combo.count
+        void combo.valueRole
+        return combo.indexOfValue(value)
+    }
 }

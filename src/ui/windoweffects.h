@@ -2,17 +2,21 @@
 // The blurred backdrop of the Settings window: the wallpaper shows
 // through, blurred, behind a see-through Raye background. When the
 // compositor has no blur, or the user turned transparency effects off,
-// the window is opaque instead (`translucent` says which).
+// the window is opaque instead (`translucent` says which). The setting
+// is kdeglobals [Raye] TransparencyEffects, followed while the window is
+// open.
 //
 //   WindowEffects {
 //       id: effects
 //       window: root               // the ApplicationWindow
-//       blurBehind: transparencySetting
+//       blurBehind: true           // this window wants blur at all
 //   }
 //   color: effects.translucent ? Theme.backdrop : Theme.backdropSolid
 
 #pragma once
 
+#include <KConfigWatcher>
+#include <KSharedConfig>
 #include <QObject>
 #include <QPointer>
 #include <QQmlParserStatus>
@@ -31,6 +35,8 @@ class WindowEffects : public QObject, public QQmlParserStatus
     Q_PROPERTY(bool blurBehind READ blurBehind WRITE setBlurBehind NOTIFY blurBehindChanged)
     // the part of the window to blur, the whole window when empty
     Q_PROPERTY(QRect region READ region WRITE setRegion NOTIFY regionChanged)
+    // Transparency effects is on (Settings > Personalization > Colors)
+    Q_PROPERTY(bool transparencyEffects READ transparencyEffects NOTIFY translucentChanged)
     // the compositor can blur
     Q_PROPERTY(bool blurAvailable READ blurAvailable NOTIFY translucentChanged)
     // blur is on: paint the see-through backdrop, else the opaque one
@@ -47,6 +53,7 @@ public:
     QRect region() const { return m_region; }
     void setRegion(const QRect &region);
     bool blurAvailable() const { return m_available; }
+    bool transparencyEffects() const;
     bool translucent() const { return m_translucent; }
 
     // Look again (the compositor may have turned blur on or off).
@@ -75,10 +82,13 @@ protected:
 
 private:
     void apply();
+    void settingChanged();
 
     QPointer<QWindow> m_window;
     Backend *m_backend = nullptr;
     QRect m_region;
+    KSharedConfigPtr m_globals;
+    KConfigWatcher::Ptr m_watcher;
     bool m_blurBehind = true;
     bool m_available = false;
     bool m_translucent = false;

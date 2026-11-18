@@ -55,7 +55,7 @@ settings_list() {
             kscreenlockerrc ksmserverrc ksplashrc kded5rc kded6rc krunnerrc klipperrc \
             kiorc kservicemenurc kcmfonts kactivitymanagerdrc \
             kactivitymanagerd-pluginsrc systemsettingsrc powerdevilrc \
-            powermanagementprofilesrc baloofilerc trashrc breezerc gtkrc gtkrc-2.0 \
+            powermanagementprofilesrc baloofilerc trashrc breezerc rayerc gtkrc gtkrc-2.0 \
             gtk-3.0/settings.ini gtk-4.0/settings.ini xsettingsd menus \
             dolphinrc konsolerc spectaclerc rayeshellrc; do
             case $name in plasma-localerc) continue ;; esac

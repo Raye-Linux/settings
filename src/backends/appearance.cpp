@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "appearance.h"
 
+#include "performance.h"
+
 #include <KConfigGroup>
 #include <KSharedConfig>
 #include <QCollator>
@@ -303,20 +305,7 @@ void AppearanceSettings::setAccentFromWallpaper(bool automatic)
 
 void AppearanceSettings::setTransparency(bool on)
 {
-    KConfigGroup raye = globals()->group(QStringLiteral("Raye"));
-    raye.writeEntry("TransparencyEffects", on, KConfig::Notify);
-    globals()->sync();
-
-    KSharedConfigPtr kwin = KSharedConfig::openConfig(QStringLiteral("kwinrc"));
-    KConfigGroup plugins = kwin->group(QStringLiteral("Plugins"));
-    for (const char *key : {"blurEnabled", "contrastEnabled"}) {
-        // on: back to the system's default (on in Raye)
-        if (on)
-            plugins.revertToDefault(key, KConfig::Notify);
-        else
-            plugins.writeEntry(key, false, KConfig::Notify);
-    }
-    kwin->sync();
+    PerformanceSettings::writeTransparency(on);
     reconfigureCompositor();
     Q_EMIT changed();
 }

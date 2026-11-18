@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // System › About: the PC with its name and "Rename this PC", the device
 // specifications and the Raye Linux ones, each with Copy, then the
-// related links (Hardware details, Device security, the licence).
+// related links (Hardware details, Performance options, Device
+// security, the licence).
 import QtQuick
 import QtQuick.Layouts
 import org.raye.settings
@@ -125,6 +126,13 @@ PageScaffold {
         title: i18nc("@title settings page", "Hardware details")
         description: i18nc("@info", "Processor, memory, graphics, disks and devices in depth")
         target: "system/hardware-details"
+    }
+    NavCard {
+        iconName: "org.raye.settings-performance"
+        iconFallback: "speedometer"
+        title: i18nc("@title settings page", "Performance options")
+        description: i18nc("@info", "Visual effects, or the best performance this PC can give")
+        target: "system/performance"
     }
     NavCard {
         iconName: "org.raye.settings-device-security"

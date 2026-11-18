@@ -240,6 +240,20 @@
                     "component": "pages/system/AdvancedPage.qml"
                 },
                 {
+                    "id": "system/performance",
+                    "icon": "org.raye.settings-performance",
+                    "icon_fallback": "speedometer",
+                    "name": "Performance options",
+                    "name_fr": "Options de performances",
+                    "summary": "Visual effects, best performance",
+                    "summary_fr": "Effets visuels, meilleures performances",
+                    "type": "qml",
+                    "component": "pages/system/PerformancePage.qml",
+                    "aliases": [
+                        "kcm_kwin_effects"
+                    ]
+                },
+                {
                     "id": "system/troubleshoot",
                     "icon": "org.raye.settings-troubleshoot",
                     "icon_fallback": "tools-wizard",
