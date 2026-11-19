@@ -15,6 +15,8 @@ Item {
     // draw it as Raye Day ("day") or Raye Night ("night"), else as now
     property string mode: ""
     readonly property bool night: mode === "" ? Theme.night : mode === "night"
+    // the Windows 10 style: taskbar on the left, square corners
+    property bool windows10: false
 
     implicitWidth: 320
     implicitHeight: 200
@@ -45,7 +47,7 @@ Item {
             y: parent.height * 0.14
             width: parent.width * 0.58
             height: parent.height * 0.56
-            radius: 4
+            radius: preview.windows10 ? 0 : 4
             color: preview.night ? "#212026" : "#ffffff"
             border.width: 1
             border.color: preview.night ? "#33ffffff" : "#1a17151c"
@@ -90,7 +92,7 @@ Item {
             }
         }
 
-        // the taskbar, centred, as in Raye
+        // the taskbar, centred as in Raye, or on the left
         Rectangle {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -98,11 +100,12 @@ Item {
             height: Math.round(22 * win.unit)
             color: preview.night ? "#d9141318" : "#e6f5f4f7"
             Row {
-                anchors.centerIn: parent
+                x: preview.windows10 ? 6 * win.unit : (parent.width - width) / 2
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 6 * win.unit
                 // Start: the Raye eye's colours
                 Rectangle {
-                    width: 12 * win.unit; height: width; radius: 3 * win.unit
+                    width: 12 * win.unit; height: width; radius: preview.windows10 ? 0 : 3 * win.unit
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0; color: Theme.brandViolet }
@@ -113,7 +116,7 @@ Item {
                     model: 4
                     Rectangle {
                         required property int index
-                        width: 12 * win.unit; height: width; radius: 3 * win.unit
+                        width: 12 * win.unit; height: width; radius: preview.windows10 ? 0 : 3 * win.unit
                         color: preview.night ? "#4df1f0f4" : "#4017151c"
                         Rectangle {
                             visible: index === 0

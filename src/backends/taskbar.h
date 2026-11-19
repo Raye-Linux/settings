@@ -6,7 +6,9 @@
 //
 //   Search            the search applet (org.kde.milou) after Start, or none
 //   Task view         an icon applet starting org.raye.taskview.desktop
-//   Alignment         the spacer before Start: expanding (centre) or not (left)
+//   Alignment         the spacer before Start: expanding (centre) or not (left);
+//                     always left with Raye's taskbar in the Windows 10 style
+//                     ([Appearance] Look), which keeps the key as it is
 //   Automatically hide  the panel's hiding mode
 //   Far corner        the show-desktop applet at the end of the panel
 //   Combine buttons   icontasks (icons only) or taskmanager (labels), and
@@ -169,6 +171,8 @@ class TaskbarSettings : public QObject
     Q_PROPERTY(QString search READ search WRITE setSearch NOTIFY changed)
     Q_PROPERTY(bool taskView READ taskView WRITE setTaskView NOTIFY changed)
     Q_PROPERTY(QString alignment READ alignment WRITE setAlignment NOTIFY changed)
+    // the Windows 10 style keeps Raye's taskbar on the left
+    Q_PROPERTY(bool alignmentFixed READ alignmentFixed NOTIFY changed)
     Q_PROPERTY(bool autoHide READ autoHide WRITE setAutoHide NOTIFY changed)
     Q_PROPERTY(bool showDesktopCorner READ showDesktopCorner WRITE setShowDesktopCorner NOTIFY changed)
     Q_PROPERTY(QString combine READ combine WRITE setCombine NOTIFY changed)
@@ -205,6 +209,7 @@ public:
     void setTaskView(bool on);
     QString alignment() const;
     void setAlignment(const QString &mode);
+    bool alignmentFixed() const;
     bool autoHide() const;
     void setAutoHide(bool on);
     bool showDesktopCorner() const;
@@ -235,6 +240,8 @@ public:
     // a multi-display change ("" for none).
     void setRunningApps(const QMap<QString, QPair<QString, QString>> &apps);
     void setSyncProgram(const QString &program) { m_syncProgram = program; }
+    // For the tests: the page's own backend, given a shell of theirs.
+    void useShell(Shell shell, Describe describe);
     const TaskbarLogic::State &state() const { return m_state; }
 
 Q_SIGNALS:

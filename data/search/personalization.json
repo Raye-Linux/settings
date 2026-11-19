@@ -1,6 +1,7 @@
 {
     "version": 1,
     "entries": [
+        {"id": "personalization#desktop-style", "label": "Desktop style", "label_fr": "Style du bureau", "keywords": ["windows 10 style", "windows 11 style", "windows 10 look", "classic start menu", "start menu with tiles", "live tiles", "square corners", "taskbar on the left"], "keywords_fr": ["style windows 10", "style windows 11", "apparence windows 10", "menu démarrer classique", "menu démarrer avec vignettes", "vignettes dynamiques", "coins carrés", "barre des tâches à gauche"]},
         {"id": "personalization/background#background-type", "label": "Personalize your background", "label_fr": "Personnaliser votre arrière-plan", "keywords": ["wallpaper", "desktop background", "desktop picture", "change background"], "keywords_fr": ["fond d'écran", "arrière-plan du bureau", "image du bureau", "changer l'arrière-plan"]},
         {"id": "personalization/background#recent-images", "label": "Recent images", "label_fr": "Images récentes", "keywords": ["recent wallpapers", "raye wallpaper"], "keywords_fr": ["fonds d'écran récents", "fond d'écran raye"]},
         {"id": "personalization/background#browse-photos", "label": "Browse photos", "label_fr": "Parcourir les photos", "keywords": ["choose a photo", "my picture as background", "set as background"], "keywords_fr": ["choisir une photo", "ma photo en arrière-plan", "définir comme arrière-plan"]},

@@ -52,10 +52,11 @@ QString entry(const QString &path, const QString &group, const QString &key)
     return config.group(group).readEntry(key, QStringLiteral("<unset>"));
 }
 
-// what Raye ships in /etc/xdg/kwinrc, the part that matters here
+// what Raye ships in /etc/xdg/kwinrc, the part that matters here: its own
+// window effect replaces the stock scale one, which is shipped off
 const QByteArray rayeKwin =
     "[Plugins]\n"
-    "scaleEnabled=true\nsquashEnabled=true\nslideEnabled=true\nslidingpopupsEnabled=true\n"
+    "scaleEnabled=false\nraye_windowsEnabled=true\nsquashEnabled=true\nslideEnabled=true\nslidingpopupsEnabled=true\n"
     "blurEnabled=true\ncontrastEnabled=true\nraye_popupsEnabled=true\nraye_maximizeEnabled=true\n";
 
 struct FakeBlur : WindowEffects::Backend {
@@ -156,7 +157,8 @@ private Q_SLOTS:
         const QString plugins = QStringLiteral("Plugins");
 
         p.setEffect(QStringLiteral("window-open"), false);
-        QCOMPARE(entry(kwin, plugins, QStringLiteral("scaleEnabled")), QStringLiteral("false"));
+        QCOMPARE(entry(kwin, plugins, QStringLiteral("raye_windowsEnabled")), QStringLiteral("false"));
+        QCOMPARE(entry(kwin, plugins, QStringLiteral("scaleEnabled")), QStringLiteral("<unset>"));
         QVERIFY(!p.windowOpen());
         QCOMPARE(p.mode(), QStringLiteral("custom"));
         QCOMPARE(entry(globals, QStringLiteral("Raye"), QStringLiteral("VisualEffectsMode")), QStringLiteral("custom"));

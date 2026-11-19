@@ -79,8 +79,10 @@ Item {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
             spacing: Theme.s4
+            // the metrics, not implicitWidth: a wrapping Text's implicitWidth
+            // follows its width, a binding loop when the bar changes size
             Text {
-                width: bar._inline ? implicitWidth : parent.width
+                width: bar._inline ? Math.ceil(titleMetrics.advanceWidth) + 1 : parent.width
                 text: bar.title
                 visible: text !== ""
                 font: Theme.bodyStrong
@@ -92,7 +94,7 @@ Item {
                 Accessible.ignored: true
             }
             Text {
-                width: bar._inline ? implicitWidth : parent.width
+                width: bar._inline ? Math.ceil(messageMetrics.advanceWidth) + 1 : parent.width
                 text: bar.message
                 visible: text !== ""
                 font: Theme.body

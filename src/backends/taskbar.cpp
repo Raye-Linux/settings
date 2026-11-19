@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "taskbar.h"
+#include "shelllook.h"
 
 #include <KConfigGroup>
 #include <KConfigWatcher>
@@ -119,6 +120,13 @@ TaskbarSettings::TaskbarSettings(Shell shell, Describe describe, QObject *parent
     reload();
 }
 
+void TaskbarSettings::useShell(Shell shell, Describe describe)
+{
+    m_shell = std::move(shell);
+    m_describe = std::move(describe);
+    reload();
+}
+
 void TaskbarSettings::countScreens()
 {
     const int count = int(QGuiApplication::screens().size());
@@ -198,8 +206,15 @@ void TaskbarSettings::setTaskView(bool on)
     queue([on, url](const State &s) { return taskViewOps(s, on, url); });
 }
 
+bool TaskbarSettings::alignmentFixed() const
+{
+    return rayeTasks() && ShellLook::isWindows10(m_shellrc);
+}
+
 QString TaskbarSettings::alignment() const
 {
+    if (alignmentFixed())
+        return QStringLiteral("left");
     if (rayeTasks())
         return shellAlignment(shellValue("Alignment", QStringLiteral("center")));
     const Panel *p = mainPanel(m_state);
@@ -208,6 +223,8 @@ QString TaskbarSettings::alignment() const
 
 void TaskbarSettings::setAlignment(const QString &mode)
 {
+    if (alignmentFixed())
+        return;
     if (rayeTasks()) {
         if (shellAlignment(mode) == mode && mode != alignment())
             writeShell("Alignment", mode);

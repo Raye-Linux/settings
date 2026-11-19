@@ -330,7 +330,9 @@ bool SearchIndex::load(const Sources &sources, QString *error)
             }
             const bool atHome = row.pageId == QLatin1String("home") || row.pageId.startsWith(QLatin1String("home/"));
             const Page *page = atHome ? nullptr : layouts[En].page(row.pageId);
-            if (!atHome && !page) {
+            // a row on a category's own landing page
+            const Category *landing = atHome || page ? nullptr : layouts[En].category(row.pageId);
+            if (!atHome && !page && !landing) {
                 m_warnings.append(QStringLiteral("%1: %2 is not a page of the layout").arg(fragment.name, row.id));
                 continue;
             }
@@ -339,6 +341,12 @@ bool SearchIndex::load(const Sources &sources, QString *error)
                 row.context[Fr] = m_pageNames[Fr].value(QStringLiteral("home"));
                 row.icon = QStringLiteral("org.raye.settings-home");
                 row.iconFallback = QStringLiteral("go-home");
+            } else if (landing) {
+                row.categoryId = row.pageId;
+                for (int lang : {En, Fr})
+                    row.context[lang] = m_categoryNames[lang].value(row.categoryId);
+                row.icon = landing->icon;
+                row.iconFallback = landing->iconFallback;
             } else {
                 row.categoryId = row.pageId.section(QLatin1Char('/'), 0, 0);
                 for (int lang : {En, Fr})

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Personalization: the desktop as it is now, drawn small, next to
-// "Select a theme to apply" (Raye Night, Raye Day); then a card per
-// page.
+// "Select a theme to apply" (Raye Night, Raye Day); the desktop style
+// (Windows 11 or Windows 10 layout); then a card per page.
 import QtQuick
 import QtQuick.Layouts
 import org.raye.settings
@@ -23,6 +23,7 @@ PageScaffold {
             spacing: Theme.s7
             PersonalizationPreview {
                 Layout.alignment: Qt.AlignTop
+                windows10: shellLook.windows10
                 image: background.mode === "picture" ? (background.previewImage.toString() !== "" ? background.previewImage : page.rayeWallpaper) : ""
                 color: background.mode === "color" ? background.color : Theme.backdropSolid
             }
@@ -41,6 +42,26 @@ PageScaffold {
                     wallpaper: page.rayeWallpaper
                 }
             }
+        }
+    }
+
+    ShellLook { id: shellLook }
+
+    ComboCard {
+        Layout.fillWidth: true
+        iconName: "org.raye.settings-taskbar"
+        iconFallback: "preferences-desktop"
+        title: i18nc("@label:listbox", "Desktop style")
+        description: i18nc("@info", "The taskbar, Start and window corners, laid out like Windows 11 or Windows 10")
+        searchId: "desktop-style"
+        textRole: "text"
+        valueRole: "value"
+        model: [{ text: i18nc("@item:inlistbox desktop style", "Windows 11 style"), value: "windows11" },
+                { text: i18nc("@item:inlistbox desktop style", "Windows 10 style"), value: "windows10" }]
+        currentIndex: Math.max(0, indexOfValue(shellLook.look))
+        onActivated: (index) => {
+            shellLook.look = model[index].value
+            currentIndex = Qt.binding(() => Math.max(0, indexOfValue(shellLook.look)))
         }
     }
 

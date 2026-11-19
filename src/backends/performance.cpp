@@ -17,7 +17,7 @@ const QString plugins = QStringLiteral("Plugins");
 QStringList kwinEffects(const QString &id)
 {
     if (id == QLatin1String("window-open"))
-        return {QStringLiteral("scaleEnabled")};
+        return {QStringLiteral("raye_windowsEnabled")};
     if (id == QLatin1String("minimize"))
         return {QStringLiteral("squashEnabled"), QStringLiteral("raye_maximizeEnabled")};
     if (id == QLatin1String("menus"))

@@ -196,6 +196,21 @@ private Q_SLOTS:
         report(QStringLiteral("row in data/search that no page draws"), notDrawn);
     }
 
+    // a row can sit on a category's own page (Personalization's desktop style)
+    void landingRows()
+    {
+        SearchIndex index;
+        QVERIFY(index.load(packageSources(QStringLiteral("en"))));
+        const SearchEntry *row = index.entry(QStringLiteral("personalization#desktop-style"));
+        QVERIFY(row);
+        QCOMPARE(row->categoryId, QStringLiteral("personalization"));
+        QCOMPARE(row->context[0], QStringLiteral("Personalization"));
+        bool found = false;
+        for (const auto &r : index.search(QStringLiteral("windows 10 style"), 3))
+            found = found || r.id == row->id;
+        QVERIFY(found);
+    }
+
     void synonymAnchorsMeet()
     {
         // synonyms.json may point at a row before the row lands: listed

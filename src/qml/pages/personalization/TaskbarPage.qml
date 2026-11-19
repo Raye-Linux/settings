@@ -157,8 +157,10 @@ PageScaffold {
         ExpanderRow {
             searchId: "taskbar-alignment"
             title: i18n("Taskbar alignment")
-            enabled: taskbar.available
+            description: taskbar.alignmentFixed ? i18nc("@info", "Always on the left in the Windows 10 style") : ""
+            enabled: taskbar.available && !taskbar.alignmentFixed
             ComboBox {
+                objectName: "alignmentChoice"
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
                 readonly property var modes: ["center", "left"]
                 model: [i18nc("@item taskbar alignment", "Center"), i18nc("@item taskbar alignment", "Left")]

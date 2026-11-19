@@ -3646,6 +3646,22 @@ msgid "Colors"
 msgstr "Couleurs"
 
 msgctxt "@label:listbox"
+msgid "Desktop style"
+msgstr "Style du bureau"
+
+msgctxt "@info"
+msgid "The taskbar, Start and window corners, laid out like Windows 11 or Windows 10"
+msgstr "La barre des tâches, Démarrer et les coins des fenêtres, disposés comme dans Windows 11 ou Windows 10"
+
+msgctxt "@item:inlistbox desktop style"
+msgid "Windows 11 style"
+msgstr "Style Windows 11"
+
+msgctxt "@item:inlistbox desktop style"
+msgid "Windows 10 style"
+msgstr "Style Windows 10"
+
+msgctxt "@label:listbox"
 msgid "Choose your mode"
 msgstr "Choisir votre mode"
 
@@ -3938,6 +3954,10 @@ msgstr "Centre"
 msgctxt "@item taskbar alignment"
 msgid "Left"
 msgstr "Gauche"
+
+msgctxt "@info"
+msgid "Always on the left in the Windows 10 style"
+msgstr "Toujours à gauche avec le style Windows 10"
 
 msgctxt "@option:check"
 msgid "Automatically hide the taskbar"

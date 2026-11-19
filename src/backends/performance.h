@@ -5,7 +5,8 @@
 //
 //   animations     kdeglobals [KDE] AnimationDurationFactor (0 = off);
 //                  everything that moves follows it, window manager too
-//   window-open    kwinrc [Plugins] scaleEnabled
+//   window-open    kwinrc [Plugins] raye_windowsEnabled (Raye's own effect;
+//                  the stock scale one is shipped off)
 //   minimize       kwinrc [Plugins] squashEnabled, raye_maximizeEnabled
 //   menus          kwinrc [Plugins] raye_popupsEnabled, slidingpopupsEnabled
 //   desktops       kwinrc [Plugins] slideEnabled
