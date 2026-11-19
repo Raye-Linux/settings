@@ -369,6 +369,22 @@ private Q_SLOTS:
         KeyboardLayouts again;
         QCOMPARE(again.repeatDelay(), KeyboardLayouts::minDelay);
     }
+
+    void layoutPerWindow()
+    {
+        KeyboardLayouts k;
+        QVERIFY(!k.layoutPerWindow());
+        k.setLayoutPerWindow(true);
+        QCOMPARE(entry(user(QStringLiteral("kxkbrc")), QStringLiteral("Layout"), QStringLiteral("SwitchMode")), QStringLiteral("Window"));
+        QVERIFY(k.layoutPerWindow());
+        k.setLayoutPerWindow(false);
+        QCOMPARE(entry(user(QStringLiteral("kxkbrc")), QStringLiteral("Layout"), QStringLiteral("SwitchMode")), QStringLiteral("Global"));
+        // the keyboard module's "per application" counts too
+        writeFile(user(QStringLiteral("kxkbrc")), "[Layout]\nSwitchMode=WinClass\n");
+        KeyboardLayouts again;
+        again.reload();
+        QVERIFY(again.layoutPerWindow());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestRegion)

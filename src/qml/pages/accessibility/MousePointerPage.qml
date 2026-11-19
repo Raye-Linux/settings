@@ -12,6 +12,7 @@ PageScaffold {
              { text: i18nc("@title settings page", "Mouse pointer and touch") }]
 
     PointerSettings { id: pointer }
+    InputDeviceSettings { id: touchScreens; kind: "touchscreen" }
 
     // the size is applied once the slider rests: the desktop redraws
     // every pointer at each change
@@ -79,6 +80,27 @@ PageScaffold {
         searchId: "shake-to-find"
         checked: pointer.shakeToFind
         onToggled: pointer.shakeToFind = checked
+    }
+
+    ToggleCard {
+        iconName: "org.raye.settings-mouse-pointer"
+        iconFallback: "cursor-arrow"
+        title: i18n("Show the location of the pointer when I press the Ctrl key")
+        description: i18n("Rings circle the pointer while you hold Ctrl")
+        searchId: "ctrl-to-find"
+        checked: pointer.ctrlToFind
+        onToggled: pointer.ctrlToFind = checked
+    }
+
+    ToggleCard {
+        iconName: "org.raye.settings-mouse-pointer"
+        iconFallback: "input-touchscreen"
+        title: i18n("Touch indicator")
+        description: i18n("Show a circle on the screen where I touch it")
+        searchId: "touch-indicator"
+        visible: touchScreens.deviceNames.length > 0 || pointer.touchIndicator
+        checked: pointer.touchIndicator
+        onToggled: pointer.touchIndicator = checked
     }
 
     SectionHeader { text: i18n("Related settings") }

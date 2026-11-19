@@ -44,6 +44,9 @@
          "keywords_fr": ["répétition des touches", "maintenir une touche", "délai du clavier"]},
         {"id": "time/typing#repeat-rate", "label": "Repeat rate", "label_fr": "Vitesse de répétition",
          "keywords": ["key repeat", "repeat speed", "keyboard speed"],
-         "keywords_fr": ["répétition des touches", "vitesse du clavier"]}
+         "keywords_fr": ["répétition des touches", "vitesse du clavier"]},
+        {"id": "time/typing#layout-per-window", "label": "Let me use a different keyboard layout for each app window", "label_fr": "Me laisser utiliser une disposition de clavier différente pour chaque fenêtre d'application", "keywords": ["input method per window", "layout per app", "keyboard per window"], "keywords_fr": ["méthode d'entrée par fenêtre", "disposition par application", "clavier par fenêtre"]},
+        {"id": "time/typing#highlight-misspelled", "label": "Highlight misspelled words", "label_fr": "Mettre en évidence les mots mal orthographiés", "keywords": ["spell check", "spelling", "typos", "red underline"], "keywords_fr": ["correcteur orthographique", "orthographe", "fautes de frappe", "soulignement rouge"]},
+        {"id": "time/typing#spelling-language", "label": "Spelling language", "label_fr": "Langue de l'orthographe", "keywords": ["dictionary", "spell check language"], "keywords_fr": ["dictionnaire", "langue du correcteur"]}
     ]
 }

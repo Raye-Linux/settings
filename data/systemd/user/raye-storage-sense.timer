@@ -1,6 +1,7 @@
-# Started by Settings > System > Storage when Storage Sense is on.
+# Started by Settings > System > Storage when Storage Sense is on. Weekly
+# unless the page wrote a drop-in with another OnCalendar.
 [Unit]
-Description=Storage Sense, once a week
+Description=Storage Sense
 
 [Timer]
 OnCalendar=weekly

@@ -105,7 +105,7 @@ private Q_SLOTS:
             QDir(dir).removeRecursively();
             QDir().mkpath(dir);
         }
-        for (const char *name : {"kdeglobals", "kwinrc", "rayeshellrc", "kcminputrc", "kaccessrc"})
+        for (const char *name : {"kdeglobals", "kwinrc", "rayeshellrc", "kcminputrc", "kaccessrc", "rayerc"})
             KSharedConfig::openConfig(QString::fromLatin1(name))->reparseConfiguration();
     }
 
@@ -266,6 +266,31 @@ private Q_SLOTS:
         QCOMPARE(entry(user(QStringLiteral("kwinrc")), QStringLiteral("Plugins"), QStringLiteral("shakecursorEnabled")), QStringLiteral("false"));
     }
 
+    void pointerFinders()
+    {
+        const QString kwinrc = user(QStringLiteral("kwinrc"));
+        PointerSettings p;
+        QVERIFY(!p.ctrlToFind());
+        QVERIFY(!p.touchIndicator());
+
+        // Ctrl alone, like Windows, not the window manager's Meta+Ctrl
+        p.setCtrlToFind(true);
+        QCOMPARE(entry(kwinrc, QStringLiteral("Plugins"), QStringLiteral("trackmouseEnabled")), QStringLiteral("true"));
+        QCOMPARE(entry(kwinrc, QStringLiteral("Effect-trackmouse"), QStringLiteral("Control")), QStringLiteral("true"));
+        QCOMPARE(entry(kwinrc, QStringLiteral("Effect-trackmouse"), QStringLiteral("Meta")), QStringLiteral("false"));
+        QCOMPARE(entry(kwinrc, QStringLiteral("Effect-trackmouse"), QStringLiteral("Alt")), QStringLiteral("false"));
+        QCOMPARE(entry(kwinrc, QStringLiteral("Effect-trackmouse"), QStringLiteral("Shift")), QStringLiteral("false"));
+        QVERIFY(p.ctrlToFind());
+        p.setCtrlToFind(false);
+        QCOMPARE(entry(kwinrc, QStringLiteral("Plugins"), QStringLiteral("trackmouseEnabled")), QStringLiteral("false"));
+
+        p.setTouchIndicator(true);
+        QCOMPARE(entry(kwinrc, QStringLiteral("Plugins"), QStringLiteral("touchpointsEnabled")), QStringLiteral("true"));
+        PointerSettings again;
+        QVERIFY(again.touchIndicator());
+        QVERIFY(!again.ctrlToFind());
+    }
+
     // ---- Magnifier --------------------------------------------------
 
     void magnifier()
@@ -376,6 +401,22 @@ private Q_SLOTS:
         QCOMPARE(entry(file, QStringLiteral("Mouse"), QStringLiteral("MouseKeys")), QStringLiteral("true"));
         QCOMPARE(entry(file, QStringLiteral("Mouse"), QStringLiteral("MKMaxSpeed")), QStringLiteral("70"));
         QCOMPARE(entry(file, QStringLiteral("Mouse"), QStringLiteral("MKTimeToMax")), QStringLiteral("80"));
+
+        // what a keyboard shortcut does when it turns a setting on
+        QVERIFY(!a.gestureConfirmation());
+        QVERIFY(a.gestureBeep());
+        a.setGestureConfirmation(true);
+        a.setGestureBeep(false);
+        QCOMPARE(entry(file, QStringLiteral("Keyboard"), QStringLiteral("GestureConfirmation")), QStringLiteral("true"));
+        QCOMPARE(entry(file, QStringLiteral("Keyboard"), QStringLiteral("AccessXBeep")), QStringLiteral("false"));
+
+        // underlined access keys: the Raye widget style's mnemonics mode
+        QVERIFY(!a.underlineAccessKeys());
+        a.setUnderlineAccessKeys(true);
+        QCOMPARE(entry(user(QStringLiteral("rayerc")), QStringLiteral("Style"), QStringLiteral("MnemonicsMode")), QStringLiteral("MN_ALWAYS"));
+        QVERIFY(a.underlineAccessKeys());
+        a.setUnderlineAccessKeys(false);
+        QCOMPARE(entry(user(QStringLiteral("rayerc")), QStringLiteral("Style"), QStringLiteral("MnemonicsMode")), QStringLiteral("MN_AUTO"));
 
         AccessSettings again;
         QVERIFY(again.screenReader());

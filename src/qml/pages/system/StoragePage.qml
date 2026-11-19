@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // System › Storage: how full the Raye drive is and what fills it, Clean
-// up for the files nobody needs, Storage Sense to do it every week, and
+// up for the files nobody needs, Storage Sense to do it on a schedule, and
 // the other drives.
 import QtQuick
 import QtQuick.Layouts
@@ -111,7 +111,7 @@ PageScaffold {
         iconName: "org.raye.settings-storage"
         iconFallback: "drive-harddisk"
         title: i18nc("@label", "Storage Sense")
-        description: i18nc("@info", "Free up space by itself: empty old files from the trash and clean up thumbnails, once a week")
+        description: i18nc("@info", "Free up space by itself: delete old files from the trash and Downloads, and clean up thumbnails")
         headerContent: [
             Text {
                 anchors.verticalCenter: parent.verticalCenter
@@ -130,6 +130,20 @@ PageScaffold {
         ]
 
         ExpanderRow {
+            searchId: "sense-frequency"
+            title: i18nc("@label", "Run Storage Sense")
+            ComboBox {
+                readonly property var frequencies: ["day", "week", "month", "lowspace"]
+                model: [i18nc("@item:inlistbox run Storage Sense", "Every day"),
+                        i18nc("@item:inlistbox run Storage Sense", "Every week"),
+                        i18nc("@item:inlistbox run Storage Sense", "Every month"),
+                        i18nc("@item:inlistbox run Storage Sense", "During low free disk space")]
+                currentIndex: Math.max(0, frequencies.indexOf(storage.senseFrequency))
+                Accessible.name: i18nc("@label", "Run Storage Sense")
+                onActivated: (index) => storage.senseFrequency = frequencies[index]
+            }
+        }
+        ExpanderRow {
             searchId: "trash-days"
             title: i18nc("@label", "Delete files in my trash if they've been there for over")
             ComboBox {
@@ -143,6 +157,21 @@ PageScaffold {
                 currentIndex: Math.max(0, days.indexOf(storage.senseTrashDays))
                 Accessible.name: i18nc("@label", "Delete files in my trash if they've been there for over")
                 onActivated: (index) => storage.senseTrashDays = days[index]
+            }
+        }
+        ExpanderRow {
+            searchId: "downloads-days"
+            title: i18nc("@label", "Delete files in my Downloads folder if they haven't been opened for more than")
+            ComboBox {
+                readonly property var days: [0, 1, 14, 30, 60]
+                model: [i18nc("@item:inlistbox downloads", "Never"),
+                        i18ncp("@item:inlistbox", "%1 day", "%1 days", 1),
+                        i18ncp("@item:inlistbox", "%1 day", "%1 days", 14),
+                        i18ncp("@item:inlistbox", "%1 day", "%1 days", 30),
+                        i18ncp("@item:inlistbox", "%1 day", "%1 days", 60)]
+                currentIndex: Math.max(0, days.indexOf(storage.senseDownloadsDays))
+                Accessible.name: i18nc("@label", "Delete files in my Downloads folder if they haven't been opened for more than")
+                onActivated: (index) => storage.senseDownloadsDays = days[index]
             }
         }
         ExpanderRow {

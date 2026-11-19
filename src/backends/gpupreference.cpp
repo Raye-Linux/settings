@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
+#include <QProcess>
 #include <QStandardPaths>
 
 #include <algorithm>
@@ -159,4 +160,11 @@ bool GpuApps::setDedicated(int row, bool on)
     app.dedicated = on;
     Q_EMIT dataChanged(index(row), index(row), {DedicatedRole});
     return true;
+}
+
+void GpuApps::openNvidiaPanel()
+{
+    const QString panel = QStandardPaths::findExecutable(QStringLiteral("nvidia-settings"));
+    if (!panel.isEmpty())
+        QProcess::startDetached(panel, {});
 }

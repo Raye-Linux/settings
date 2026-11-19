@@ -163,6 +163,45 @@ PageScaffold {
         onToggled: access.onScreenKeyboard = checked
     }
 
+    ToggleCard {
+        iconName: "org.raye.settings-accessibility-keyboard"
+        iconFallback: "input-keyboard"
+        title: i18n("Underline access keys")
+        description: i18n("Access keys are underlined even when you aren't holding Alt")
+        searchId: "underline-access-keys"
+        checked: access.underlineAccessKeys
+        onToggled: access.underlineAccessKeys = checked
+    }
+
+    Expander {
+        iconName: "org.raye.settings-notifications"
+        iconFallback: "preferences-desktop-notification"
+        title: i18n("Notification preferences")
+        description: i18n("What happens when a keyboard shortcut turns sticky, filter or toggle keys on")
+        searchId: "shortcut-notifications"
+
+        ExpanderRow {
+            searchId: "shortcut-warning"
+            title: i18n("Show a warning message when turning a setting on with a shortcut")
+            NotificationsCheckBox {
+                text: i18n("Show a warning message when turning a setting on with a shortcut")
+                contentItem: Item {}
+                checked: access.gestureConfirmation
+                onToggled: access.gestureConfirmation = checked
+            }
+        }
+        ExpanderRow {
+            searchId: "shortcut-sound"
+            title: i18n("Make a sound when turning a setting on or off with a shortcut")
+            NotificationsCheckBox {
+                text: i18n("Make a sound when turning a setting on or off with a shortcut")
+                contentItem: Item {}
+                checked: access.gestureBeep
+                onToggled: access.gestureBeep = checked
+            }
+        }
+    }
+
     SectionHeader { text: i18n("Related settings") }
 
     NavCard {

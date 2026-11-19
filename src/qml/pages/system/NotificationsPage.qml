@@ -11,6 +11,7 @@ Item {
     id: root
 
     NotificationSettings { id: notifications }
+    DndSchedule { id: dndSchedule }
 
     // the app whose page is open, "" for the list
     property string appId: ""
@@ -111,6 +112,57 @@ Item {
             title: i18nc("@title", "Turn on do not disturb automatically")
             enabled: notifications.enabled
 
+            ExpanderRow {
+                searchId: "dnd-schedule"
+                title: i18nc("@option:check", "During these times")
+                NotificationsCheckBox {
+                    text: i18nc("@option:check", "During these times")
+                    contentItem: Item {}
+                    checked: dndSchedule.enabled
+                    onToggled: dndSchedule.enabled = checked
+                }
+            }
+            ExpanderRow {
+                searchId: "dnd-schedule-from"
+                title: i18nc("@label do not disturb starts at", "From")
+                enabled: dndSchedule.enabled
+                ComboBox {
+                    anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                    readonly property var values: dndSchedule.times()
+                    model: values.map((t) => dndSchedule.displayTime(t))
+                    currentIndex: Math.max(0, values.indexOf(dndSchedule.start))
+                    Accessible.name: i18nc("@label do not disturb starts at", "From") + ", " + displayText
+                    onActivated: (index) => dndSchedule.start = values[index]
+                }
+            }
+            ExpanderRow {
+                searchId: "dnd-schedule-to"
+                title: i18nc("@label do not disturb ends at", "To")
+                enabled: dndSchedule.enabled
+                ComboBox {
+                    anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                    readonly property var values: dndSchedule.times()
+                    model: values.map((t) => dndSchedule.displayTime(t))
+                    currentIndex: Math.max(0, values.indexOf(dndSchedule.end))
+                    Accessible.name: i18nc("@label do not disturb ends at", "To") + ", " + displayText
+                    onActivated: (index) => dndSchedule.end = values[index]
+                }
+            }
+            ExpanderRow {
+                searchId: "dnd-schedule-days"
+                title: i18nc("@label do not disturb on these days", "Repeats")
+                enabled: dndSchedule.enabled
+                ComboBox {
+                    anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                    readonly property var values: ["everyday", "weekdays", "weekends"]
+                    model: [i18nc("@item:inlistbox do not disturb repeats", "Every day"),
+                            i18nc("@item:inlistbox do not disturb repeats", "Weekdays"),
+                            i18nc("@item:inlistbox do not disturb repeats", "Weekends")]
+                    currentIndex: Math.max(0, values.indexOf(dndSchedule.days))
+                    Accessible.name: i18nc("@label do not disturb on these days", "Repeats") + ", " + displayText
+                    onActivated: (index) => dndSchedule.days = values[index]
+                }
+            }
             ExpanderRow {
                 searchId: "dnd-duplicating"
                 title: i18nc("@option:check", "When duplicating your display")

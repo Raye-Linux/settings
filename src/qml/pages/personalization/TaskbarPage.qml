@@ -257,5 +257,33 @@ PageScaffold {
                 onActivated: (index) => taskbar.combine = modes[index]
             }
         }
+        ExpanderRow {
+            searchId: "small-buttons"
+            title: i18n("Show smaller taskbar buttons")
+            description: taskbar.rayeTasks ? "" : i18n("Needs the Raye taskbar.")
+            enabled: taskbar.available && taskbar.rayeTasks
+            ComboBox {
+                anchors.verticalCenter: parent ? parent.verticalCenter : undefined
+                readonly property var modes: ["always", "full", "never"]
+                model: [i18nc("@item smaller taskbar buttons", "Always"),
+                        i18nc("@item smaller taskbar buttons", "When taskbar is full"),
+                        i18nc("@item smaller taskbar buttons", "Never")]
+                currentIndex: Math.max(0, modes.indexOf(taskbar.smallButtons))
+                Accessible.name: i18n("Show smaller taskbar buttons") + ", " + displayText
+                onActivated: (index) => taskbar.smallButtons = modes[index]
+            }
+        }
+        ExpanderRow {
+            searchId: "recent-searches"
+            title: i18nc("@option:check", "Show recent searches when I open search")
+            description: taskbar.rayeStart ? "" : i18n("Needs the Raye Start menu.")
+            enabled: taskbar.available && taskbar.rayeStart
+            NotificationsCheckBox {
+                text: i18nc("@option:check", "Show recent searches when I open search")
+                contentItem: Item {}
+                checked: !taskbar.rayeStart || taskbar.recentSearches
+                onCheckedChanged: if (taskbar.rayeStart && checked !== taskbar.recentSearches) taskbar.recentSearches = checked
+            }
+        }
     }
 }

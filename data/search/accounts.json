@@ -181,6 +181,7 @@
                 "sauvegarde",
                 "fichiers Windows"
             ]
-        }
+        },
+        {"id": "accounts/sign-in#restart-apps", "label": "Automatically save my restartable apps and restart them when I sign back in", "label_fr": "Enregistrer automatiquement mes applications redémarrables et les redémarrer à ma prochaine connexion", "keywords": ["restore session", "reopen apps", "session restore", "remember open apps"], "keywords_fr": ["restaurer la session", "rouvrir les applications", "mémoriser les applications ouvertes"]}
     ]
 }

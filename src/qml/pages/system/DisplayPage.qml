@@ -264,4 +264,13 @@ PageScaffold {
         iconFallback: "preferences-desktop-display"
         target: "system/graphics"
     }
+    LinkCard {
+        searchId: "nvidia-panel"
+        visible: Router.has("nvidia-panel")
+        title: i18n("NVIDIA Control Panel")
+        description: i18n("Settings of your NVIDIA graphics card, from NVIDIA")
+        iconName: "nvidia-settings"
+        iconFallback: "org.raye.settings-graphics"
+        onClicked: display.openNvidiaPanel()
+    }
 }

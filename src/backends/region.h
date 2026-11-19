@@ -121,6 +121,8 @@ class KeyboardLayouts : public QObject
     Q_PROPERTY(int repeatDelay READ repeatDelay WRITE setRepeatDelay NOTIFY changed)
     // repeats per second
     Q_PROPERTY(int repeatRate READ repeatRate WRITE setRepeatRate NOTIFY changed)
+    // kxkbrc [Layout] SwitchMode: each window keeps its own layout
+    Q_PROPERTY(bool layoutPerWindow READ layoutPerWindow WRITE setLayoutPerWindow NOTIFY changed)
 
 public:
     static constexpr int minDelay = 100;
@@ -135,6 +137,8 @@ public:
     void setRepeatDelay(int ms);
     int repeatRate() const;
     void setRepeatRate(int perSecond);
+    bool layoutPerWindow() const;
+    void setLayoutPerWindow(bool on);
 
     Q_INVOKABLE void reload();
     // add, remove and order layouts, the switch shortcut: the keyboard

@@ -145,6 +145,7 @@ private Q_SLOTS:
         QCOMPARE(InputDeviceSettings::kindOf({{QStringLiteral("pointer"), true}, {QStringLiteral("tabletTool"), true}}),
                  QStringLiteral("pen"));
         QCOMPARE(InputDeviceSettings::kindOf({{QStringLiteral("tabletPad"), true}}), QStringLiteral("pen"));
+        QCOMPARE(InputDeviceSettings::kindOf({{QStringLiteral("touch"), true}}), QStringLiteral("touchscreen"));
         QCOMPARE(InputDeviceSettings::kindOf({{QStringLiteral("keyboard"), true}}), QString());
     }
 

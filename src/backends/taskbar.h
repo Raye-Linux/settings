@@ -146,6 +146,7 @@ bool has(const Panel &panel, const QString &plugin);
 QString shellSearch(const QString &value);        // box, iconlabel, icon, hidden
 QString shellAlignment(const QString &value);     // center, left
 QString shellCombine(const QString &value);       // always, full, never
+QString shellSmallButtons(const QString &value);  // never, always, full
 
 const QString milou = QStringLiteral("org.kde.milou");
 const QString kickoff = QStringLiteral("org.kde.plasma.kickoff");
@@ -180,6 +181,9 @@ class TaskbarSettings : public QObject
     Q_PROPERTY(QString multiDisplayButtons READ multiDisplayButtons WRITE setMultiDisplayButtons NOTIFY changed)
     Q_PROPERTY(bool badges READ badges WRITE setBadges NOTIFY changed)
     Q_PROPERTY(bool flashing READ flashing WRITE setFlashing NOTIFY changed)
+    // "never", "always" or "full" (when the taskbar is full)
+    Q_PROPERTY(QString smallButtons READ smallButtons WRITE setSmallButtons NOTIFY changed)
+    Q_PROPERTY(bool recentSearches READ recentSearches WRITE setRecentSearches NOTIFY changed)
     // the parts of Raye's own taskbar on the main panel
     Q_PROPERTY(bool rayeStart READ rayeStart NOTIFY changed)
     Q_PROPERTY(bool rayeTasks READ rayeTasks NOTIFY changed)
@@ -224,6 +228,10 @@ public:
     void setBadges(bool on);
     bool flashing() const;
     void setFlashing(bool on);
+    QString smallButtons() const;
+    void setSmallButtons(const QString &mode);
+    bool recentSearches() const;
+    void setRecentSearches(bool on);
     bool rayeStart() const { return mainHas(TaskbarLogic::rayeStart); }
     bool rayeTasks() const { return mainHas(TaskbarLogic::rayeTasks); }
     bool rayeClock() const { return mainHas(TaskbarLogic::rayeClock); }

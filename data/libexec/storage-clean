@@ -4,6 +4,8 @@
 # It only ever touches these places:
 #   trash       the user's trash (files, info, expunged)
 #   thumbnails  the user's thumbnail cache
+#   downloads   files in the user's Downloads folder neither changed nor
+#               opened for DAYS days (only with --older-than)
 #   apt         downloaded package files in /var/cache/apt/archives
 #   logs        rotated logs, and journal files archived over 14 days
 #               ago, in /var/log
@@ -16,7 +18,9 @@
 #       deletes, and says what was freed
 #   storage-clean [--apply] --sense
 #       Storage Sense: what the user chose in raye-settingsrc
-#       ([StorageSense] TrashDays=, Thumbnails=)
+#       ([StorageSense] TrashDays=, Thumbnails=, DownloadsDays=). With
+#       Frequency=lowspace and started by the timer (TRIGGER_UNIT is
+#       set), it does nothing while the home has 10 % or more free.
 #
 # One line per item, tab separated:
 #   size   ITEM BYTES COUNT    (-1 when it cannot be known)
@@ -37,7 +41,7 @@ umask 077
 
 usage() {
     echo "usage: storage-clean [--apply] [--root DIR] [--older-than DAYS] ITEM... | --sense" >&2
-    echo "items: trash thumbnails apt logs snapshots" >&2
+    echo "items: trash thumbnails downloads apt logs snapshots" >&2
     exit 1
 }
 
@@ -52,7 +56,7 @@ while [ $# -gt 0 ]; do
         --root) [ $# -ge 2 ] || usage; root=$2; shift ;;
         --older-than) [ $# -ge 2 ] || usage; days=$2; shift ;;
         --sense) sense=1 ;;
-        trash|thumbnails|apt|logs|snapshots)
+        trash|thumbnails|downloads|apt|logs|snapshots)
             case " $items " in *" $1 "*) ;; *) items="$items $1" ;; esac ;;
         *) usage ;;
     esac
@@ -73,6 +77,8 @@ if [ "$sense" = 1 ]; then
 elif [ -z "$items" ]; then
     usage
 fi
+# never every download at once
+case " $items " in *" downloads "*) [ "$days" -gt 0 ] || usage ;; esac
 
 base=${root%/}
 uid=$(id -u)
@@ -217,6 +223,47 @@ do_thumbnails() {
     report thumbnails "$before" "$after"
 }
 
+# --- downloads ---------------------------------------------------------
+# XDG_DOWNLOAD_DIR of user-dirs.dirs, else ~/Downloads. Only a folder
+# inside the home: some setups point it at the home itself.
+downloads_dir() {
+    dir=$HOME/Downloads
+    dirs=$config_home/user-dirs.dirs
+    if [ -f "$dirs" ]; then
+        line=$(grep '^XDG_DOWNLOAD_DIR=' "$dirs" | tail -n 1)
+        value=${line#XDG_DOWNLOAD_DIR=}
+        value=${value#\"}
+        value=${value%\"}
+        case $value in
+            '$HOME'/*) dir=$HOME/${value#'$HOME'/} ;;
+            /*) dir=$value ;;
+        esac
+    fi
+    while [ "$dir" != "${dir%/}" ]; do dir=${dir%/}; done
+    case $dir in
+        "$HOME"/*) ;;
+        *) return 1 ;;
+    esac
+    case /$dir/ in */../*|*/./*) return 1 ;; esac
+    printf '%s\n' "$dir"
+}
+
+do_downloads() {
+    user_ok downloads || return 0
+    if ! dir=$(downloads_dir); then
+        fail downloads missing
+        return 0
+    fi
+    set -- -atime +$((days - 1)) -mtime +$((days - 1))
+    before=$(measure "$dir" "$@")
+    after="0 0"
+    if [ "$apply" = 1 ]; then
+        remove "$dir" "$@" || fail downloads partial
+        after=$(measure "$dir" "$@")
+    fi
+    report downloads "$before" "$after"
+}
+
 # --- apt ---------------------------------------------------------------
 do_apt() {
     system_ok apt || return 0
@@ -311,9 +358,16 @@ do_snapshots() {
 }
 
 # --- Storage Sense -----------------------------------------------------
+# 1 when the filesystem of the home has less than 10 % free
+space_low() {
+    df -P -- "$HOME" 2>/dev/null | awk 'NR == 2 { exit !($4 * 10 < $2) }'
+}
+
 sense() {
     trash_days=30
     thumbnails=true
+    downloads_days=0
+    frequency=week
     conf=$config_home/raye-settingsrc
     if [ -f "$conf" ]; then
         section=
@@ -327,8 +381,18 @@ sense() {
                     fi ;;
                 Thumbnails=*)
                     [ "$section" = "[StorageSense]" ] && thumbnails=${line#Thumbnails=} ;;
+                DownloadsDays=*)
+                    value=${line#DownloadsDays=}
+                    if [ "$section" = "[StorageSense]" ]; then
+                        case $value in ''|*[!0-9]*) ;; *) [ "${#value}" -le 4 ] && downloads_days=$value ;; esac
+                    fi ;;
+                Frequency=*)
+                    [ "$section" = "[StorageSense]" ] && frequency=${line#Frequency=} ;;
             esac
         done < "$conf"
+    fi
+    if [ "$frequency" = lowspace ] && [ -n "${TRIGGER_UNIT:-}" ] && ! space_low; then
+        return 0
     fi
     if [ "$trash_days" -gt 0 ]; then
         days=$trash_days
@@ -337,6 +401,10 @@ sense() {
     if [ "$thumbnails" = true ]; then
         days=30
         do_thumbnails
+    fi
+    if [ "$downloads_days" -gt 0 ]; then
+        days=$downloads_days
+        do_downloads
     fi
 }
 

@@ -114,6 +114,21 @@ PageScaffold {
         onToggled: input.setValue("tapAndDrag", checked)
     }
 
+    ToggleCard {
+        searchId: "corner-right-click"
+        iconName: "org.raye.settings-touchpad"
+        iconFallback: "input-touchpad"
+        title: i18nc("@title", "Press the lower right corner of the touchpad to right-click")
+        description: checked ? "" : i18nc("@info", "Click with two fingers to right-click")
+        // a touchpad with real buttons has neither way
+        enabled: page.can("supportsClickMethodAreas") && page.can("supportsClickMethodClickfinger")
+        checked: page.revision >= 0 && page.read("clickMethodAreas", true)
+        onToggled: {
+            input.setValue(checked ? "clickMethodAreas" : "clickMethodClickfinger", true)
+            input.reload()
+        }
+    }
+
     SectionHeader { text: i18nc("@title:group", "Scroll") }
 
     ComboCard {

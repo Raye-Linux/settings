@@ -10,6 +10,8 @@
 #include <KScreen/Output>
 #include <KScreen/SetConfigOperation>
 #include <QLocale>
+#include <QProcess>
+#include <QStandardPaths>
 
 #include <algorithm>
 #include <cmath>
@@ -669,6 +671,13 @@ void DisplayConfig::setVrrEnabled(bool on)
         return;
     o->setVrrPolicy(on ? Output::VrrPolicy::Automatic : Output::VrrPolicy::Never);
     apply(false);
+}
+
+void DisplayConfig::openNvidiaPanel()
+{
+    const QString panel = QStandardPaths::findExecutable(QStringLiteral("nvidia-settings"));
+    if (!panel.isEmpty())
+        QProcess::startDetached(panel, {});
 }
 
 void DisplayConfig::makePrimary(int outputId)

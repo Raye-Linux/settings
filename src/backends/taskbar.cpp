@@ -332,6 +332,28 @@ void TaskbarSettings::setFlashing(bool on)
         writeShell("Flashing", on);
 }
 
+QString TaskbarSettings::smallButtons() const
+{
+    return shellSmallButtons(shellValue("SmallButtons", QStringLiteral("never")));
+}
+
+void TaskbarSettings::setSmallButtons(const QString &mode)
+{
+    if (shellSmallButtons(mode) == mode && mode != smallButtons())
+        writeShell("SmallButtons", mode);
+}
+
+bool TaskbarSettings::recentSearches() const
+{
+    return shellBool("RecentSearches", true);
+}
+
+void TaskbarSettings::setRecentSearches(bool on)
+{
+    if (on != recentSearches())
+        writeShell("RecentSearches", on);
+}
+
 QVariantList TaskbarSettings::systemIcons() const
 {
     const Panel *p = mainPanel(m_state);

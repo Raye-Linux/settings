@@ -227,6 +227,70 @@ check "[ ! -e \"\$tmp/pwned\" ]" "sense ran text from the config file"
 out=$(run --sense)
 check "printf '%s\n' \"\$out\" | grep -q '^size'" "sense without --apply must only measure"
 
+# --- Downloads ------------------------------------------------------------
+setup
+D=$H/Downloads
+mk "$D/old.iso" 8
+mk "$D/new.zip" 4
+mk "$D/folder/old.txt" 4
+old 40 "$D/old.iso"
+old 40 "$D/folder/old.txt"
+mk "$D/opened.pdf" 4
+touch -m -d "40 days ago" "$D/opened.pdf"   # changed long ago, opened today
+env HOME="$H" sh "$helper" downloads >/dev/null 2>&1
+check "[ $? = 1 ]" "downloads without --older-than"
+out=$(run --older-than 30 downloads)
+check "[ \"\$(printf '%s\n' \"\$out\" | field size downloads 4)\" = 2 ]" "downloads measure: $out"
+run --apply --older-than 30 downloads >/dev/null
+check "[ ! -e \"\$D/old.iso\" ] && [ ! -e \"\$D/folder/old.txt\" ]" "old downloads kept"
+check "[ -f \"\$D/new.zip\" ] && [ -f \"\$D/opened.pdf\" ] && [ -d \"\$D/folder\" ]" "downloads: too much deleted"
+# a Downloads folder that is the home itself is never cleaned
+setup
+mkdir -p "$H/.config"
+printf 'XDG_DOWNLOAD_DIR="$HOME/"\n' > "$H/.config/user-dirs.dirs"
+old 40 "$H/Documents/report.odt"
+out=$(run --apply --older-than 30 downloads)
+check "[ -f \"\$H/Documents/report.odt\" ]" "downloads set to the home emptied the home"
+check "printf '%s\n' \"\$out\" | grep -q 'error.downloads.missing'" "no error for downloads = home: $out"
+printf 'XDG_DOWNLOAD_DIR="$HOME/Téléchargements"\n' > "$H/.config/user-dirs.dirs"
+mk "$H/Téléchargements/a" 4
+old 40 "$H/Téléchargements/a"
+run --apply --older-than 30 downloads >/dev/null
+check "[ ! -e \"\$H/Téléchargements/a\" ]" "downloads: user-dirs.dirs not followed"
+
+# --- Storage Sense: Downloads and low disk space --------------------------
+setup
+mk "$H/Downloads/old.iso" 8
+old 40 "$H/Downloads/old.iso"
+mkdir -p "$H/.config"
+printf '[StorageSense]\nTrashDays=0\nThumbnails=false\nDownloadsDays=30\n' > "$H/.config/raye-settingsrc"
+run --apply --sense >/dev/null
+check "[ ! -e \"\$H/Downloads/old.iso\" ]" "sense: DownloadsDays"
+setup
+mk "$H/Downloads/old.iso" 8
+old 40 "$H/Downloads/old.iso"
+mkdir -p "$H/.config"
+printf '[StorageSense]\nTrashDays=0\nThumbnails=false\nDownloadsDays=0\n' > "$H/.config/raye-settingsrc"
+run --apply --sense >/dev/null
+check "[ -f \"\$H/Downloads/old.iso\" ]" "sense: DownloadsDays=0 deleted downloads"
+# only when space is low, and only when the timer started it
+printf '#!/bin/sh\nprintf "Filesystem 1024-blocks Used Available Capacity Mounted on\\n/dev/x 1000 %%s %%s x /\\n" "$((1000 - FREE))" "$FREE"\n' > "$tmp/bin/df"
+chmod +x "$tmp/bin/df"
+printf '[StorageSense]\nTrashDays=0\nThumbnails=false\nDownloadsDays=30\nFrequency=lowspace\n' > "$H/.config/raye-settingsrc"
+export FREE=500 TRIGGER_UNIT=raye-storage-sense.timer
+run --apply --sense >/dev/null
+check "[ -f \"\$H/Downloads/old.iso\" ]" "sense ran with plenty of space"
+FREE=50
+run --apply --sense >/dev/null
+check "[ ! -e \"\$H/Downloads/old.iso\" ]" "sense did not run with little space"
+mk "$H/Downloads/old.iso" 8
+old 40 "$H/Downloads/old.iso"
+FREE=500
+unset TRIGGER_UNIT
+run --apply --sense >/dev/null
+check "[ ! -e \"\$H/Downloads/old.iso\" ]" "Run now waited for low space"
+unset FREE
+
 # --- nothing outside the listed places, after everything ------------------
 setup
 outside=$(find "$R" | grep -v -e '/Trash/' -e '/thumbnails/' -e '/var/cache/apt/archives/' -e '/var/log/' | sort)

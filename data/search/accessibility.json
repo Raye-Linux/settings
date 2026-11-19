@@ -119,6 +119,12 @@
          "keywords_fr": ["vitesse", "vitesse du pointeur"]},
         {"id": "accessibility/mouse#mouse-keys-acceleration", "label": "Mouse keys acceleration", "label_fr": "Accélération des touches de souris",
          "keywords": ["acceleration", "top speed"],
-         "keywords_fr": ["accélération", "vitesse maximale"]}
+         "keywords_fr": ["accélération", "vitesse maximale"]},
+        {"id": "accessibility/mouse-pointer#ctrl-to-find", "label": "Show the location of the pointer when I press the Ctrl key", "label_fr": "Afficher l'emplacement du pointeur quand j'appuie sur la touche Ctrl", "keywords": ["find pointer", "locate cursor", "ctrl key", "where is my mouse"], "keywords_fr": ["trouver le pointeur", "localiser le curseur", "touche ctrl", "où est ma souris"]},
+        {"id": "accessibility/mouse-pointer#touch-indicator", "label": "Touch indicator", "label_fr": "Indicateur tactile", "keywords": ["touch circle", "touch screen", "show touches"], "keywords_fr": ["cercle tactile", "écran tactile", "afficher les touchers"]},
+        {"id": "accessibility/keyboard#underline-access-keys", "label": "Underline access keys", "label_fr": "Souligner les touches d'accès", "keywords": ["mnemonics", "alt key", "keyboard shortcuts in menus"], "keywords_fr": ["mnémoniques", "touche alt", "raccourcis dans les menus"]},
+        {"id": "accessibility/keyboard#shortcut-notifications", "label": "Notification preferences for keyboard shortcuts", "label_fr": "Préférences de notification des raccourcis clavier", "keywords": ["sticky keys warning", "shortcut sound"], "keywords_fr": ["avertissement touches rémanentes", "son des raccourcis"]},
+        {"id": "accessibility/keyboard#shortcut-warning", "label": "Show a warning message when turning a setting on with a shortcut", "label_fr": "Afficher un message d'avertissement lors de l'activation d'un paramètre par un raccourci", "keywords": ["confirmation", "warning", "shift five times"], "keywords_fr": ["confirmation", "avertissement", "cinq fois maj"]},
+        {"id": "accessibility/keyboard#shortcut-sound", "label": "Make a sound when turning a setting on or off with a shortcut", "label_fr": "Émettre un son lors de l'activation ou la désactivation d'un paramètre par un raccourci", "keywords": ["beep", "sound", "shortcut"], "keywords_fr": ["bip", "son", "raccourci"]}
     ]
 }

@@ -65,4 +65,16 @@ PageScaffold {
         iconName: "org.raye.settings-graphics"
         title: i18n("No apps found")
     }
+
+    SectionHeader { text: i18n("Related settings"); visible: nvidia.visible }
+    LinkCard {
+        id: nvidia
+        searchId: "nvidia-panel"
+        visible: Router.has("nvidia-panel")
+        title: i18n("NVIDIA Control Panel")
+        description: i18n("Settings of your NVIDIA graphics card, from NVIDIA")
+        iconName: "nvidia-settings"
+        iconFallback: "org.raye.settings-graphics"
+        onClicked: apps.openNvidiaPanel()
+    }
 }

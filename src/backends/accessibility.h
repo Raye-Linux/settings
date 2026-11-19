@@ -116,6 +116,10 @@ class PointerSettings : public QObject
     Q_PROPERTY(QString theme READ theme WRITE setTheme NOTIFY changed)
     Q_PROPERTY(int size READ size WRITE setSize NOTIFY changed)
     Q_PROPERTY(bool shakeToFind READ shakeToFind WRITE setShakeToFind NOTIFY changed)
+    // rings around the pointer while Ctrl is held (the trackmouse effect)
+    Q_PROPERTY(bool ctrlToFind READ ctrlToFind WRITE setCtrlToFind NOTIFY changed)
+    // a circle where a finger touches the screen (the touchpoints effect)
+    Q_PROPERTY(bool touchIndicator READ touchIndicator WRITE setTouchIndicator NOTIFY changed)
 
 public:
     static constexpr int minSize = 24;
@@ -137,6 +141,10 @@ public:
     void setSize(int size);
     bool shakeToFind() const;
     void setShakeToFind(bool on);
+    bool ctrlToFind() const;
+    void setCtrlToFind(bool on);
+    bool touchIndicator() const;
+    void setTouchIndicator(bool on);
 
     Q_INVOKABLE void reload();
 
@@ -255,6 +263,11 @@ class AccessSettings : public QObject
     Q_PROPERTY(bool stickyKeysBeep READ stickyKeysBeep WRITE setStickyKeysBeep NOTIFY changed)
     // Shift five times turns sticky keys on (and the other key gestures)
     Q_PROPERTY(bool gestures READ gestures WRITE setGestures NOTIFY changed)
+    // a shortcut that turns a setting on asks first, and beeps
+    Q_PROPERTY(bool gestureConfirmation READ gestureConfirmation WRITE setGestureConfirmation NOTIFY changed)
+    Q_PROPERTY(bool gestureBeep READ gestureBeep WRITE setGestureBeep NOTIFY changed)
+    // rayerc [Style] MnemonicsMode: always, not only while Alt is held
+    Q_PROPERTY(bool underlineAccessKeys READ underlineAccessKeys WRITE setUnderlineAccessKeys NOTIFY changed)
     // filter keys = slow keys and/or bounce keys
     Q_PROPERTY(bool filterKeys READ filterKeys WRITE setFilterKeys NOTIFY changed)
     Q_PROPERTY(bool slowKeys READ slowKeys WRITE setSlowKeys NOTIFY changed)
@@ -286,6 +299,12 @@ public:
     void setStickyKeysBeep(bool on);
     bool gestures() const;
     void setGestures(bool on);
+    bool gestureConfirmation() const;
+    void setGestureConfirmation(bool on);
+    bool gestureBeep() const;
+    void setGestureBeep(bool on);
+    bool underlineAccessKeys() const;
+    void setUnderlineAccessKeys(bool on);
     bool filterKeys() const;
     void setFilterKeys(bool on);
     bool slowKeys() const;

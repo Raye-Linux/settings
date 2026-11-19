@@ -376,6 +376,40 @@ void PointerSettings::setShakeToFind(bool on)
     Q_EMIT changed();
 }
 
+bool PointerSettings::ctrlToFind() const
+{
+    return m_kwin->group(plugins).readEntry("trackmouseEnabled", false);
+}
+
+void PointerSettings::setCtrlToFind(bool on)
+{
+    if (on == ctrlToFind())
+        return;
+    if (on) {
+        KConfigGroup g = m_kwin->group(QStringLiteral("Effect-trackmouse"));
+        g.writeEntry("Control", true, KConfig::Notify);
+        for (const char *key : {"Meta", "Alt", "Shift"})
+            g.writeEntry(key, false, KConfig::Notify);
+    }
+    writeNotify(m_kwin, plugins, QStringLiteral("trackmouseEnabled"), on);
+    tellKwin(QStringLiteral("trackmouse"));
+    Q_EMIT changed();
+}
+
+bool PointerSettings::touchIndicator() const
+{
+    return m_kwin->group(plugins).readEntry("touchpointsEnabled", false);
+}
+
+void PointerSettings::setTouchIndicator(bool on)
+{
+    if (on == touchIndicator())
+        return;
+    writeNotify(m_kwin, plugins, QStringLiteral("touchpointsEnabled"), on);
+    tellKwin();
+    Q_EMIT changed();
+}
+
 // ---- Magnifier --------------------------------------------------------
 
 const QList<double> MagnifierSettings::zoomSteps = {1.1, 1.2, 1.25, 1.5, 2.0};
@@ -659,11 +693,31 @@ RAYE_KEYBOARD_BOOL(stickyKeysLatch, setStickyKeysLatch, "StickyKeysLatch", true)
 RAYE_KEYBOARD_BOOL(stickyKeysAutoOff, setStickyKeysAutoOff, "StickyKeysAutoOff", false)
 RAYE_KEYBOARD_BOOL(stickyKeysBeep, setStickyKeysBeep, "StickyKeysBeep", false)
 RAYE_KEYBOARD_BOOL(gestures, setGestures, "Gestures", false)
+RAYE_KEYBOARD_BOOL(gestureConfirmation, setGestureConfirmation, "GestureConfirmation", false)
+RAYE_KEYBOARD_BOOL(gestureBeep, setGestureBeep, "AccessXBeep", true)
 RAYE_KEYBOARD_BOOL(slowKeys, setSlowKeys, "SlowKeys", false)
 RAYE_KEYBOARD_BOOL(bounceKeys, setBounceKeys, "BounceKeys", false)
 RAYE_KEYBOARD_BOOL(toggleKeys, setToggleKeys, "ToggleKeysBeep", false)
 
 #undef RAYE_KEYBOARD_BOOL
+
+bool AccessSettings::underlineAccessKeys() const
+{
+    return KSharedConfig::openConfig(QStringLiteral("rayerc"))->group(QStringLiteral("Style")).readEntry("MnemonicsMode", QString())
+        == QLatin1String("MN_ALWAYS");
+}
+
+void AccessSettings::setUnderlineAccessKeys(bool on)
+{
+    if (on == underlineAccessKeys())
+        return;
+    writeNotify(KSharedConfig::openConfig(QStringLiteral("rayerc")), QStringLiteral("Style"), QStringLiteral("MnemonicsMode"),
+                on ? QStringLiteral("MN_ALWAYS") : QStringLiteral("MN_AUTO"));
+    // every app with the Raye style reads it again on this signal
+    QDBusConnection::sessionBus().send(QDBusMessage::createSignal(QStringLiteral("/RayeStyle"), QStringLiteral("org.raye.Style"),
+                                                                  QStringLiteral("reparseConfiguration")));
+    Q_EMIT changed();
+}
 
 bool AccessSettings::filterKeys() const
 {

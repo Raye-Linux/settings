@@ -574,6 +574,55 @@ private Q_SLOTS:
         QVERIFY(readAll(dir.filePath(QStringLiteral("systemctl.log")))
                     .contains(QStringLiteral("--user start raye-storage-sense.service")));
     }
+
+    void senseScheduleAndDownloads()
+    {
+        QTemporaryDir dir;
+        const QByteArray log = QFile::encodeName(dir.filePath(QStringLiteral("systemctl.log")));
+        writeScript(dir.filePath(QStringLiteral("systemctl")),
+                    "echo \"$*\" >> " + log + "\n"
+                    "case \"$*\" in *is-enabled*) echo enabled ;; esac\n");
+        const QString config = dir.filePath(QStringLiteral("raye-settingsrc"));
+        const QString units = dir.filePath(QStringLiteral("units"));
+        const QString dropIn = units + QStringLiteral("/raye-storage-sense.timer.d/frequency.conf");
+
+        Storage storage;
+        storage.setSystemctl(dir.filePath(QStringLiteral("systemctl")));
+        storage.setUnitDir(units);
+        storage.setConfigFile(config);
+        // what Windows does out of the box
+        QCOMPARE(storage.senseFrequency(), QStringLiteral("week"));
+        QCOMPARE(storage.senseDownloadsDays(), 0);
+        QTRY_VERIFY_WITH_TIMEOUT(storage.senseEnabled(), 5000);
+
+        storage.setSenseFrequency(QStringLiteral("day"));
+        QCOMPARE(storage.senseFrequency(), QStringLiteral("day"));
+        QVERIFY(readAll(dropIn).contains(QStringLiteral("OnCalendar=\nOnCalendar=daily")));
+        QVERIFY(readAll(config).contains(QStringLiteral("Frequency=day")));
+        QTRY_VERIFY_WITH_TIMEOUT(readAll(dir.filePath(QStringLiteral("systemctl.log"))).contains(QStringLiteral("--user daemon-reload")), 5000);
+        QTRY_VERIFY_WITH_TIMEOUT(readAll(dir.filePath(QStringLiteral("systemctl.log")))
+                                     .contains(QStringLiteral("--user restart raye-storage-sense.timer")), 5000);
+
+        // low disk space: checked every hour, the helper decides
+        storage.setSenseFrequency(QStringLiteral("lowspace"));
+        QVERIFY(readAll(dropIn).contains(QStringLiteral("OnCalendar=hourly")));
+        storage.setSenseFrequency(QStringLiteral("month"));
+        QVERIFY(readAll(dropIn).contains(QStringLiteral("OnCalendar=monthly")));
+        storage.setSenseFrequency(QStringLiteral("year")); // refused
+        QCOMPARE(storage.senseFrequency(), QStringLiteral("month"));
+
+        storage.setSenseDownloadsDays(30);
+        storage.setSenseDownloadsDays(-1); // refused
+        QCOMPARE(storage.senseDownloadsDays(), 30);
+        QVERIFY(readAll(config).contains(QStringLiteral("DownloadsDays=30")));
+
+        Storage again;
+        again.setSystemctl(dir.filePath(QStringLiteral("systemctl")));
+        again.setUnitDir(units);
+        again.setConfigFile(config);
+        QCOMPARE(again.senseFrequency(), QStringLiteral("month"));
+        QCOMPARE(again.senseDownloadsDays(), 30);
+    }
 };
 
 QTEST_MAIN(TestStorage)

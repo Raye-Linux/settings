@@ -641,4 +641,12 @@ QString shellCombine(const QString &value)
     return oneOf(value, {QStringLiteral("always"), QStringLiteral("full"), QStringLiteral("never")});
 }
 
+// the shell also reads its older spelling "whenfull"
+QString shellSmallButtons(const QString &value)
+{
+    if (value == QLatin1String("whenfull"))
+        return QStringLiteral("full");
+    return oneOf(value, {QStringLiteral("never"), QStringLiteral("always"), QStringLiteral("full")});
+}
+
 } // namespace TaskbarLogic

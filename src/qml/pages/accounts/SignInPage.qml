@@ -111,6 +111,15 @@ PageScaffold {
         }
     }
 
+    ToggleCard {
+        searchId: "restart-apps"
+        iconName: "org.raye.settings-sign-in"
+        iconFallback: "system-reboot"
+        title: i18nc("@title", "Automatically save my restartable apps and restart them when I sign back in")
+        checked: signIn.restartApps
+        onToggled: signIn.restartApps = checked
+    }
+
     ComboCard {
         searchId: "when-away"
         iconName: "system-lock-screen"

@@ -18,7 +18,7 @@ class InputDeviceSettings : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
-    // "mouse", "touchpad" or "pen"
+    // "mouse", "touchpad", "pen" or "touchscreen"
     Q_PROPERTY(QString kind READ kind WRITE setKind NOTIFY changed)
     // KWin answered: without it no page can change anything
     Q_PROPERTY(bool available READ available NOTIFY changed)

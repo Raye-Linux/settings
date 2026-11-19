@@ -1,0 +1,10 @@
+# Do not disturb "during these times": turns do not disturb on until the
+# end time when it is inside the hours chosen in Settings > System >
+# Notifications. Does nothing outside them.
+[Unit]
+Description=Scheduled do not disturb
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/raye-settings/dnd-schedule
+NoNewPrivileges=yes

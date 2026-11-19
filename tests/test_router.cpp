@@ -467,6 +467,22 @@ private Q_SLOTS:
         QVERIFY(!req.has(QStringLiteral("tablet")));
     }
 
+    // the NVIDIA Control Panel link: the panel installed and the NVIDIA
+    // driver loaded, not one without the other
+    void probesTheNvidiaPanel()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        const QString root = dir.path();
+        QVERIFY(!Requirements(root).has(QStringLiteral("nvidia-panel")));
+        writeFile(root + QStringLiteral("/usr/share/applications/nvidia-settings.desktop"), "[Desktop Entry]\n");
+        QVERIFY(!Requirements(root).has(QStringLiteral("nvidia-panel")));
+        writeFile(root + QStringLiteral("/sys/module/nvidia/version"), "580.95.05\n");
+        QVERIFY(Requirements(root).has(QStringLiteral("nvidia-panel")));
+        QFile::remove(root + QStringLiteral("/usr/share/applications/nvidia-settings.desktop"));
+        QVERIFY(!Requirements(root).has(QStringLiteral("nvidia-panel")));
+    }
+
     void probesTheAccountPreview()
     {
         QTemporaryDir dir;

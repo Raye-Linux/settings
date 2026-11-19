@@ -49,6 +49,8 @@ QString InputDeviceSettings::kindOf(const QVariantMap &properties)
         return QStringLiteral("touchpad");
     if (is("pointer"))
         return QStringLiteral("mouse");
+    if (is("touch"))
+        return QStringLiteral("touchscreen");
     return {};
 }
 

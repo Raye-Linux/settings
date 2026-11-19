@@ -224,6 +224,7 @@
                 "associer un téléphone",
                 "envoyer des fichiers"
             ]
-        }
+        },
+        {"id": "devices/touchpad#corner-right-click", "label": "Press the lower right corner of the touchpad to right-click", "label_fr": "Appuyer dans le coin inférieur droit du pavé tactile pour cliquer avec le bouton droit", "keywords": ["right click", "clickpad", "two finger click", "bottom right corner"], "keywords_fr": ["clic droit", "pavé cliquable", "clic à deux doigts", "coin inférieur droit"]}
     ]
 }

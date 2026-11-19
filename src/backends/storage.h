@@ -147,6 +147,10 @@ class Storage : public QObject
     // 0 = never
     Q_PROPERTY(int senseTrashDays READ senseTrashDays WRITE setSenseTrashDays NOTIFY senseChanged)
     Q_PROPERTY(bool senseThumbnails READ senseThumbnails WRITE setSenseThumbnails NOTIFY senseChanged)
+    // "day", "week", "month" or "lowspace" (checked every hour)
+    Q_PROPERTY(QString senseFrequency READ senseFrequency WRITE setSenseFrequency NOTIFY senseChanged)
+    // files in Downloads not opened for this many days; 0 = never
+    Q_PROPERTY(int senseDownloadsDays READ senseDownloadsDays WRITE setSenseDownloadsDays NOTIFY senseChanged)
     Q_PROPERTY(bool senseRunning READ senseRunning NOTIFY senseChanged)
     Q_PROPERTY(QDateTime senseLastRun READ senseLastRun NOTIFY senseChanged)
     Q_PROPERTY(bool disksToolAvailable READ disksToolAvailable CONSTANT)
@@ -167,6 +171,10 @@ public:
     void setSenseTrashDays(int days);
     bool senseThumbnails() const { return m_senseThumbnails; }
     void setSenseThumbnails(bool on);
+    QString senseFrequency() const { return m_senseFrequency; }
+    void setSenseFrequency(const QString &frequency);
+    int senseDownloadsDays() const { return m_senseDownloadsDays; }
+    void setSenseDownloadsDays(int days);
     bool senseRunning() const { return m_senseRunning; }
     QDateTime senseLastRun() const { return m_senseLastRun; }
     bool disksToolAvailable() const;
@@ -185,6 +193,8 @@ public:
     Q_INVOKABLE QString formatSize(qint64 bytes) const;
 
     static bool isSystemItem(const QString &item);
+    // the timer's OnCalendar for a Storage Sense frequency, "" if unknown
+    static QString senseCalendar(const QString &frequency);
 
     // For the tests: the volumes, the folders, the programs run and the
     // files read, instead of the computer's own. Set before refresh().
@@ -196,6 +206,8 @@ public:
     void setSysRoot(const QString &path) { m_sysRoot = path; }
     void setCacheFile(const QString &path) { m_cacheFile = path; }
     void setConfigFile(const QString &path);
+    // where the timer's drop-in goes (~/.config/systemd/user)
+    void setUnitDir(const QString &path) { m_unitDir = path; }
     // waits for the count running now (tests)
     bool waitForScan(int msecs);
 
@@ -233,6 +245,9 @@ private:
     bool m_senseEnabled = false;
     int m_senseTrashDays = 30;
     bool m_senseThumbnails = true;
+    QString m_senseFrequency = QStringLiteral("week");
+    int m_senseDownloadsDays = 0;
+    QString m_unitDir;
     bool m_senseRunning = false;
     QDateTime m_senseLastRun;
 

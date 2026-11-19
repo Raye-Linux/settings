@@ -28,6 +28,7 @@ public:
     explicit Requirements(const QString &root = QStringLiteral("/"));
 
     // "bluetooth", "wifi", "battery", "touchpad", "tablet", "two-gpus",
+    // "nvidia-panel" (NVIDIA's driver loaded and its panel installed),
     // "windows", "btrfs", "fingerprint", "raye-account" (the account
     // preview is switched on and its QML module is installed). An empty
     // name is "always"; "wifi|bluetooth" is either of them.

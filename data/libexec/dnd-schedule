@@ -1,0 +1,115 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Do not disturb "during these times", from Settings > System >
+# Notifications. Run by raye-dnd-schedule.timer at the start time and at
+# sign-in: inside the window it turns do not disturb on until the end
+# time, by writing plasmanotifyrc [DoNotDisturb] Until, which the
+# notification server follows at once. Outside the window it does nothing,
+# and a do not disturb that already lasts longer is left alone.
+#
+#   dnd-schedule [--now "YYYY-MM-DD HH:MM"]
+#
+# The schedule is raye-settingsrc [DoNotDisturbSchedule]:
+#   Enabled=true, Start=HH:MM, End=HH:MM, Days=everyday|weekdays|weekends
+# An end at or before the start is the next morning.
+set -u
+LC_ALL=C
+export LC_ALL
+
+now=
+case ${1:-} in
+    --now) [ $# = 2 ] || exit 1; now=$2 ;;
+    '') ;;
+    *) echo "usage: dnd-schedule [--now 'YYYY-MM-DD HH:MM']" >&2; exit 1 ;;
+esac
+if [ -n "$now" ]; then
+    case $now in
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\ [0-9][0-9]:[0-9][0-9]) ;;
+        *) exit 1 ;;
+    esac
+    now_s=$(date -d "$now" +%s 2>/dev/null) || exit 1
+else
+    now_s=$(date +%s)
+fi
+
+case ${XDG_CONFIG_HOME:-} in /*) config_home=$XDG_CONFIG_HOME ;; *) config_home=${HOME:-}/.config ;; esac
+conf=$config_home/raye-settingsrc
+[ -f "$conf" ] || exit 0
+
+enabled=false start= end= days=everyday
+section=
+while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+        \[*\]) section=$line; continue ;;
+    esac
+    [ "$section" = "[DoNotDisturbSchedule]" ] || continue
+    case $line in
+        Enabled=*) enabled=${line#Enabled=} ;;
+        Start=*) start=${line#Start=} ;;
+        End=*) end=${line#End=} ;;
+        Days=*) days=${line#Days=} ;;
+    esac
+done < "$conf"
+[ "$enabled" = true ] || exit 0
+
+# minutes after midnight of HH:MM, or nothing
+minutes() {
+    case $1 in
+        [0-2][0-9]:[0-5][0-9]) ;;
+        *) return 1 ;;
+    esac
+    h=${1%:*}; m=${1#*:}
+    h=${h#0}; m=${m#0}
+    [ "${h:-0}" -le 23 ] || return 1
+    echo $(( ${h:-0} * 60 + ${m:-0} ))
+}
+start_m=$(minutes "$start") || exit 0
+end_m=$(minutes "$end") || exit 0
+[ "$start_m" != "$end_m" ] || exit 0
+case $days in everyday|weekdays|weekends) ;; *) exit 0 ;; esac
+
+# does the schedule start on that date (YYYY-MM-DD)?
+starts_on() {
+    dow=$(date -d "$1" +%u)
+    case $days in
+        everyday) return 0 ;;
+        weekdays) [ "$dow" -le 5 ] ;;
+        weekends) [ "$dow" -ge 6 ] ;;
+    esac
+}
+
+at() { date -d "$1 $2" +%s; }    # at YYYY-MM-DD HH:MM
+
+today=$(date -d "@$now_s" +%Y-%m-%d)
+yesterday=$(date -d "$today -1 day" +%Y-%m-%d)
+until_s=
+for day in "$today" "$yesterday"; do
+    starts_on "$day" || continue
+    from=$(at "$day" "$start")
+    if [ "$end_m" -gt "$start_m" ]; then
+        to=$(at "$day" "$end")
+    else
+        to=$(at "$(date -d "$day +1 day" +%Y-%m-%d)" "$end")
+    fi
+    if [ "$now_s" -ge "$from" ] && [ "$now_s" -lt "$to" ]; then
+        until_s=$to
+        break
+    fi
+done
+[ -n "$until_s" ] || exit 0
+
+# Until is "year,month,day,hour,minute,second" in local time
+current=$(kreadconfig6 --file plasmanotifyrc --group DoNotDisturb --key Until 2>/dev/null)
+case $current in
+    [0-9]*,*,*,*,*,*)
+        set -- $(printf '%s\n' "$current" | tr ',' ' ')
+        current_s=$(date -d "$(printf '%04d-%02d-%02d %02d:%02d:%02d' "$1" "$2" "$3" "$4" "$5" "${6%%.*}")" +%s 2>/dev/null)
+        [ -n "$current_s" ] || current_s=0
+        # a year like 9999 is past what date counts: notifications off
+        [ "$1" -ge 9000 ] && exit 0
+        [ "$current_s" -ge "$until_s" ] && exit 0
+        ;;
+esac
+
+kwriteconfig6 --file plasmanotifyrc --group DoNotDisturb --key Until --notify \
+    "$(date -d "@$until_s" +%Y,%-m,%-d,%-H,%-M,0)"

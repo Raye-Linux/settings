@@ -12,6 +12,7 @@ PageScaffold {
              { text: i18nc("@title settings page", "Typing") }]
 
     KeyboardLayouts { id: keyboard }
+    SpellingSettings { id: spelling }
 
     Connections {
         target: Router
@@ -59,6 +60,15 @@ PageScaffold {
                     font: Theme.captionStrong
                     color: Theme.textSecondary
                 }
+            }
+        }
+        ExpanderRow {
+            title: i18n("Let me use a different keyboard layout for each app window")
+            searchId: "layout-per-window"
+            ToggleSwitch {
+                checked: keyboard.layoutPerWindow
+                Accessible.name: i18n("Let me use a different keyboard layout for each app window")
+                onToggled: keyboard.layoutPerWindow = checked
             }
         }
         ExpanderRow {
@@ -112,6 +122,35 @@ PageScaffold {
             placeholderText: i18n("Hold a key down")
             Accessible.name: i18n("Try the key repeat here")
         }
+    }
+
+    SectionHeader {
+        text: i18n("Spelling")
+        visible: spelling.available
+    }
+
+    ToggleCard {
+        iconName: "org.raye.settings-text-input"
+        iconFallback: "tools-check-spelling"
+        title: i18n("Highlight misspelled words")
+        description: i18n("In apps that check spelling as you type")
+        searchId: "highlight-misspelled"
+        visible: spelling.available
+        checked: spelling.highlight
+        onToggled: spelling.highlight = checked
+    }
+
+    ComboCard {
+        id: spellingLanguage
+        iconName: "org.raye.settings-language"
+        iconFallback: "preferences-desktop-locale"
+        title: i18n("Spelling language")
+        searchId: "spelling-language"
+        visible: spelling.available
+        readonly property var codes: [""].concat(spelling.languages.map((l) => l.code))
+        model: [i18nc("@item:inlistbox spelling language", "Detect automatically")].concat(spelling.languages.map((l) => l.name))
+        currentIndex: Math.max(0, codes.indexOf(spelling.language))
+        onActivated: (index) => spelling.language = codes[index]
     }
 
     SectionHeader { text: i18n("Related settings") }

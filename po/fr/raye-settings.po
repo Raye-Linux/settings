@@ -4954,6 +4954,12 @@ msgstr "Graphiques"
 msgid "Choose which graphics card each app uses"
 msgstr "Choisir la carte graphique utilisée par chaque application"
 
+msgid "NVIDIA Control Panel"
+msgstr "Panneau de configuration NVIDIA"
+
+msgid "Settings of your NVIDIA graphics card, from NVIDIA"
+msgstr "Les réglages de votre carte graphique NVIDIA, par NVIDIA"
+
 msgid "Cast to a wireless display"
 msgstr "Projeter sur un écran sans fil"
 
@@ -10744,3 +10750,151 @@ msgstr "Fréquence d'actualisation et synchronisation adaptative, pour des jeux 
 msgctxt "@info %1 is a number Steam gives the game"
 msgid "Steam game %1"
 msgstr "Jeu Steam %1"
+
+# Settings from Windows 11 added for 1.0 Beta 2
+
+msgid "Underline access keys"
+msgstr "Souligner les touches d'accès"
+
+msgid "Access keys are underlined even when you aren't holding Alt"
+msgstr "Les touches d'accès sont soulignées même sans maintenir Alt"
+
+msgid "Notification preferences"
+msgstr "Préférences de notification"
+
+msgid "What happens when a keyboard shortcut turns sticky, filter or toggle keys on"
+msgstr "Ce qui se passe quand un raccourci clavier active les touches rémanentes, filtres ou bascules"
+
+msgid "Show a warning message when turning a setting on with a shortcut"
+msgstr "Afficher un message d'avertissement lors de l'activation d'un paramètre avec un raccourci"
+
+msgid "Make a sound when turning a setting on or off with a shortcut"
+msgstr "Émettre un son lors de l'activation ou de la désactivation d'un paramètre avec un raccourci"
+
+msgid "Show the location of the pointer when I press the Ctrl key"
+msgstr "Afficher l'emplacement du pointeur quand j'appuie sur la touche Ctrl"
+
+msgid "Rings circle the pointer while you hold Ctrl"
+msgstr "Des cercles entourent le pointeur tant que vous maintenez Ctrl"
+
+msgid "Touch indicator"
+msgstr "Indicateur tactile"
+
+msgid "Show a circle on the screen where I touch it"
+msgstr "Afficher un cercle à l'endroit où je touche l'écran"
+
+msgctxt "@title"
+msgid "Automatically save my restartable apps and restart them when I sign back in"
+msgstr "Enregistrer automatiquement mes applications redémarrables et les redémarrer lorsque je me reconnecte"
+
+msgctxt "@title"
+msgid "Press the lower right corner of the touchpad to right-click"
+msgstr "Appuyer dans le coin inférieur droit du pavé tactile pour cliquer avec le bouton droit"
+
+msgctxt "@info"
+msgid "Click with two fingers to right-click"
+msgstr "Cliquez avec deux doigts pour faire un clic droit"
+
+msgid "Show smaller taskbar buttons"
+msgstr "Afficher des boutons de barre des tâches plus petits"
+
+msgid "Needs the Raye taskbar."
+msgstr "Nécessite la barre des tâches Raye."
+
+msgctxt "@item smaller taskbar buttons"
+msgid "Always"
+msgstr "Toujours"
+
+msgctxt "@item smaller taskbar buttons"
+msgid "When taskbar is full"
+msgstr "Lorsque la barre des tâches est pleine"
+
+msgctxt "@item smaller taskbar buttons"
+msgid "Never"
+msgstr "Jamais"
+
+msgctxt "@option:check"
+msgid "Show recent searches when I open search"
+msgstr "Afficher les recherches récentes quand j'ouvre la recherche"
+
+msgid "Needs the Raye Start menu."
+msgstr "Nécessite le menu Démarrer de Raye."
+
+msgctxt "@option:check"
+msgid "During these times"
+msgstr "Pendant ces heures"
+
+msgctxt "@label do not disturb starts at"
+msgid "From"
+msgstr "De"
+
+msgctxt "@label do not disturb ends at"
+msgid "To"
+msgstr "À"
+
+msgctxt "@label do not disturb on these days"
+msgid "Repeats"
+msgstr "Répétition"
+
+msgctxt "@item:inlistbox do not disturb repeats"
+msgid "Every day"
+msgstr "Tous les jours"
+
+msgctxt "@item:inlistbox do not disturb repeats"
+msgid "Weekdays"
+msgstr "Jours de semaine"
+
+msgctxt "@item:inlistbox do not disturb repeats"
+msgid "Weekends"
+msgstr "Fins de semaine"
+
+msgctxt "@info"
+msgid "Free up space by itself: delete old files from the trash and Downloads, and clean up thumbnails"
+msgstr "Libère de l'espace tout seul : supprime les anciens fichiers de la corbeille et des Téléchargements, et nettoie les miniatures"
+
+msgctxt "@label"
+msgid "Run Storage Sense"
+msgstr "Exécuter l'Assistant Stockage"
+
+msgctxt "@item:inlistbox run Storage Sense"
+msgid "Every day"
+msgstr "Tous les jours"
+
+msgctxt "@item:inlistbox run Storage Sense"
+msgid "Every week"
+msgstr "Toutes les semaines"
+
+msgctxt "@item:inlistbox run Storage Sense"
+msgid "Every month"
+msgstr "Tous les mois"
+
+msgctxt "@item:inlistbox run Storage Sense"
+msgid "During low free disk space"
+msgstr "Lorsque l'espace disque est faible"
+
+msgctxt "@label"
+msgid "Delete files in my Downloads folder if they haven't been opened for more than"
+msgstr "Supprimer les fichiers de mon dossier Téléchargements s'ils n'ont pas été ouverts depuis plus de"
+
+msgctxt "@item:inlistbox downloads"
+msgid "Never"
+msgstr "Jamais"
+
+msgid "Let me use a different keyboard layout for each app window"
+msgstr "Me laisser utiliser une disposition de clavier différente pour chaque fenêtre d'application"
+
+msgid "Spelling"
+msgstr "Orthographe"
+
+msgid "Highlight misspelled words"
+msgstr "Mettre en évidence les mots mal orthographiés"
+
+msgid "In apps that check spelling as you type"
+msgstr "Dans les applications qui vérifient l'orthographe pendant la saisie"
+
+msgid "Spelling language"
+msgstr "Langue de l'orthographe"
+
+msgctxt "@item:inlistbox spelling language"
+msgid "Detect automatically"
+msgstr "Détecter automatiquement"

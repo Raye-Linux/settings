@@ -36,6 +36,8 @@ public:
     Q_INVOKABLE void reload();
     // returns false when the entry could not be written
     Q_INVOKABLE bool setDedicated(int row, bool on);
+    // NVIDIA's own settings app (Router.has("nvidia-panel") says it is there)
+    Q_INVOKABLE void openNvidiaPanel();
 
     // The marker in a copy Raye made only for this choice.
     static constexpr const char *marker = "X-Raye-GpuChoice";

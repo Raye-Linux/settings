@@ -543,6 +543,32 @@ private Q_SLOTS:
         QCOMPARE(TaskbarLogic::multiDisplayApps(QStringLiteral("x")), QStringLiteral("all"));
     }
 
+    void smallButtonsAndRecentSearches()
+    {
+        FakeShell shell;
+        shell.store = R"({"panels": [{"id": 3, "screen": 0, "location": "bottom", "hiding": "none", "widgets": [
+            {"id": 5, "plugin": "org.raye.start", "general": {}, "root": {}},
+            {"id": 6, "plugin": "org.raye.taskbar", "general": {}, "root": {}},
+            {"id": 20, "plugin": "org.raye.clock", "general": {}, "root": {}}]}]})";
+        TaskbarSettings taskbar(shell.shell(), describe);
+        QCOMPARE(taskbar.smallButtons(), QStringLiteral("never"));
+        QVERIFY(taskbar.recentSearches());
+
+        taskbar.setSmallButtons(QStringLiteral("full"));
+        taskbar.setSmallButtons(QStringLiteral("tiny")); // refused
+        taskbar.setRecentSearches(false);
+        const KConfigGroup g = KConfig(m_home + QStringLiteral("/rayeshellrc"), KConfig::SimpleConfig).group(QStringLiteral("Taskbar"));
+        QCOMPARE(g.readEntry("SmallButtons"), QStringLiteral("full"));
+        QCOMPARE(g.readEntry("RecentSearches"), QStringLiteral("false"));
+        QCOMPARE(taskbar.smallButtons(), QStringLiteral("full"));
+        QVERIFY(!taskbar.recentSearches());
+
+        // the shell's own spelling of the old value
+        KConfig(m_home + QStringLiteral("/rayeshellrc"), KConfig::SimpleConfig).group(QStringLiteral("Taskbar")).writeEntry("SmallButtons", "whenfull");
+        taskbar.reload();
+        QCOMPARE(taskbar.smallButtons(), QStringLiteral("full"));
+    }
+
     // the stock taskbar keeps its panel changes and leaves rayeshellrc alone
     void stockTaskbarLeavesShellrc()
     {

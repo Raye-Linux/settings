@@ -367,6 +367,7 @@ Storage::Storage(QObject *parent)
                 + QStringLiteral("/raye-settings/storage.json");
     m_configFile = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation)
                  + QStringLiteral("/raye-settingsrc");
+    m_unitDir = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + QStringLiteral("/systemd/user");
     readSense();
     // asked once the page has set everything up
     QTimer::singleShot(0, this, &Storage::querySense);
@@ -814,6 +815,10 @@ void Storage::readSense()
     const int days = group.readEntry("TrashDays", 30);
     m_senseTrashDays = days >= 0 && days <= 9999 ? days : 30;
     m_senseThumbnails = group.readEntry("Thumbnails", true);
+    const QString frequency = group.readEntry("Frequency", QStringLiteral("week"));
+    m_senseFrequency = senseCalendar(frequency).isEmpty() ? QStringLiteral("week") : frequency;
+    const int downloads = group.readEntry("DownloadsDays", 0);
+    m_senseDownloadsDays = downloads >= 0 && downloads <= 9999 ? downloads : 0;
     Q_EMIT senseChanged();
 }
 
@@ -824,6 +829,8 @@ void Storage::writeSense()
     KConfigGroup group = config->group(QStringLiteral("StorageSense"));
     group.writeEntry("TrashDays", m_senseTrashDays);
     group.writeEntry("Thumbnails", m_senseThumbnails);
+    group.writeEntry("Frequency", m_senseFrequency);
+    group.writeEntry("DownloadsDays", m_senseDownloadsDays);
     config->sync();
 }
 
@@ -852,6 +859,51 @@ void Storage::setSenseThumbnails(bool on)
     m_senseThumbnails = on;
     writeSense();
     Q_EMIT senseChanged();
+}
+
+void Storage::setSenseFrequency(const QString &frequency)
+{
+    const QString calendar = senseCalendar(frequency);
+    if (calendar.isEmpty() || frequency == m_senseFrequency)
+        return;
+    m_senseFrequency = frequency;
+    writeSense();
+    Q_EMIT senseChanged();
+
+    // the empty OnCalendar= drops the weekly one of the shipped timer
+    QDir().mkpath(m_unitDir + QStringLiteral("/raye-storage-sense.timer.d"));
+    QSaveFile file(m_unitDir + QStringLiteral("/raye-storage-sense.timer.d/frequency.conf"));
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write("# Settings > System > Storage > Storage Sense: Run Storage Sense\n[Timer]\nOnCalendar=\nOnCalendar=");
+        file.write(calendar.toLatin1() + "\n");
+        file.commit();
+    }
+    systemctl({QStringLiteral("--user"), QStringLiteral("daemon-reload")}, [this](int, const QByteArray &) {
+        if (m_senseEnabled)
+            systemctl({QStringLiteral("--user"), QStringLiteral("restart"), kTimer});
+    });
+}
+
+void Storage::setSenseDownloadsDays(int days)
+{
+    if (days < 0 || days > 9999 || days == m_senseDownloadsDays)
+        return;
+    m_senseDownloadsDays = days;
+    writeSense();
+    Q_EMIT senseChanged();
+}
+
+QString Storage::senseCalendar(const QString &frequency)
+{
+    if (frequency == QLatin1String("day"))
+        return QStringLiteral("daily");
+    if (frequency == QLatin1String("week"))
+        return QStringLiteral("weekly");
+    if (frequency == QLatin1String("month"))
+        return QStringLiteral("monthly");
+    if (frequency == QLatin1String("lowspace"))
+        return QStringLiteral("hourly");
+    return {};
 }
 
 void Storage::runSenseNow()

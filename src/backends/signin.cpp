@@ -49,6 +49,7 @@ SignInSettings::SignInSettings(const QStringList &sddmConfigs, const QStringList
                                const QString &powerConfig, const QString &login, QObject *parent)
     : QObject(parent)
     , m_power(KSharedConfig::openConfig(powerConfig))
+    , m_session(KSharedConfig::openConfig(QStringLiteral("ksmserverrc")))
     , m_sddmConfigs(sddmConfigs)
     , m_helper(autologinHelper)
     , m_passwd(passwdProgram)
@@ -167,6 +168,31 @@ void SignInSettings::setLockWhenAway(bool on)
     QDBusConnection::sessionBus().asyncCall(QDBusMessage::createMethodCall(
         QStringLiteral("org.kde.Solid.PowerManagement"), QStringLiteral("/org/kde/Solid/PowerManagement"),
         QStringLiteral("org.kde.Solid.PowerManagement"), QStringLiteral("refreshStatus")));
+    Q_EMIT changed();
+}
+
+bool SignInSettings::restartApps() const
+{
+    // the session manager's own default restores; Raye's /etc/xdg file says no
+    const QString mode = m_session->group(QStringLiteral("General")).readEntry("loginMode", QStringLiteral("restorePreviousLogout"));
+    return mode != QLatin1String("emptySession");
+}
+
+void SignInSettings::setRestartApps(bool on)
+{
+    if (on == restartApps())
+        return;
+    // the session manager reads the file when the session ends and starts
+    KConfigGroup g = m_session->group(QStringLiteral("General"));
+    g.writeEntry("loginMode", on ? QStringLiteral("restorePreviousLogout") : QStringLiteral("emptySession"), KConfig::Notify);
+    m_session->sync();
+    Q_EMIT changed();
+}
+
+void SignInSettings::setSessionFile(const QString &path)
+{
+    m_session = KSharedConfig::openConfig(path, KConfig::SimpleConfig);
+    m_session->reparseConfiguration();
     Q_EMIT changed();
 }
 

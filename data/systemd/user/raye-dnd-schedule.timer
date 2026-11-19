@@ -1,0 +1,12 @@
+# Started by Settings > System > Notifications when "During these times"
+# is on. The page writes the start time in a drop-in (OnCalendar); the
+# run at sign-in covers a window that began while signed out.
+[Unit]
+Description=Scheduled do not disturb
+
+[Timer]
+OnStartupSec=20s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

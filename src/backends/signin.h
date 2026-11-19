@@ -32,6 +32,8 @@ class SignInSettings : public QObject
     Q_PROPERTY(bool autoLoginFailed READ autoLoginFailed NOTIFY changed)
     // ask for the password again when the screen turns off
     Q_PROPERTY(bool lockWhenAway READ lockWhenAway WRITE setLockWhenAway NOTIFY changed)
+    // ksmserverrc [General] loginMode: the apps open at sign-out come back
+    Q_PROPERTY(bool restartApps READ restartApps WRITE setRestartApps NOTIFY changed)
     Q_PROPERTY(bool passwordBusy READ passwordBusy NOTIFY changed)
     // what passwd said, in words for the page; empty when all went well
     Q_PROPERTY(QString passwordError READ passwordError NOTIFY changed)
@@ -53,6 +55,10 @@ public:
     bool autoLoginFailed() const { return m_autoLoginFailed; }
     bool lockWhenAway() const;
     void setLockWhenAway(bool on);
+    bool restartApps() const;
+    void setRestartApps(bool on);
+    // For the tests: a file instead of the user's ksmserverrc
+    void setSessionFile(const QString &path);
     bool passwordBusy() const { return m_passwordBusy; }
     QString passwordError() const { return m_passwordError; }
 
@@ -76,6 +82,7 @@ private:
     void passwdFinished(int exitCode);
 
     KSharedConfigPtr m_power;
+    KSharedConfigPtr m_session;
     QStringList m_sddmConfigs;
     QStringList m_helper;
     QString m_passwd;

@@ -241,6 +241,28 @@ private Q_SLOTS:
         signin.setLockWhenAway(true);
         QVERIFY(signin.lockWhenAway());
     }
+
+    void restartAppsIsTheSessionLoginMode()
+    {
+        QTemporaryDir dir;
+        const QString rc = dir.filePath(QStringLiteral("ksmserverrc"));
+        write(rc, "[General]\nloginMode=emptySession\nexcludeApps=foo\n");
+        auto signin = settings();
+        signin->setSessionFile(rc);
+        QVERIFY(!signin->restartApps());
+        signin->setRestartApps(true);
+        QVERIFY(signin->restartApps());
+        KConfig reread(rc, KConfig::SimpleConfig);
+        QCOMPARE(reread.group(QStringLiteral("General")).readEntry("loginMode"), QStringLiteral("restorePreviousLogout"));
+        QCOMPARE(reread.group(QStringLiteral("General")).readEntry("excludeApps"), QStringLiteral("foo"));
+        signin->setRestartApps(false);
+        KConfig again(rc, KConfig::SimpleConfig);
+        QCOMPARE(again.group(QStringLiteral("General")).readEntry("loginMode"), QStringLiteral("emptySession"));
+        // a session saved by hand is also restored
+        write(rc, "[General]\nloginMode=restoreSavedSession\n");
+        signin->setSessionFile(rc);
+        QVERIFY(signin->restartApps());
+    }
 };
 
 QTEST_GUILESS_MAIN(TestSignIn)

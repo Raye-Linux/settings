@@ -133,6 +133,8 @@
                 "gestion des disques",
                 "volume"
             ]
-        }
+        },
+        {"id": "system/storage#sense-frequency", "label": "Run Storage Sense", "label_fr": "Exécuter l'Assistant Stockage", "keywords": ["every day", "every week", "every month", "low disk space", "schedule"], "keywords_fr": ["chaque jour", "chaque semaine", "chaque mois", "espace disque faible", "planifier"]},
+        {"id": "system/storage#downloads-days", "label": "Delete files in my Downloads folder", "label_fr": "Supprimer les fichiers de mon dossier Téléchargements", "keywords": ["downloads", "old downloads", "clean downloads"], "keywords_fr": ["téléchargements", "anciens téléchargements", "nettoyer les téléchargements"]}
     ]
 }

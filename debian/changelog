@@ -14,6 +14,17 @@ raye-settings (1.0~beta2) resolute; urgency=medium
     for a Windows program).
   * Settings gives back the memory of pages you have left, and more of it
     while minimized.
+  * NVIDIA Control Panel link in Display and Graphics when the NVIDIA
+    driver and panel are installed.
+  * Storage Sense can run every day, week or month or when space is low,
+    and clean old files out of Downloads.
+  * Do not disturb can turn on by itself during set hours, every day, on
+    weekdays or on weekends.
+  * New settings: smaller taskbar buttons, recent searches, right-click in
+    the touchpad corner, find the pointer with Ctrl, touch indicator,
+    underline access keys, shortcut warning and sound, restart apps after
+    sign-in, a keyboard layout per window, highlight misspelled words and
+    the spelling language.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 10:00:00 +0000
 

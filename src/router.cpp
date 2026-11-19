@@ -210,6 +210,13 @@ bool Requirements::probe(const QString &name) const
         return cards >= 2;
     }
 
+    if (name == QLatin1String("nvidia-panel")) {
+        // the panel alone is useless without the driver (nouveau, or a card
+        // taken out), and the driver alone has nothing to open
+        return QFileInfo::exists(sys + QStringLiteral("/module/nvidia"))
+            && QFileInfo::exists(m_root + QStringLiteral("/usr/share/applications/nvidia-settings.desktop"));
+    }
+
     if (name == QLatin1String("windows")) {
         if (firmwareKnowsWindows(m_root))
             return true;

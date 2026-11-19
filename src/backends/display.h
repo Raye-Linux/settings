@@ -133,6 +133,8 @@ public:
     Q_INVOKABLE void setHdrEnabled(bool on);
     Q_INVOKABLE void setSdrBrightness(int nits);
     Q_INVOKABLE void setVrrEnabled(bool on);
+    // NVIDIA's own settings app (Router.has("nvidia-panel") says it is there)
+    Q_INVOKABLE void openNvidiaPanel();
     Q_INVOKABLE void makePrimary(int outputId);
     // A screen dropped in the arrangement at x, y (logical pixels).
     Q_INVOKABLE void moveOutput(int outputId, int x, int y);

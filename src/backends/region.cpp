@@ -539,6 +539,25 @@ void KeyboardLayouts::setRepeatRate(int perSecond)
         writeInput(QStringLiteral("RepeatRate"), perSecond);
 }
 
+bool KeyboardLayouts::layoutPerWindow() const
+{
+    const QString mode = m_kxkb->group(QStringLiteral("Layout")).readEntry("SwitchMode", QStringLiteral("Global"));
+    return mode == QLatin1String("Window") || mode == QLatin1String("WinClass");
+}
+
+void KeyboardLayouts::setLayoutPerWindow(bool on)
+{
+    if (on == layoutPerWindow())
+        return;
+    KConfigGroup g = m_kxkb->group(QStringLiteral("Layout"));
+    g.writeEntry("SwitchMode", on ? QStringLiteral("Window") : QStringLiteral("Global"), KConfig::Notify);
+    m_kxkb->sync();
+    // what the keyboard module sends: the window manager reads kxkbrc again
+    QDBusConnection::sessionBus().send(
+        QDBusMessage::createSignal(QStringLiteral("/Layouts"), QStringLiteral("org.kde.keyboard"), QStringLiteral("reloadConfig")));
+    Q_EMIT changed();
+}
+
 void KeyboardLayouts::writeInput(const QString &key, int value)
 {
     // the window manager watches this file for key repeat
