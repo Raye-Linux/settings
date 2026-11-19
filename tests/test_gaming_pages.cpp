@@ -185,6 +185,8 @@ private Q_SLOTS:
             QVERIFY(!indexed.isEmpty());
         }
         indexed.sort();
+        // an expander gives its id through its header too
+        drawn.removeDuplicates();
         drawn.sort();
         QCOMPARE(drawn, indexed);
     }

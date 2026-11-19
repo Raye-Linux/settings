@@ -10680,3 +10680,67 @@ msgstr "Récupérez vos fichiers de Windows"
 msgctxt "@info notification"
 msgid "Windows is on this PC. Copy your documents, pictures and more to Raye. Windows stays as it is."
 msgstr "Windows est sur ce PC. Copiez vos documents, images et plus vers Raye. Windows reste tel quel."
+
+msgctxt "@info"
+msgid "On now: a game is running and has the whole PC."
+msgstr "Activé en ce moment : un jeu est lancé et dispose de tout le PC."
+
+msgctxt "@info"
+msgid "Optimize your PC for play. Turns on by itself when a game starts, and everything goes back when you stop."
+msgstr "Optimisez votre PC pour le jeu. S'active tout seul au lancement d'un jeu, et tout revient comme avant quand vous arrêtez."
+
+msgctxt "@label"
+msgid "Turn off transparency effects while playing"
+msgstr "Désactiver les effets de transparence pendant le jeu"
+
+msgctxt "@info"
+msgid "Blur and see-through backgrounds pause, so the graphics card works for the game alone"
+msgstr "Le flou et les arrière-plans transparents se mettent en pause : la carte graphique ne travaille que pour le jeu"
+
+msgctxt "@label"
+msgid "Game scheduler"
+msgstr "Planificateur pour les jeux"
+
+msgctxt "@info"
+msgid "Keeps frame times steady when something else runs in the background"
+msgstr "Garde des temps d'image réguliers quand autre chose tourne en arrière-plan"
+
+msgctxt "@label"
+msgid "Best performance power mode"
+msgstr "Mode d'alimentation Meilleures performances"
+
+msgctxt "@info"
+msgid "While the PC is plugged in. Your own power mode comes back when you stop playing"
+msgstr "Quand le PC est branché sur secteur. Votre mode d'alimentation revient quand vous arrêtez de jouer"
+
+msgctxt "@title:group"
+msgid "Games"
+msgstr "Jeux"
+
+msgctxt "@info"
+msgid "Game Mode turns on for these when they run. Turn it off for one that plays better without it, or on for a Windows program that is a game."
+msgstr "Le mode jeu s'active pour ces jeux quand ils tournent. Désactivez-le pour un jeu qui marche mieux sans, ou activez-le pour un programme Windows qui est un jeu."
+
+msgctxt "@info"
+msgid "Games you play show up here, from Steam, the Store and Windows. You can turn Game Mode off for any of them."
+msgstr "Les jeux auxquels vous jouez apparaissent ici, depuis Steam, le Store et Windows. Vous pouvez désactiver le mode jeu pour chacun d'eux."
+
+msgctxt "@info where a game comes from"
+msgid "Steam"
+msgstr "Steam"
+
+msgctxt "@info where a game comes from"
+msgid "Raye Store"
+msgstr "Raye Store"
+
+msgctxt "@info where a game comes from"
+msgid "Windows program"
+msgstr "Programme Windows"
+
+msgctxt "@info"
+msgid "Refresh rate and adaptive sync, for smoother games"
+msgstr "Fréquence d'actualisation et synchronisation adaptative, pour des jeux plus fluides"
+
+msgctxt "@info %1 is a number Steam gives the game"
+msgid "Steam game %1"
+msgstr "Jeu Steam %1"
