@@ -12,6 +12,8 @@ raye-settings (1.0~beta2) resolute; urgency=medium
   * Gaming > Game Mode: a switch for Game Mode, what it does while you
     play, and every game it found, each of which can be turned off (or on,
     for a Windows program).
+  * Settings gives back the memory of pages you have left, and more of it
+    while minimized.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 10:00:00 +0000
 

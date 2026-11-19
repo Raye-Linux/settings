@@ -31,6 +31,10 @@
 
 #include <memory>
 
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
+
 #include <cstring>
 
 namespace {
@@ -176,6 +180,12 @@ int showPreview(QQmlApplicationEngine &engine, Router &router, const QString &pa
 
 int main(int argc, char *argv[])
 {
+#ifdef __GLIBC__
+    // the backends' threads share two heaps instead of keeping one each,
+    // and pictures and icons go back to the system when freed
+    mallopt(M_ARENA_MAX, 2);
+    mallopt(M_MMAP_THRESHOLD, 128 * 1024);
+#endif
     for (int i = 1; i + 1 < argc; ++i) {
         if (std::strcmp(argv[i], "--knows") == 0) {
             QCoreApplication ask(argc, argv);

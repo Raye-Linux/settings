@@ -109,6 +109,10 @@ public:
     Q_INVOKABLE void restoreWindow(QWindow *window);
     Q_INVOKABLE void saveWindow(QWindow *window);
 
+    // Gives back what the pages left behind once they are gone: their
+    // objects, the types no page uses any more, the heap's free blocks.
+    Q_INVOKABLE void releaseMemory();
+
     // Parsing, public for the tests.
     static QString processorName(const QString &cpuinfo);
     static qint64 memoryBytes(const QString &meminfo);

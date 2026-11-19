@@ -14,6 +14,10 @@
 #include <QDBusServer>
 #include <QDir>
 #include <QFile>
+#include <QJSValue>
+#include <QPointer>
+#include <QQmlContext>
+#include <QQmlEngine>
 #include <QSignalSpy>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -223,6 +227,22 @@ private Q_SLOTS:
         QCOMPARE(FrameSettings::sizeText(gib * 3 / 2), QStringLiteral("1.5 GB"));
         QCOMPARE(FrameSettings::sizeText(476 * gib), QStringLiteral("476 GB"));
         QCOMPARE(FrameSettings::sizeText(2048 * gib), QStringLiteral("2.0 TB"));
+    }
+
+    void releaseMemory()
+    {
+        // nothing to do outside an engine, and no harm done
+        FrameSettings alone;
+        alone.releaseMemory();
+
+        QQmlEngine engine;
+        FrameSettings frame;
+        QQmlEngine::setContextForObject(&frame, engine.rootContext());
+        // what a page that was let go leaves: an object only JS knew
+        QPointer<QObject> left = new QObject;
+        engine.newQObject(left);
+        frame.releaseMemory();
+        QTRY_VERIFY(!left);
     }
 
     void device()

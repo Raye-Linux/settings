@@ -18,6 +18,10 @@
 #include <QStorageInfo>
 #include <QWindow>
 
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
+
 namespace {
 // where Plasma installs its settings modules: the System Settings ones,
 // and the system information ones (About and friends)
@@ -170,6 +174,19 @@ FrameSettings::FrameSettings(const QString &root, QObject *parent)
     : QObject(parent)
     , m_root(root == QLatin1String("/") ? QString() : root)
 {
+}
+
+void FrameSettings::releaseMemory()
+{
+    if (QQmlEngine *engine = qmlEngine(this)) {
+        engine->collectGarbage();
+        engine->trimComponentCache();
+    }
+#ifdef __GLIBC__
+    // glibc keeps freed blocks for later otherwise, and Settings would
+    // stay the size of every page it ever showed
+    malloc_trim(0);
+#endif
 }
 
 QStringList FrameSettings::hiddenCards() const

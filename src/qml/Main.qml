@@ -52,7 +52,7 @@ QQC2.ApplicationWindow {
             pane.focusSearch(text)
         } else {
             overlayOpen = true
-            overlayPane.searchField.startTyping(text)
+            overlayPane.item.searchField.startTyping(text)
         }
     }
 
@@ -80,6 +80,13 @@ QQC2.ApplicationWindow {
             openModule(startModule)
     }
     onClosing: FrameSettings.saveWindow(root)
+    // in the taskbar it gives back its caches; they come back when shown
+    onVisibilityChanged: (visibility) => {
+        if (visibility === Window.Minimized) {
+            root.releaseResources()
+            FrameSettings.releaseMemory()
+        }
+    }
 
     WindowEffects {
         id: effects
@@ -149,7 +156,7 @@ QQC2.ApplicationWindow {
             onSearchRequested: (text) => root.showSearchResults(text)
             onExpandRequested: {
                 root.overlayOpen = true
-                overlayPane.searchField.startTyping("")
+                overlayPane.item.searchField.startTyping("")
             }
             Behavior on width { NumberAnimation { duration: Theme.durationNormal; easing.type: Theme.easingEnter } }
         }
@@ -244,13 +251,18 @@ QQC2.ApplicationWindow {
         Glow { radius: 0; spread: 16; color: Qt.alpha(Theme.shadow, Theme.night ? 0.5 : 0.18); visible: root.overlayOpen }
         Rectangle { anchors.fill: parent; color: Theme.flyout }
 
-        NavPane {
+        // made only where it can open: a full-width window never shows it
+        Loader {
             id: overlayPane
             anchors.fill: parent
-            mode: "expanded"
+            active: root.paneMode !== "expanded" || root.overlayOpen
             focus: root.overlayOpen
-            onSearchRequested: (text) => root.showSearchResults(text)
-            onNavigated: root.overlayOpen = false
+            sourceComponent: NavPane {
+                mode: "expanded"
+                focus: true
+                onSearchRequested: (text) => root.showSearchResults(text)
+                onNavigated: root.overlayOpen = false
+            }
         }
     }
 }

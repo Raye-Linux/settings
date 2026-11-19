@@ -76,6 +76,7 @@ Item {
             if (_current) {
                 _current.source = ""
                 _current = null
+                collectLater.restart()
             }
             _shownKey = ""
             return
@@ -108,6 +109,13 @@ Item {
     }
     onSearchQueryChanged: refresh()
     Component.onCompleted: refresh()
+
+    // a page let go keeps its objects, types and heap until this runs
+    Timer {
+        id: collectLater
+        interval: 2000
+        onTriggered: FrameSettings.releaseMemory()
+    }
 
     PageLoader { id: loaderA }
     PageLoader { id: loaderB }
@@ -155,7 +163,12 @@ Item {
         SequentialAnimation {
             id: leaveAnimation
             NumberAnimation { target: loader; property: "opacity"; to: 0; duration: Theme.durationFaster; easing.type: Theme.easingExit }
-            ScriptAction { script: loader.source = "" }
+            ScriptAction {
+                script: {
+                    loader.source = ""
+                    collectLater.restart()
+                }
+            }
         }
     }
 }
