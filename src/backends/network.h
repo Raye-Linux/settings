@@ -16,7 +16,11 @@
 #include <QVariantMap>
 #include <QtQml/qqmlregistration.h>
 
+#include <NetworkManagerQt/Connection>
+#include <NetworkManagerQt/ConnectionSettings>
 #include <NetworkManagerQt/Device>
+
+#include <functional>
 
 class QProcess;
 
@@ -63,7 +67,33 @@ QString wifiSummary(bool wifiEnabled, const QString &primaryType, const QString 
 // Keys: offline, noEthernet, proxy, proxyIntro, resetSummary,
 // resetWarning, resetDone, airplaneOn, airplaneOff.
 QVariantMap wording(bool hasWifi, bool hasBluetooth);
+
+// "private" or "public", as raye-network-profile decides: the zone a
+// person chose, otherwise open Wi-Fi and mobile data are public.
+// type is the connection's type ("802-11-wireless", "gsm"...), keyMgmt
+// the Wi-Fi security ("" for an open network, "owe", "wpa-psk"...).
+QString networkProfile(const QString &zone, const QString &type, const QString &keyMgmt);
+// the zone written for "private" or "public"
+QString zoneOf(const QString &profile);
+
+// Encrypted DNS. Presets: [{ id, name, dns4: [...], dns6: [...] }].
+QVariantList dnsPresets();
+// the preset these servers are, "" when they are not exactly one
+QString dnsPresetOf(const QStringList &dns4, const QStringList &dns6);
+// the name a known server shows in its certificate, "" otherwise
+QString dnsTlsName(const QString &address);
+// NetworkManager's dns-data: "1.1.1.1#cloudflare-dns.com" when encrypted
+// and the name is known, the address alone otherwise
+QStringList dnsData(const QStringList &servers, bool encrypted);
+// "off", "preferred", "only" <-> connection.dns-over-tls (-1 default,
+// 0 no, 1 opportunistic, 2 yes)
+int dnsOverTls(const QString &encryption);
+QString dnsEncryption(int value);
 }
+
+// A connection's settings ready to save: NetworkManagerQt does not read
+// dns-data or dns-over-tls, so they are taken back from NetworkManager.
+NMVariantMapMap keepUnreadSettings(const NetworkManager::Connection::Ptr &connection, NMVariantMapMap map);
 
 // Is there a Wi-Fi card, as NetworkManager sees it? The window holds
 // the router's "wifi" requirement to this, so a USB key plugged in with
@@ -192,6 +222,14 @@ public:
     Q_INVOKABLE QString setDnsConfig(const QString &uuid, const QVariantMap &config);
     Q_INVOKABLE bool isMetered(const QString &uuid) const;
     Q_INVOKABLE QString setMetered(const QString &uuid, bool metered);
+    // "private" or "public"; the change counts at once, without a
+    // reconnection
+    Q_INVOKABLE QString networkProfile(const QString &uuid) const;
+    Q_INVOKABLE QString setNetworkProfile(const QString &uuid, const QString &profile);
+    // a private address for this Wi-Fi network (from the next connection)
+    Q_INVOKABLE bool randomAddress(const QString &uuid) const;
+    Q_INVOKABLE QString setRandomAddress(const QString &uuid, bool on);
+    Q_INVOKABLE QVariantList dnsPresets() const { return NetworkText::dnsPresets(); }
 
     // Turn an adapter off (disconnected, no more connecting by itself)
     // or back on.
@@ -220,6 +258,7 @@ private:
     void watchStatistics();
     QVariantMap ethernetEntry(const NetworkManager::Device::Ptr &device) const;
     QString update(const QString &uuid, const QVariantMap &config, bool ip, bool dns);
+    QString save(const QString &uuid, const std::function<void(NetworkManager::ConnectionSettings::Ptr)> &change);
 
     QTimer m_refresh;
     BluezQt::Manager *m_bluetooth = nullptr;

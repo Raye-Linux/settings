@@ -222,9 +222,10 @@ NMVariantMapMap newConnection(const QString &ssid, const QString &security, cons
                                 {QStringLiteral("autoconnect"), autoconnect}});
     QVariantMap wireless{{QStringLiteral("ssid"), ssid.toUtf8()},
                          {QStringLiteral("mode"), QStringLiteral("infrastructure")}};
-    // "stable": an address of its own on each network, the same each time
-    if (randomAddress)
-        wireless.insert(QStringLiteral("assigned-mac-address"), QStringLiteral("stable"));
+    // "stable": an address of its own on each network, the same each time;
+    // off is written out, since Raye's default for Wi-Fi is "stable"
+    wireless.insert(QStringLiteral("assigned-mac-address"),
+                    randomAddress ? QStringLiteral("stable") : QStringLiteral("permanent"));
     settings.insert(QStringLiteral("802-11-wireless"), wireless);
     settings.insert(QStringLiteral("ipv4"), QVariantMap{{QStringLiteral("method"), QStringLiteral("auto")}});
     settings.insert(QStringLiteral("ipv6"), QVariantMap{{QStringLiteral("method"), QStringLiteral("auto")}});
@@ -486,7 +487,9 @@ void WifiNetworks::setHoldOrder(bool hold)
 
 bool WifiNetworks::randomAddresses() const
 {
-    return rayeGroup().readEntry("RandomAddresses", false);
+    // on unless turned off here: NetworkManager gives Wi-Fi a private
+    // address by default (raye-base)
+    return rayeGroup().readEntry("RandomAddresses", true);
 }
 
 void WifiNetworks::setRandomAddresses(bool on)
@@ -505,13 +508,10 @@ void WifiNetworks::setRandomAddresses(bool on)
         auto wireless = settings->setting(NetworkManager::Setting::Wireless).staticCast<NetworkManager::WirelessSetting>();
         if (!wireless || wireless->mode() == NetworkManager::WirelessSetting::Ap)
             continue;
-        NMVariantMapMap map = settings->toMap();
+        NMVariantMapMap map = keepUnreadSettings(connection, settings->toMap());
         QVariantMap section = map.value(QStringLiteral("802-11-wireless"));
         section.remove(QStringLiteral("cloned-mac-address"));
-        if (on)
-            section.insert(QStringLiteral("assigned-mac-address"), QStringLiteral("stable"));
-        else
-            section.remove(QStringLiteral("assigned-mac-address"));
+        section.insert(QStringLiteral("assigned-mac-address"), on ? QStringLiteral("stable") : QStringLiteral("permanent"));
         map.insert(QStringLiteral("802-11-wireless"), section);
         // keep the password: fetch it before saving
         if (map.contains(QStringLiteral("802-11-wireless-security"))) {
@@ -792,7 +792,7 @@ QString KnownNetworks::setAutoconnect(const QString &uuid, bool autoconnect)
         return i18nc("@info", "This network is no longer saved on this PC.");
     auto settings = connection->settings();
     settings->setAutoconnect(autoconnect);
-    NMVariantMapMap map = settings->toMap();
+    NMVariantMapMap map = keepUnreadSettings(connection, settings->toMap());
     if (map.contains(QStringLiteral("802-11-wireless-security"))) {
         auto secrets = connection->secrets(QStringLiteral("802-11-wireless-security"));
         secrets.waitForFinished();

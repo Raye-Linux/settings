@@ -10898,3 +10898,55 @@ msgstr "Langue de l'orthographe"
 msgctxt "@item:inlistbox spelling language"
 msgid "Detect automatically"
 msgstr "Détecter automatiquement"
+
+msgctxt "@label"
+msgid "Network profile type"
+msgstr "Type de profil réseau"
+
+msgctxt "@option:radio"
+msgid "Public network"
+msgstr "Réseau public"
+
+msgctxt "@info"
+msgid "This PC stays hidden on the network: no sharing, and no answer to other devices. Best for cafés, hotels and airports."
+msgstr "Ce PC reste invisible sur le réseau : aucun partage, et aucune réponse aux autres appareils. Idéal pour les cafés, les hôtels et les aéroports."
+
+msgctxt "@option:radio"
+msgid "Private network"
+msgstr "Réseau privé"
+
+msgctxt "@info"
+msgid "Devices on this network can find this PC and connect to it, for sharing, phones, printers and games. Use it at home or with people you trust."
+msgstr "Les appareils de ce réseau peuvent trouver ce PC et s'y connecter, pour le partage, les téléphones, les imprimantes et les jeux. À utiliser chez vous ou avec des personnes de confiance."
+
+msgctxt "@info"
+msgid "This network sees an address of its own for this PC, so it's harder to follow you from place to place. Counts from the next connection."
+msgstr "Ce réseau voit une adresse propre à ce PC, ce qui rend plus difficile de vous suivre d'un endroit à l'autre. S'applique à la prochaine connexion."
+
+msgctxt "@info %1 is a DNS server or a list of them"
+msgid "%1, encrypted"
+msgstr "%1, chiffré"
+
+msgctxt "@info %1 is a DNS server or a list of them"
+msgid "%1, encrypted when possible"
+msgstr "%1, chiffré si possible"
+
+msgctxt "@label"
+msgid "DNS encryption"
+msgstr "Chiffrement DNS"
+
+msgctxt "@item DNS encryption"
+msgid "Unencrypted only"
+msgstr "Non chiffré uniquement"
+
+msgctxt "@item DNS encryption"
+msgid "Encrypted only (DNS over TLS)"
+msgstr "Chiffré uniquement (DNS over TLS)"
+
+msgctxt "@item DNS encryption"
+msgid "Encrypted preferred, unencrypted allowed"
+msgstr "Chiffré de préférence, non chiffré autorisé"
+
+msgctxt "@info"
+msgid "If this network shows a sign-in page (in a hotel or an airport), choose “Encrypted preferred” for it, or the page can't open."
+msgstr "Si ce réseau affiche une page de connexion (dans un hôtel ou un aéroport), choisissez « Chiffré de préférence » pour lui, sinon la page ne peut pas s'ouvrir."

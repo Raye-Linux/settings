@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Network & internet › Ethernet: for each wired adapter, metered, IP and
-// DNS with their Edit dialogs, and its properties with Copy.
+// Network & internet › Ethernet: for each wired adapter, network profile
+// type, metered, IP and DNS with their Edit dialogs, and its properties
+// with Copy.
 import QtQuick
 import QtQuick.Layouts
 import org.raye.settings
@@ -79,6 +80,22 @@ PageScaffold {
                 }
             }
 
+            Rectangle {
+                Layout.fillWidth: true
+                visible: adapter.editable
+                implicitHeight: profileChoice.implicitHeight
+                radius: Theme.radiusControl
+                color: Theme.card
+                border.width: 1
+                border.color: Theme.cardBorder
+                NetworkProfileChoice {
+                    id: profileChoice
+                    width: parent.width
+                    network: netStatus
+                    uuid: adapter.modelData.uuid
+                }
+            }
+
             ToggleCard {
                 Layout.fillWidth: true
                 enabled: adapter.editable
@@ -117,8 +134,17 @@ PageScaffold {
                 iconName: "org.raye.settings-network-advanced"
                 iconFallback: "network-server"
                 title: i18nc("@label", "DNS server assignment:")
-                description: adapter.modelData.dnsAuto ? i18nc("@info DNS assignment", "Automatic (DHCP)")
-                                                       : i18nc("@info DNS assignment", "Manual")
+                description: {
+                    if (adapter.modelData.dnsAuto)
+                        return i18nc("@info DNS assignment", "Automatic (DHCP)")
+                    // read again when the adapter's entry changes
+                    const c = netStatus.ipConfig(adapter.modelData.uuid)
+                    const preset = netStatus.dnsPresets().find(p => p.id === c.dnsPreset)
+                    const what = preset ? preset.name : i18nc("@info DNS assignment", "Manual")
+                    return c.dnsEncryption === "only" ? i18nc("@info %1 is a DNS server or a list of them", "%1, encrypted", what)
+                         : c.dnsEncryption === "preferred" ? i18nc("@info %1 is a DNS server or a list of them", "%1, encrypted when possible", what)
+                         : what
+                }
                 buttonText: i18nc("@action:button", "Edit")
                 onButtonClicked: {
                     dnsDialog.uuid = adapter.modelData.uuid

@@ -5,15 +5,28 @@
 #   firewall on     block the connections other computers start, let
 #                   this PC's own go out
 #   firewall off
+#
+# Turning it off leaves a mark, so that an update that turns the
+# firewall on for everyone leaves this PC alone.
 set -eu
+
+root=
+# the tests stand a folder in for the computer (never under pkexec)
+if [ -z "${PKEXEC_UID:-}" ] && [ -n "${RAYE_ROOT:-}" ]; then
+    root=$RAYE_ROOT
+fi
+mark=$root/var/lib/raye/firewall-off
 
 case "${1:-}" in
 on)
+    rm -f "$mark"
     # --force: ufw would otherwise ask on the terminal whether SSH
     # connections may be cut
     exec ufw --force enable
     ;;
 off)
+    mkdir -p "${mark%/*}"
+    : > "$mark"
     exec ufw disable
     ;;
 *)

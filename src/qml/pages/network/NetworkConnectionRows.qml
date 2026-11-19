@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The settings of one saved connection, as rows of an expander:
-// connect automatically, metered, IP and DNS with their Edit dialogs,
-// and the KDE editor for the rest.
+// The settings of one saved Wi-Fi connection, as rows of an expander:
+// connect automatically, network profile type, private address,
+// metered, IP and DNS with their Edit dialogs, and the KDE editor for
+// the rest.
 //
 //   Expander { NetworkConnectionRows { network: net; uuid: "…" } }
 import QtQuick
@@ -20,15 +21,28 @@ ColumnLayout {
     // what the rows show, read again when the connection changes
     property var config: ({})
     property bool metered: false
+    property bool randomAddress: true
 
     Layout.fillWidth: true
     spacing: 0
 
+    // "Automatic (DHCP)", "Cloudflare, encrypted", "Manual: 1.1.1.1, …"
+    function dnsSummary(c) {
+        if (c.dnsAuto !== false)
+            return i18nc("@info DNS assignment", "Automatic (DHCP)")
+        const preset = (network.dnsPresets() || []).find(p => p.id === c.dnsPreset)
+        const what = preset ? preset.name
+                            : i18nc("@info", "Manual: %1", (c.dns4 || []).concat(c.dns6 || []).join(", "))
+        return c.dnsEncryption === "only" ? i18nc("@info %1 is a DNS server or a list of them", "%1, encrypted", what)
+             : c.dnsEncryption === "preferred" ? i18nc("@info %1 is a DNS server or a list of them", "%1, encrypted when possible", what)
+             : what
+    }
     function reload() {
         if (uuid === "")
             return
         config = network.ipConfig(uuid)
         metered = network.isMetered(uuid)
+        randomAddress = network.randomAddress(uuid)
     }
     Component.onCompleted: reload()
     onUuidChanged: reload()
@@ -46,6 +60,24 @@ ColumnLayout {
             onToggled: {
                 rows.autoconnectToggled(checked)
                 checked = Qt.binding(() => rows.autoconnect)
+            }
+        }
+    }
+    NetworkProfileChoice {
+        network: rows.network
+        uuid: rows.uuid
+        inExpander: true
+    }
+    ExpanderRow {
+        title: i18nc("@label", "Random hardware addresses")
+        description: i18nc("@info", "This network sees an address of its own for this PC, so it's harder to follow you from place to place. Counts from the next connection.")
+        ToggleSwitch {
+            checked: rows.randomAddress
+            text: i18nc("@label", "Random hardware addresses")
+            onToggled: {
+                rows.network.setRandomAddress(rows.uuid, checked)
+                rows.reload()
+                checked = Qt.binding(() => rows.randomAddress)
             }
         }
     }
@@ -75,9 +107,7 @@ ColumnLayout {
     }
     ExpanderRow {
         title: i18nc("@label", "DNS server assignment")
-        description: rows.config.dnsAuto === false
-                     ? i18nc("@info", "Manual: %1", (rows.config.dns4 || []).concat(rows.config.dns6 || []).join(", "))
-                     : i18nc("@info DNS assignment", "Automatic (DHCP)")
+        description: rows.dnsSummary(rows.config)
         Button {
             text: i18nc("@action:button", "Edit")
             Accessible.description: i18nc("@label", "DNS server assignment")

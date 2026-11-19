@@ -21,9 +21,13 @@
 #include <NetworkManagerQt/Settings>
 #include <NetworkManagerQt/WiredDevice>
 #include <NetworkManagerQt/WirelessDevice>
+#include <NetworkManagerQt/WirelessSecuritySetting>
 #include <NetworkManagerQt/WirelessSetting>
 
 #include <QClipboard>
+#include <QDBusConnection>
+#include <QDBusMessage>
+#include <QDBusReply>
 #include <QGuiApplication>
 #include <QHostAddress>
 #include <QLocale>
@@ -143,12 +147,45 @@ QStringList nameservers(const NetworkManager::IpConfig &config)
     return list;
 }
 
+// The connection as NetworkManager holds it, with what NetworkManagerQt
+// does not read (dns-data, dns-over-tls).
+NMVariantMapMap rawSettings(const NetworkManager::Connection::Ptr &connection)
+{
+    auto call = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.NetworkManager"), connection->path(),
+                                               QStringLiteral("org.freedesktop.NetworkManager.Settings.Connection"),
+                                               QStringLiteral("GetSettings"));
+    QDBusReply<NMVariantMapMap> reply = QDBusConnection::systemBus().call(call);
+    return reply.isValid() ? reply.value() : NMVariantMapMap();
+}
+
+} // namespace
+
+NMVariantMapMap keepUnreadSettings(const NetworkManager::Connection::Ptr &connection, NMVariantMapMap map)
+{
+    // keys NetworkManagerQt drops would be lost by saving anything else
+    const NMVariantMapMap raw = rawSettings(connection);
+    const QList<QPair<QString, QString>> keep{{QStringLiteral("connection"), QStringLiteral("dns-over-tls")},
+                                              {QStringLiteral("ipv4"), QStringLiteral("dns-data")},
+                                              {QStringLiteral("ipv6"), QStringLiteral("dns-data")}};
+    for (const auto &[group, key] : keep) {
+        if (map.contains(group) && !map.value(group).contains(key) && raw.value(group).contains(key)) {
+            QVariantMap merged = map.value(group);
+            merged.insert(key, raw.value(group).value(key));
+            map.insert(group, merged);
+        }
+    }
+    return map;
+}
+
+namespace
+{
+
 // the settings of a saved connection with the secrets it keeps, so
 // saving them back does not lose the Wi-Fi password
 NMVariantMapMap withSecrets(const NetworkManager::Connection::Ptr &connection,
                             const NetworkManager::ConnectionSettings::Ptr &settings)
 {
-    NMVariantMapMap map = settings->toMap();
+    NMVariantMapMap map = keepUnreadSettings(connection, settings->toMap());
     for (const char *name : {"802-11-wireless-security", "802-1x"}) {
         const QString section = QString::fromLatin1(name);
         if (!map.contains(section))
@@ -363,6 +400,130 @@ QVariantMap wording(bool hasWifi, bool hasBluetooth)
         w.insert(QStringLiteral("airplaneOff"), i18nc("@info", "Turn on airplane mode to stop all wireless communication."));
     }
     return w;
+}
+
+QString networkProfile(const QString &zone, const QString &type, const QString &keyMgmt)
+{
+    static const QStringList publicZones{QStringLiteral("public"), QStringLiteral("block"), QStringLiteral("drop"),
+                                         QStringLiteral("external")};
+    static const QStringList privateZones{QStringLiteral("home"), QStringLiteral("trusted"), QStringLiteral("work"),
+                                          QStringLiteral("internal")};
+    if (publicZones.contains(zone))
+        return QStringLiteral("public");
+    if (privateZones.contains(zone))
+        return QStringLiteral("private");
+    if (type == QLatin1String("gsm") || type == QLatin1String("cdma"))
+        return QStringLiteral("public");
+    if (type == QLatin1String("802-11-wireless")
+        && (keyMgmt.isEmpty() || keyMgmt == QLatin1String("none") || keyMgmt == QLatin1String("owe")))
+        return QStringLiteral("public");
+    return QStringLiteral("private");
+}
+
+QString zoneOf(const QString &profile)
+{
+    return profile == QLatin1String("public") ? QStringLiteral("public") : QStringLiteral("home");
+}
+
+namespace
+{
+struct DnsPreset {
+    const char *id;
+    const char *name;
+    const char *tlsName;
+    QStringList dns4;
+    QStringList dns6;
+};
+
+const QList<DnsPreset> &presets()
+{
+    static const QList<DnsPreset> list{
+        {"cloudflare", "Cloudflare", "cloudflare-dns.com",
+         {QStringLiteral("1.1.1.1"), QStringLiteral("1.0.0.1")},
+         {QStringLiteral("2606:4700:4700::1111"), QStringLiteral("2606:4700:4700::1001")}},
+        {"quad9", "Quad9", "dns.quad9.net",
+         {QStringLiteral("9.9.9.9"), QStringLiteral("149.112.112.112")},
+         {QStringLiteral("2620:fe::fe"), QStringLiteral("2620:fe::9")}},
+        {"google", "Google", "dns.google",
+         {QStringLiteral("8.8.8.8"), QStringLiteral("8.8.4.4")},
+         {QStringLiteral("2001:4860:4860::8888"), QStringLiteral("2001:4860:4860::8844")}},
+    };
+    return list;
+}
+
+QStringList filled(const QStringList &list)
+{
+    QStringList out;
+    for (const QString &s : list)
+        if (!s.trimmed().isEmpty())
+            out.append(QHostAddress(s.trimmed()).toString());
+    return out;
+}
+} // namespace
+
+QVariantList dnsPresets()
+{
+    QVariantList list;
+    for (const auto &p : presets())
+        list.append(QVariantMap{{QStringLiteral("id"), QString::fromLatin1(p.id)},
+                                {QStringLiteral("name"), QString::fromLatin1(p.name)},
+                                {QStringLiteral("dns4"), p.dns4},
+                                {QStringLiteral("dns6"), p.dns6}});
+    return list;
+}
+
+QString dnsPresetOf(const QStringList &dns4, const QStringList &dns6)
+{
+    const QStringList four = filled(dns4);
+    const QStringList six = filled(dns6);
+    for (const auto &p : presets()) {
+        // IPv6 servers left empty still count as the service
+        if (four == filled(p.dns4) && (six.isEmpty() || six == filled(p.dns6)))
+            return QString::fromLatin1(p.id);
+    }
+    return {};
+}
+
+QString dnsTlsName(const QString &address)
+{
+    const QString normal = QHostAddress(address.trimmed()).toString();
+    if (normal.isEmpty())
+        return {};
+    for (const auto &p : presets()) {
+        if (filled(p.dns4).contains(normal) || filled(p.dns6).contains(normal))
+            return QString::fromLatin1(p.tlsName);
+    }
+    return {};
+}
+
+QStringList dnsData(const QStringList &servers, bool encrypted)
+{
+    QStringList out;
+    for (const QString &server : filled(servers)) {
+        const QString name = encrypted ? dnsTlsName(server) : QString();
+        out.append(name.isEmpty() ? server : server + QLatin1Char('#') + name);
+    }
+    return out;
+}
+
+int dnsOverTls(const QString &encryption)
+{
+    if (encryption == QLatin1String("only"))
+        return 2;
+    if (encryption == QLatin1String("preferred"))
+        return 1;
+    if (encryption == QLatin1String("off"))
+        return 0;
+    return -1;
+}
+
+QString dnsEncryption(int value)
+{
+    if (value == 2)
+        return QStringLiteral("only");
+    if (value == 1)
+        return QStringLiteral("preferred");
+    return QStringLiteral("off");
 }
 
 } // namespace NetworkText
@@ -850,11 +1011,18 @@ QVariantMap NetworkStatus::ipConfig(const QString &uuid) const
         for (const auto &server : ipv6->dns())
             dns6.append(server.toString());
     }
+    const NMVariantMapMap raw = rawSettings(connection);
+    bool tlsOk = false;
+    int tls = raw.value(QStringLiteral("connection")).value(QStringLiteral("dns-over-tls")).toInt(&tlsOk);
+    if (!tlsOk)
+        tls = -1;
     return {{QStringLiteral("ipv4"), v4},
             {QStringLiteral("ipv6"), v6},
             {QStringLiteral("dnsAuto"), dnsAuto},
             {QStringLiteral("dns4"), dns4},
-            {QStringLiteral("dns6"), dns6}};
+            {QStringLiteral("dns6"), dns6},
+            {QStringLiteral("dnsEncryption"), NetworkText::dnsEncryption(tls)},
+            {QStringLiteral("dnsPreset"), dnsAuto ? QString() : NetworkText::dnsPresetOf(dns4, dns6)}};
 }
 
 QString NetworkStatus::setIpConfig(const QString &uuid, const QVariantMap &config)
@@ -933,7 +1101,31 @@ QString NetworkStatus::update(const QString &uuid, const QVariantMap &config, bo
         ipv6->setIgnoreAutoDns(!automatic);
     }
 
-    auto reply = connection->update(withSecrets(connection, settings));
+    NMVariantMapMap map = withSecrets(connection, settings);
+    if (dns) {
+        // the servers with their certificate name, and whether to encrypt
+        const bool automatic = config.value(QStringLiteral("dnsAuto"), true).toBool();
+        const QString encryption = automatic ? QString() : config.value(QStringLiteral("dnsEncryption")).toString();
+        const bool encrypted = encryption == QLatin1String("only") || encryption == QLatin1String("preferred");
+        for (const char *family : {"ipv4", "ipv6"}) {
+            const QString group = QString::fromLatin1(family);
+            QVariantMap values = map.value(group);
+            const QStringList servers = strings(config.value(group == QLatin1String("ipv4") ? QStringLiteral("dns4") : QStringLiteral("dns6")));
+            if (automatic)
+                values.remove(QStringLiteral("dns-data"));
+            else
+                values.insert(QStringLiteral("dns-data"), NetworkText::dnsData(servers, encrypted));
+            map.insert(group, values);
+        }
+        QVariantMap general = map.value(QStringLiteral("connection"));
+        const int tls = NetworkText::dnsOverTls(encryption);
+        if (tls < 0)
+            general.remove(QStringLiteral("dns-over-tls"));
+        else
+            general.insert(QStringLiteral("dns-over-tls"), tls);
+        map.insert(QStringLiteral("connection"), general);
+    }
+    auto reply = connection->update(map);
     reply.waitForFinished();
     if (reply.isError())
         return i18nc("@info", "Raye couldn't save these settings. %1", reply.error().message());
@@ -970,6 +1162,84 @@ QString NetworkStatus::setMetered(const QString &uuid, bool metered)
         return i18nc("@info", "Raye couldn't save this setting. %1", reply.error().message());
     scheduleRefresh();
     return {};
+}
+
+QString NetworkStatus::save(const QString &uuid, const std::function<void(NetworkManager::ConnectionSettings::Ptr)> &change)
+{
+    auto connection = NetworkManager::findConnectionByUuid(uuid);
+    if (!connection)
+        return i18nc("@info", "This network is no longer saved on this PC.");
+    auto settings = connection->settings();
+    change(settings);
+    auto reply = connection->update(withSecrets(connection, settings));
+    reply.waitForFinished();
+    if (reply.isError())
+        return i18nc("@info", "Raye couldn't save this setting. %1", reply.error().message());
+    scheduleRefresh();
+    return {};
+}
+
+QString NetworkStatus::networkProfile(const QString &uuid) const
+{
+    auto connection = NetworkManager::findConnectionByUuid(uuid);
+    if (!connection)
+        return QStringLiteral("private");
+    const auto settings = connection->settings();
+    QString keyMgmt;
+    if (auto security = settings->setting(NetworkManager::Setting::WirelessSecurity)
+                            .staticCast<NetworkManager::WirelessSecuritySetting>();
+        security && !security->isNull()) {
+        switch (security->keyMgmt()) {
+        case NetworkManager::WirelessSecuritySetting::Unknown:
+            break;
+        case NetworkManager::WirelessSecuritySetting::OWE:
+            keyMgmt = QStringLiteral("owe");
+            break;
+        default:
+            keyMgmt = QStringLiteral("secured");
+        }
+    }
+    return NetworkText::networkProfile(settings->zone(),
+                                       NetworkManager::ConnectionSettings::typeAsString(settings->connectionType()), keyMgmt);
+}
+
+QString NetworkStatus::setNetworkProfile(const QString &uuid, const QString &profile)
+{
+    const QString problem = save(uuid, [&profile](NetworkManager::ConnectionSettings::Ptr settings) {
+        settings->setZone(NetworkText::zoneOf(profile));
+    });
+    if (!problem.isEmpty())
+        return problem;
+    // NetworkManager tells the firewall at once (its "reapply" event)
+    const auto actives = NetworkManager::activeConnections();
+    for (const auto &active : actives) {
+        if (active->uuid() != uuid)
+            continue;
+        if (auto device = deviceOf(active))
+            device->reapplyConnection({}, 0, 0);
+    }
+    return {};
+}
+
+bool NetworkStatus::randomAddress(const QString &uuid) const
+{
+    auto connection = NetworkManager::findConnectionByUuid(uuid);
+    if (!connection)
+        return false;
+    auto wifi = connection->settings()->setting(NetworkManager::Setting::Wireless).staticCast<NetworkManager::WirelessSetting>();
+    if (!wifi)
+        return false;
+    const QString mac = wifi->assignedMacAddress();
+    // unset follows Raye's default: a stable private address
+    return mac.isEmpty() || mac == QLatin1String("stable") || mac == QLatin1String("random");
+}
+
+QString NetworkStatus::setRandomAddress(const QString &uuid, bool on)
+{
+    return save(uuid, [on](NetworkManager::ConnectionSettings::Ptr settings) {
+        if (auto wifi = settings->setting(NetworkManager::Setting::Wireless).staticCast<NetworkManager::WirelessSetting>())
+            wifi->setAssignedMacAddress(on ? QStringLiteral("stable") : QStringLiteral("permanent"));
+    });
 }
 
 void NetworkStatus::setAdapterEnabled(const QString &uni, bool enabled)

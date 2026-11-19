@@ -253,6 +253,53 @@ private Q_SLOTS:
             QVERIFY(!NetworkText::errorText(problem).isEmpty());
     }
 
+    void networkProfile_data()
+    {
+        QTest::addColumn<QString>("zone");
+        QTest::addColumn<QString>("type");
+        QTest::addColumn<QString>("key");
+        QTest::addColumn<QString>("profile");
+        QTest::newRow("home wifi") << QString() << "802-11-wireless" << "secured" << "private";
+        QTest::newRow("cable") << QString() << "802-3-ethernet" << QString() << "private";
+        QTest::newRow("open wifi") << QString() << "802-11-wireless" << QString() << "public";
+        QTest::newRow("enhanced open") << QString() << "802-11-wireless" << "owe" << "public";
+        QTest::newRow("mobile") << QString() << "gsm" << QString() << "public";
+        QTest::newRow("marked public") << "public" << "802-3-ethernet" << QString() << "public";
+        QTest::newRow("marked private") << "home" << "802-11-wireless" << QString() << "private";
+    }
+    void networkProfile()
+    {
+        QFETCH(QString, zone);
+        QFETCH(QString, type);
+        QFETCH(QString, key);
+        QFETCH(QString, profile);
+        QCOMPARE(NetworkText::networkProfile(zone, type, key), profile);
+        QCOMPARE(NetworkText::networkProfile(NetworkText::zoneOf(profile), type, key), profile);
+    }
+
+    void encryptedDns()
+    {
+        const QVariantList presets = NetworkText::dnsPresets();
+        QCOMPARE(presets.size(), 3);
+        QCOMPARE(NetworkText::dnsPresetOf({QStringLiteral("1.1.1.1"), QStringLiteral("1.0.0.1")},
+                                          {QStringLiteral("2606:4700:4700::1111"), QStringLiteral("2606:4700:4700::1001")}),
+                 QStringLiteral("cloudflare"));
+        QCOMPARE(NetworkText::dnsPresetOf({QStringLiteral("9.9.9.9"), QString()}, {}), QString());
+        QCOMPARE(NetworkText::dnsPresetOf({QStringLiteral("9.9.9.9"), QStringLiteral("149.112.112.112")}, {}),
+                 QStringLiteral("quad9"));
+        QCOMPARE(NetworkText::dnsPresetOf({QStringLiteral("8.8.8.8"), QStringLiteral("8.8.4.4")},
+                                          {QStringLiteral("2606:4700:4700::1111")}), QString());
+        QCOMPARE(NetworkText::dnsTlsName(QStringLiteral("2620:00fe::fe")), QStringLiteral("dns.quad9.net"));
+        QCOMPARE(NetworkText::dnsTlsName(QStringLiteral("192.168.1.1")), QString());
+        QCOMPARE(NetworkText::dnsData({QStringLiteral("8.8.8.8"), QStringLiteral("10.0.0.1"), QString()}, true),
+                 QStringList({QStringLiteral("8.8.8.8#dns.google"), QStringLiteral("10.0.0.1")}));
+        QCOMPARE(NetworkText::dnsData({QStringLiteral("8.8.8.8")}, false), QStringList{QStringLiteral("8.8.8.8")});
+        for (const QString &e : {QStringLiteral("off"), QStringLiteral("preferred"), QStringLiteral("only")})
+            QCOMPARE(NetworkText::dnsEncryption(NetworkText::dnsOverTls(e)), e);
+        QCOMPARE(NetworkText::dnsOverTls(QString()), -1);
+        QCOMPARE(NetworkText::dnsEncryption(-1), QStringLiteral("off"));
+    }
+
     void text()
     {
         QCOMPARE(NetworkText::byteSize(0), QStringLiteral("0 B"));
@@ -384,7 +431,9 @@ private Q_SLOTS:
 
         s = WifiList::newConnection(QStringLiteral("Cafe"), QStringLiteral("open"), QString(), true, false);
         QVERIFY(!s.contains(QStringLiteral("802-11-wireless-security")));
-        QVERIFY(!section(s, "802-11-wireless").contains(QStringLiteral("assigned-mac-address")));
+        // off is said out loud: the system's default is a private address
+        QCOMPARE(section(s, "802-11-wireless").value(QStringLiteral("assigned-mac-address")).toString(),
+                 QStringLiteral("permanent"));
         QCOMPARE(section(s, "connection").value(QStringLiteral("autoconnect")).toBool(), true);
 
         s = WifiList::newConnection(QStringLiteral("New"), QStringLiteral("sae"), QStringLiteral("x"), true, false);
@@ -765,6 +814,39 @@ private Q_SLOTS:
         QVERIFY(!active.isEmpty());
         QTRY_COMPARE(status.primaryType(), QStringLiteral("ethernet"));
         QTRY_VERIFY(status.onCable());
+
+        // encrypted DNS, then other settings saved on top of it keep it
+        const QString uuid = QStringLiteral("8a2c7e1e-5d1f-4c55-9a35-1f8f0c3e7a11");
+        QCOMPARE(status.setDnsConfig(uuid, {{QStringLiteral("dnsAuto"), false},
+                                            {QStringLiteral("dns4"), QStringList{QStringLiteral("1.1.1.1"), QStringLiteral("1.0.0.1")}},
+                                            {QStringLiteral("dns6"), QStringList{QStringLiteral("2606:4700:4700::1111"),
+                                                                                 QStringLiteral("2606:4700:4700::1001")}},
+                                            {QStringLiteral("dnsEncryption"), QStringLiteral("only")}}),
+                 QString());
+        const auto raw = [&wiredConnection]() {
+            QDBusInterface iface(QStringLiteral("org.freedesktop.NetworkManager"), wiredConnection,
+                                 QStringLiteral("org.freedesktop.NetworkManager.Settings.Connection"),
+                                 QDBusConnection::systemBus());
+            QDBusReply<NMVariantMapMap> reply = iface.call(QStringLiteral("GetSettings"));
+            return reply.value();
+        };
+        QCOMPARE(raw().value(QStringLiteral("connection")).value(QStringLiteral("dns-over-tls")).toInt(), 2);
+        QCOMPARE(raw().value(QStringLiteral("ipv4")).value(QStringLiteral("dns-data")).toStringList().value(0),
+                 QStringLiteral("1.1.1.1#cloudflare-dns.com"));
+        QCOMPARE(status.setMetered(uuid, true), QString());
+        QCOMPARE(raw().value(QStringLiteral("connection")).value(QStringLiteral("dns-over-tls")).toInt(), 2);
+        QCOMPARE(raw().value(QStringLiteral("ipv6")).value(QStringLiteral("dns-data")).toStringList().value(0),
+                 QStringLiteral("2606:4700:4700::1111#cloudflare-dns.com"));
+        QCOMPARE(status.ipConfig(uuid).value(QStringLiteral("dnsPreset")).toString(), QStringLiteral("cloudflare"));
+        QCOMPARE(status.ipConfig(uuid).value(QStringLiteral("dnsEncryption")).toString(), QStringLiteral("only"));
+        // (back to automatic is not checked here: dbusmock merges an update
+        // into what it has, where NetworkManager replaces it)
+
+        // network profile: private by default for a cable, public once marked
+        QCOMPARE(status.networkProfile(uuid), QStringLiteral("private"));
+        QCOMPARE(status.setNetworkProfile(uuid, QStringLiteral("public")), QString());
+        QCOMPARE(raw().value(QStringLiteral("connection")).value(QStringLiteral("zone")).toString(), QStringLiteral("public"));
+        QCOMPARE(status.networkProfile(uuid), QStringLiteral("public"));
         QCOMPARE(status.wifiSummary(), QStringLiteral("Not in use, this PC is connected by cable"));
         QVERIFY(shownText(QStringLiteral("WifiPage.qml")).contains(QStringLiteral("Connected by cable")));
 
