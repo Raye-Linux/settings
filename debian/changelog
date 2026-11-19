@@ -10,6 +10,12 @@ raye-settings (1.0~beta1) resolute; urgency=medium
   * The mouse wheel scrolls every page by a Windows-sized step.
   * The Raye kernel is not offered on PCs with NVIDIA's driver, and says why.
   * Lists with a saved choice (Colors mode and others) show it again.
+  * New page, Accounts > Files from Windows: copy Documents, Pictures, Music,
+    Videos, Downloads and the Desktop of each Windows account (or from a USB
+    drive), with the wallpaper and browser favorites; the Windows drive is
+    opened read-only, every file is checked after copying, a stopped copy
+    picks up where it was, and after the first sign-in a notification
+    offers it when Windows is on the PC.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 06:00:00 +0000
 
