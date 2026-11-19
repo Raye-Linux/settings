@@ -456,6 +456,85 @@ private Q_SLOTS:
         QVERIFY(values(p.actionChoices(true, 32)).contains(PowerSettings::Lock));
         QVERIFY(values(p.actionChoices(true, 2)).contains(PowerSettings::Hibernate));
     }
+
+    void sleepGuardState()
+    {
+        QCOMPARE(PowerSettings::sleepOffReasonOf(R"({"status": "off", "reason": "model"})"), u"model"_s);
+        QCOMPARE(PowerSettings::sleepOffReasonOf(R"({"status": "off", "reason": "failed"})"), u"failed"_s);
+        QCOMPARE(PowerSettings::sleepOffReasonOf(R"({"status": "off"})"), u"failed"_s);
+        QVERIFY(PowerSettings::sleepOffReasonOf(R"({"status": "warned", "reason": ""})").isEmpty());
+        QVERIFY(PowerSettings::sleepOffReasonOf(R"({"status": "ok", "user_on": true})").isEmpty());
+        QVERIFY(PowerSettings::sleepOffReasonOf("not json").isEmpty());
+    }
+
+    void sleepTurnedOffByRaye()
+    {
+        QTemporaryDir root;
+        writeGuardState(root.path(), R"({"status": "off", "reason": "model", "event": 1})");
+        PowerSettings p(client(), root.path(), nullptr);
+        QVERIFY(p.sleepOff());
+        QCOMPARE(p.sleepOffReason(), u"model"_s);
+        // the lid turns the screen off (the daemon's rule when it cannot sleep)
+        QCOMPARE(p.lidAc(), int(PowerSettings::ScreenOff));
+        auto values = [](const QVariantList &l) {
+            QList<int> v;
+            for (const QVariant &x : l)
+                v << x.toMap().value(u"value"_s).toInt();
+            return v;
+        };
+        QVERIFY(!values(p.actionChoices(true, PowerSettings::ScreenOff)).contains(PowerSettings::Sleep));
+        QVERIFY(!values(p.actionChoices(false, PowerSettings::Ask)).contains(PowerSettings::Sleep));
+        // a choice already made stays shown
+        QVERIFY(values(p.actionChoices(true, PowerSettings::Sleep)).contains(PowerSettings::Sleep));
+
+        PowerSettings normal(client(), m_dir.path(), nullptr);
+        QVERIFY(!normal.sleepOff());
+        QVERIFY(values(normal.actionChoices(true, 1)).contains(PowerSettings::Sleep));
+    }
+
+    void turnSleepBackOn()
+    {
+        QTemporaryDir root;
+        writeGuardState(root.path(), R"({"status": "off", "reason": "failed"})");
+        const QString state = root.filePath(u"var/lib/raye/sleep-guard/state.json"_s);
+        PowerSettings p(client(), root.path(), nullptr);
+        p.setSleepRestoreCommand({});
+
+        // the password box closed: nothing changes, no error
+        p.setSleepGuardCommand({u"sh"_s, u"-c"_s, u"exit 126"_s});
+        QSignalSpy spy(&p, &PowerSettings::sleepGuardChanged);
+        QVERIFY(p.turnSleepBackOn());
+        QVERIFY(p.sleepBusy());
+        QVERIFY(!p.turnSleepBackOn());
+        QTRY_VERIFY(!p.sleepBusy());
+        QVERIFY(p.sleepOff());
+        QVERIFY(!p.sleepFailed());
+
+        // the helper failed
+        p.setSleepGuardCommand({u"sh"_s, u"-c"_s, u"exit 1"_s});
+        QVERIFY(p.turnSleepBackOn());
+        QTRY_VERIFY(!p.sleepBusy());
+        QVERIFY(p.sleepFailed());
+        QVERIFY(p.sleepOff());
+
+        // it went through: the guard wrote "ok"
+        p.setSleepGuardCommand({u"sh"_s, u"-c"_s, u"printf '{\"status\": \"ok\", \"user_on\": true}' > \"$0\""_s, state});
+        QVERIFY(p.turnSleepBackOn());
+        QTRY_VERIFY(!p.sleepBusy());
+        QVERIFY(!p.sleepFailed());
+        QVERIFY(!p.sleepOff());
+        QVERIFY(p.sleepTurnedOn());
+        QCOMPARE(p.lidAc(), int(PowerSettings::Sleep));
+    }
+
+private:
+    static void writeGuardState(const QString &root, const QByteArray &json)
+    {
+        QDir().mkpath(root + u"/var/lib/raye/sleep-guard"_s);
+        QFile f(root + u"/var/lib/raye/sleep-guard/state.json"_s);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write(json);
+    }
 };
 
 QTEST_GUILESS_MAIN(TestPower)

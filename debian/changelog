@@ -28,6 +28,9 @@ raye-settings (1.0~beta2) resolute; urgency=medium
   * Network profile type, random hardware addresses and encrypted DNS
     (Cloudflare, Quad9, Google) in network properties; turning the
     firewall off is remembered.
+  * System > Power says when Raye turned sleep off because this PC did not
+    wake up from it, and has a "Turn sleep back on" button; while sleep is
+    off, the lid turns the screen off and Sleep is not offered.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 10:00:00 +0000
 

@@ -26,6 +26,43 @@ PageScaffold {
         PowerBatteryBanner { power: powerSettings }
     }
 
+    // --- Sleep turned off by Raye on this PC -------------------------------
+    InfoBar {
+        Layout.fillWidth: true
+        Layout.bottomMargin: Theme.s3
+        open: powerSettings.sleepOff
+        closable: false
+        severity: "warning"
+        title: i18nc("@info", "Sleep is turned off on this PC")
+        message: (powerSettings.sleepOffReason === "model"
+                  ? i18nc("@info", "This PC model doesn't wake up from sleep, so Raye turned sleep off.")
+                  : i18nc("@info", "This PC didn't wake up from sleep twice in a row, so Raye turned sleep off."))
+                 + (powerSettings.lidPresent
+                    ? " " + i18nc("@info", "Closing the lid locks the PC and turns off the screen.") : "")
+        Button {
+            text: i18nc("@action:button", "Turn sleep back on")
+            enabled: !powerSettings.sleepBusy
+            onClicked: powerSettings.turnSleepBackOn()
+        }
+    }
+    InfoBar {
+        Layout.fillWidth: true
+        Layout.bottomMargin: Theme.s3
+        open: powerSettings.sleepFailed
+        severity: "error"
+        title: i18nc("@info", "Sleep couldn't be turned back on")
+        message: i18nc("@info", "Try again in a moment.")
+        onClosed: powerSettings.readSleepGuard()
+    }
+    InfoBar {
+        Layout.fillWidth: true
+        Layout.bottomMargin: Theme.s3
+        open: powerSettings.sleepTurnedOn && !powerSettings.sleepOff
+        severity: "success"
+        title: i18nc("@info", "Sleep is back on")
+        message: i18nc("@info", "Sleep shows in the power menu after you sign out and back in. If the PC doesn't wake up twice in a row, Raye turns sleep off again.")
+    }
+
     // --- Energy saver -----------------------------------------------------
     Expander {
         searchId: "energy-saver"
@@ -138,7 +175,7 @@ PageScaffold {
         }
         ExpanderRow {
             searchId: "sleep-battery"
-            visible: page.laptop
+            visible: page.laptop && !powerSettings.sleepOff
             title: i18nc("@label", "On battery power, put my device to sleep after")
             PowerChoiceBox {
                 label: i18nc("@label", "On battery power, put my device to sleep after")
@@ -149,6 +186,7 @@ PageScaffold {
         }
         ExpanderRow {
             searchId: "sleep"
+            visible: !powerSettings.sleepOff
             title: page.laptop ? i18nc("@label", "When plugged in, put my device to sleep after")
                                : i18nc("@label", "Put my device to sleep after")
             PowerChoiceBox {

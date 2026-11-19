@@ -10950,3 +10950,35 @@ msgstr "Chiffré de préférence, non chiffré autorisé"
 msgctxt "@info"
 msgid "If this network shows a sign-in page (in a hotel or an airport), choose “Encrypted preferred” for it, or the page can't open."
 msgstr "Si ce réseau affiche une page de connexion (dans un hôtel ou un aéroport), choisissez « Chiffré de préférence » pour lui, sinon la page ne peut pas s'ouvrir."
+
+msgctxt "@info"
+msgid "Sleep is turned off on this PC"
+msgstr "La mise en veille est désactivée sur ce PC"
+
+msgctxt "@info"
+msgid "This PC model doesn't wake up from sleep, so Raye turned sleep off."
+msgstr "Ce modèle de PC ne se réveille pas de la mise en veille, alors Raye l'a désactivée."
+
+msgctxt "@info"
+msgid "This PC didn't wake up from sleep twice in a row, so Raye turned sleep off."
+msgstr "Ce PC ne s'est pas réveillé de la mise en veille deux fois de suite, alors Raye l'a désactivée."
+
+msgctxt "@info"
+msgid "Closing the lid locks the PC and turns off the screen."
+msgstr "Fermer le capot verrouille le PC et éteint l'écran."
+
+msgctxt "@action:button"
+msgid "Turn sleep back on"
+msgstr "Réactiver la mise en veille"
+
+msgctxt "@info"
+msgid "Sleep couldn't be turned back on"
+msgstr "La mise en veille n'a pas pu être réactivée"
+
+msgctxt "@info"
+msgid "Sleep is back on"
+msgstr "La mise en veille est réactivée"
+
+msgctxt "@info"
+msgid "Sleep shows in the power menu after you sign out and back in. If the PC doesn't wake up twice in a row, Raye turns sleep off again."
+msgstr "La mise en veille apparaît dans le menu d'alimentation après vous être déconnecté puis reconnecté. Si le PC ne se réveille pas deux fois de suite, Raye la désactive de nouveau."

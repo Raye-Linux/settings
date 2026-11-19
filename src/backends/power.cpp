@@ -11,6 +11,8 @@
 #include <QDBusPendingReply>
 #include <QDBusVariant>
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QProcess>
 #include <QStandardPaths>
 
@@ -21,6 +23,11 @@ const QString upowerPath = QStringLiteral("/org/freedesktop/UPower");
 const QString displayDevice = QStringLiteral("/org/freedesktop/UPower/devices/DisplayDevice");
 const QString deviceInterface = QStringLiteral("org.freedesktop.UPower.Device");
 const QString properties = QStringLiteral("org.freedesktop.DBus.Properties");
+// Raye's sleep guard (raye-base)
+const char sleepGuard[] = "/usr/libexec/raye-sleep-guard";
+const char sleepGuardState[] = "/var/lib/raye/sleep-guard/state.json";
+// pkexec: the password prompt was closed
+constexpr int pkexecDismissed = 126;
 
 struct HistoryItem {
     uint time = 0;
@@ -76,6 +83,10 @@ PowerSettings::PowerSettings(const QDBusConnection &bus, const QString &root, QO
     , m_root(root)
     , m_config(KSharedConfig::openConfig(QStringLiteral("powerdevilrc")))
     , m_own(KSharedConfig::openConfig(QStringLiteral("raye-settingsrc")))
+    , m_sleepCommand{QStringLiteral("pkexec"), QString::fromLatin1(sleepGuard), QStringLiteral("enable")}
+    // the session part gives the lid back its sleep
+    , m_sleepRestore{QStringLiteral("systemctl"), QStringLiteral("--user"), QStringLiteral("start"), QStringLiteral("--no-block"),
+                     QStringLiteral("raye-sleep-notice.service")}
 {
     qDBusRegisterMetaType<HistoryItem>();
     qDBusRegisterMetaType<QList<HistoryItem>>();
@@ -83,6 +94,8 @@ PowerSettings::PowerSettings(const QDBusConnection &bus, const QString &root, QO
     QFile cpuinfo(m_root + QStringLiteral("/proc/cpuinfo"));
     if (cpuinfo.open(QIODevice::ReadOnly))
         m_isVM = isVirtualMachine(QString::fromUtf8(cpuinfo.read(1 << 20)));
+
+    readSleepGuard();
 
     m_bus.connect(upower, displayDevice, properties, QStringLiteral("PropertiesChanged"), this,
                   SLOT(onUPowerChanged(QString, QVariantMap, QStringList)));
@@ -549,7 +562,7 @@ int PowerSettings::action(const QString &source, const char *key) const
     const KConfigGroup g = m_config->group(source).group(QStringLiteral("SuspendAndShutdown"));
     uint fallback = uint(Ask);
     if (qstrcmp(key, "LidAction") == 0)
-        fallback = m_isVM ? uint(NoAction) : uint(Sleep);
+        fallback = sleepOff() ? uint(ScreenOff) : m_isVM ? uint(NoAction) : uint(Sleep);
     return int(g.readEntry(key, fallback));
 }
 
@@ -588,7 +601,8 @@ QVariantList PowerSettings::actionChoices(bool lid, int current) const
         list.append(QVariantMap{{QStringLiteral("value"), value}, {QStringLiteral("text"), text}});
     };
     add(NoAction, i18nc("@item:inlistbox lid or power button", "Do nothing"));
-    add(Sleep, i18nc("@item:inlistbox lid or power button", "Sleep"));
+    if (!sleepOff() || current == Sleep)
+        add(Sleep, i18nc("@item:inlistbox lid or power button", "Sleep"));
     if (m_canHibernate || current == Hibernate)
         add(Hibernate, i18nc("@item:inlistbox lid or power button", "Hibernate"));
     add(Shutdown, i18nc("@item:inlistbox lid or power button", "Shut down"));
@@ -621,8 +635,66 @@ void PowerSettings::reload()
 {
     m_config->reparseConfiguration();
     m_own->reparseConfiguration();
+    readSleepGuard();
     readBattery();
     readProfiles();
     Q_EMIT timeoutsChanged();
     Q_EMIT energySaverSettingsChanged();
+}
+
+// --- sleep guard ----------------------------------------------------------
+
+QString PowerSettings::sleepOffReasonOf(const QByteArray &stateJson)
+{
+    const QJsonObject state = QJsonDocument::fromJson(stateJson).object();
+    if (state.value(QLatin1String("status")).toString() != QLatin1String("off"))
+        return {};
+    const QString reason = state.value(QLatin1String("reason")).toString();
+    return reason == QLatin1String("model") ? reason : QStringLiteral("failed");
+}
+
+void PowerSettings::readSleepGuard()
+{
+    QFile file(m_root + QLatin1String(sleepGuardState));
+    const QString reason = file.open(QIODevice::ReadOnly) ? sleepOffReasonOf(file.read(1 << 16)) : QString();
+    if (reason == m_sleepOffReason)
+        return;
+    m_sleepOffReason = reason;
+    Q_EMIT sleepGuardChanged();
+    Q_EMIT timeoutsChanged();
+}
+
+bool PowerSettings::turnSleepBackOn()
+{
+    if (m_sleepBusy || m_sleepCommand.isEmpty())
+        return false;
+    m_sleepBusy = true;
+    m_sleepFailed = false;
+    Q_EMIT sleepGuardChanged();
+    auto *process = new QProcess(this);
+    process->setStandardInputFile(QProcess::nullDevice());
+    process->setStandardOutputFile(QProcess::nullDevice());
+    process->setStandardErrorFile(QProcess::nullDevice());
+    auto done = [this, process](bool ok, bool dismissed) {
+        process->deleteLater();
+        m_sleepBusy = false;
+        m_sleepFailed = !ok && !dismissed;
+        if (ok) {
+            m_sleepTurnedOn = true;
+            if (!m_sleepRestore.isEmpty())
+                QProcess::startDetached(m_sleepRestore.first(), m_sleepRestore.mid(1));
+        }
+        readSleepGuard();
+        Q_EMIT sleepGuardChanged();
+    };
+    connect(process, &QProcess::finished, this, [done](int code, QProcess::ExitStatus status) {
+        const bool normal = status == QProcess::NormalExit;
+        done(normal && code == 0, normal && code == pkexecDismissed);
+    });
+    connect(process, &QProcess::errorOccurred, this, [done](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart)
+            done(false, false);
+    });
+    process->start(m_sleepCommand.first(), m_sleepCommand.mid(1));
+    return true;
 }

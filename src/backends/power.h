@@ -19,6 +19,12 @@
 //   session's energy saver service; its settings are here, in
 //   raye-settingsrc [EnergySaver] TurnOnAt (percent, 0 = never) and
 //   LowerBrightness.
+// - Sleep turned off on a PC where it does not wake up: Raye's sleep guard
+//   (raye-base) keeps its state in /var/lib/raye/sleep-guard/state.json,
+//   readable by anyone; "Turn sleep back on" runs its "enable" through
+//   pkexec. While sleep is off, the lid's default is to turn the screen
+//   off (the power daemon's own rule when the PC cannot sleep) and Sleep
+//   is not offered for the lid or the power button.
 #pragma once
 
 #include <KSharedConfig>
@@ -73,6 +79,16 @@ class PowerSettings : public QObject
     Q_PROPERTY(int buttonBattery READ buttonBattery WRITE setButtonBattery NOTIFY timeoutsChanged)
     Q_PROPERTY(bool canHibernate READ canHibernate NOTIFY batteryChanged)
 
+    // sleep turned off on this PC by Raye's sleep guard
+    Q_PROPERTY(bool sleepOff READ sleepOff NOTIFY sleepGuardChanged)
+    // "failed" (it did not wake up twice) or "model" (a PC known not to)
+    Q_PROPERTY(QString sleepOffReason READ sleepOffReason NOTIFY sleepGuardChanged)
+    Q_PROPERTY(bool sleepBusy READ sleepBusy NOTIFY sleepGuardChanged)
+    // the last "turn back on" did not go through (not the password closed)
+    Q_PROPERTY(bool sleepFailed READ sleepFailed NOTIFY sleepGuardChanged)
+    // turned back on in this window: Plasma shows Sleep after signing in again
+    Q_PROPERTY(bool sleepTurnedOn READ sleepTurnedOn NOTIFY sleepGuardChanged)
+
 public:
     enum Action { NoAction = 0, Sleep = 1, Hibernate = 2, Shutdown = 8, Ask = 16, Lock = 32, ScreenOff = 64 };
     Q_ENUM(Action)
@@ -122,6 +138,20 @@ public:
     void setButtonBattery(int a) { setAction(QStringLiteral("Battery"), "PowerButtonAction", a); }
     bool canHibernate() const { return m_canHibernate; }
 
+    bool sleepOff() const { return !m_sleepOffReason.isEmpty(); }
+    QString sleepOffReason() const { return m_sleepOffReason; }
+    bool sleepBusy() const { return m_sleepBusy; }
+    bool sleepFailed() const { return m_sleepFailed; }
+    bool sleepTurnedOn() const { return m_sleepTurnedOn; }
+    // false when it is already running
+    Q_INVOKABLE bool turnSleepBackOn();
+    Q_INVOKABLE void readSleepGuard();
+    // the guard's state.json to the reason sleep is off, empty when it is on
+    static QString sleepOffReasonOf(const QByteArray &stateJson);
+    // for the tests
+    void setSleepGuardCommand(const QStringList &command) { m_sleepCommand = command; }
+    void setSleepRestoreCommand(const QStringList &command) { m_sleepRestore = command; }
+
     // per source ("AC", "Battery")
     int screenOff(const QString &source) const;
     void setScreenOff(const QString &source, int seconds);
@@ -163,6 +193,7 @@ Q_SIGNALS:
     void profileChanged();
     void energySaverSettingsChanged();
     void timeoutsChanged();
+    void sleepGuardChanged();
 
 private Q_SLOTS:
     void readBattery();
@@ -191,6 +222,12 @@ private:
     bool m_onBattery = false;
     bool m_lidPresent = false;
     bool m_canHibernate = false;
+    QString m_sleepOffReason;
+    bool m_sleepBusy = false;
+    bool m_sleepFailed = false;
+    bool m_sleepTurnedOn = false;
+    QStringList m_sleepCommand;
+    QStringList m_sleepRestore;
     QString m_batteryPath;
     QVariantList m_history;
 
