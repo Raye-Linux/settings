@@ -73,7 +73,7 @@ void makeLaptop(const QString &r)
     put(r, QStringLiteral("proc/sys/kernel/osrelease"), "7.0.14-2-raye\n");
     put(r, QStringLiteral("etc/machine-id"), "3f2a9c1e0b7d4e8f9a6b5c4d3e2f1a0b\n");
     put(r, QStringLiteral("etc/os-release"),
-        "PRETTY_NAME=\"Raye Linux 0.5 Beta Alpenglow\"\nNAME=\"Raye Linux\"\nVERSION_ID=\"0.5\"\nVERSION=\"0.5 Beta Alpenglow\"\nID=raye\n");
+        "PRETTY_NAME=\"Raye Linux 1.0 Beta Brocken\"\nNAME=\"Raye Linux\"\nVERSION_ID=\"1.0\"\nVERSION=\"1.0 Beta Brocken\"\nID=raye\n");
     put(r, QStringLiteral("usr/share/misc/pci.ids"), pciIds);
     put(r, QStringLiteral("sys/class/drm/card1/device/vendor"), "0x8086\n");
     put(r, QStringLiteral("sys/class/drm/card1/device/device"), "0x9a49\n");
@@ -253,7 +253,7 @@ private Q_SLOTS:
         QCOMPARE(f.penAndTouch, QStringLiteral("touch"));
         QCOMPARE(f.deviceId, QStringLiteral("3F2A9C1E-0B7D-4E8F-9A6B-5C4D3E2F1A0B"));
         QCOMPARE(f.edition, QStringLiteral("Raye Linux"));
-        QCOMPARE(f.version, QStringLiteral("0.5 Beta Alpenglow"));
+        QCOMPARE(f.version, QStringLiteral("1.0 Beta Brocken"));
         QCOMPARE(f.kernelRelease, QStringLiteral("7.0.14-2-raye"));
         QVERIFY(f.installedOn.isValid());
     }

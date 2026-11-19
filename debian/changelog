@@ -1,3 +1,18 @@
+raye-settings (1.0~beta1) resolute; urgency=medium
+
+  * New page, System > Performance options: one choice turns animations,
+    transparency and shadows off for a slow PC, or set each effect on its
+    own. The Settings window follows Transparency effects.
+  * Raye Update shows how far the check got, the size of what it found, the
+    download speed and time left, where each update is while they install,
+    says when a restart is still needed, and folds Raye's own updates under
+    one row.
+  * The mouse wheel scrolls every page by a Windows-sized step.
+  * The Raye kernel is not offered on PCs with NVIDIA's driver, and says why.
+  * Lists with a saved choice (Colors mode and others) show it again.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 06:00:00 +0000
+
 raye-settings (0.5.8~beta1) resolute; urgency=medium
 
   * Raye Update: "Restart now" shows 2.5 seconds after the updates finish,
