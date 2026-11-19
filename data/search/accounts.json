@@ -142,6 +142,45 @@
                 "créer un utilisateur",
                 "supprimer un utilisateur"
             ]
+        },
+        {
+            "id": "accounts/windows-files#drive",
+            "label": "Bring your files from Windows",
+            "label_fr": "Récupérer vos fichiers de Windows",
+            "keywords": [
+                "transfer",
+                "migrate",
+                "import",
+                "copy files",
+                "old PC",
+                "dual boot",
+                "Windows Easy Transfer"
+            ],
+            "keywords_fr": [
+                "transférer",
+                "migrer",
+                "importer",
+                "copier des fichiers",
+                "ancien PC",
+                "double démarrage"
+            ]
+        },
+        {
+            "id": "accounts/windows-files#folder",
+            "label": "Copy files from a USB drive",
+            "label_fr": "Copier des fichiers depuis une clé USB",
+            "keywords": [
+                "usb",
+                "external drive",
+                "backup",
+                "Windows files"
+            ],
+            "keywords_fr": [
+                "clé usb",
+                "disque externe",
+                "sauvegarde",
+                "fichiers Windows"
+            ]
         }
     ]
 }

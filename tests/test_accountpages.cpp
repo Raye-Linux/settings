@@ -91,8 +91,8 @@ private Q_SLOTS:
             QTest::newRow(qPrintable(category.id + QStringLiteral("-landing"))) << category.id << category.landing;
             ++count;
         }
-        // devices: 8 and a landing page; accounts: 4 and a landing page
-        QCOMPARE(count, 14);
+        // devices: 8 and a landing page; accounts: 5 and a landing page
+        QCOMPARE(count, 15);
     }
 
     void everyPageIsReal()

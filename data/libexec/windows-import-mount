@@ -1,0 +1,119 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Accounts > Files from Windows: opens a Windows volume read-only for the
+# person who asked, for as long as Settings needs it. Run through pkexec
+# (org.raye.settings.windowsimport).
+#
+#   windows-import-mount hold DEVICE
+#
+# Prints one line and keeps the volume mounted until its standard input
+# closes (Settings closes it when the copy is done, or when it quits for
+# any reason), then unmounts it and prints "unmounted":
+#
+#   mounted PATH            read-only, readable by that person only
+#   warning dirty           Windows was not shut down properly: what it was
+#                           writing last may be missing
+#   refused bitlocker       locked with BitLocker
+#   refused hibernated      Windows is hibernated or uses Fast Startup
+#   refused busy            mounted already, or held by something else
+#   refused not-windows     not an NTFS volume
+#   refused unreadable      ntfs-3g could not open it
+#
+# The account comes from PKEXEC_UID, never from the command line. Nothing
+# is ever written to the volume: ntfs-3g is told "ro", and the hibernated
+# case is refused before any mount, since what Windows kept in memory is
+# not on the disk yet.
+set -u
+LC_ALL=C
+export LC_ALL
+umask 022
+
+base=${RAYE_WINDOWS_IMPORT_RUN:-/run/raye-windows-import}
+
+say() { printf '%s\n' "$*"; }
+refuse() { say "refused $1"; exit 2; }
+
+[ "$(id -u)" = 0 ] || { echo "windows-import-mount: run through pkexec" >&2; exit 1; }
+[ "${1:-}" = hold ] && [ $# = 2 ] || { echo "usage: windows-import-mount hold DEVICE" >&2; exit 1; }
+uid=${PKEXEC_UID:-}
+case $uid in ''|*[!0-9]*) echo "windows-import-mount: no PKEXEC_UID" >&2; exit 1 ;; esac
+[ "$uid" -ge 1000 ] || { echo "windows-import-mount: not a person's account" >&2; exit 1; }
+gid=$(id -g "$uid" 2>/dev/null) || { echo "windows-import-mount: unknown account" >&2; exit 1; }
+
+# a block device under /dev, by a plain name
+dev=$2
+case $dev in
+    /dev/*) ;;
+    *) refuse not-windows ;;
+esac
+case $dev in *..*|*[!A-Za-z0-9/._:-]*) refuse not-windows ;; esac
+dev=$(readlink -e -- "$dev") || refuse not-windows
+case $dev in /dev/*) ;; *) refuse not-windows ;; esac
+[ -b "$dev" ] || refuse not-windows
+
+# blkid -p reads the disk itself, not the cache
+fstype=$(blkid -p -o value -s TYPE -- "$dev" 2>/dev/null)
+case $fstype in
+    BitLocker) refuse bitlocker ;;
+    ntfs) ;;
+    *) refuse not-windows ;;
+esac
+findmnt -rn -S "$dev" >/dev/null 2>&1 && refuse busy
+
+# ntfs-3g.probe's exit codes (see raye-preflight in the installer)
+warning=
+ntfs-3g.probe --readwrite "$dev" >/dev/null 2>&1
+case $? in
+    0) ;;
+    14) refuse hibernated ;;
+    15) warning=dirty ;;
+    16) refuse busy ;;
+    *) ;;
+esac
+
+name=$(basename -- "$dev")
+mkdir -p "$base" && chmod 755 "$base" || refuse unreadable
+# Every folder on the way is root's, so nobody can put a link there and
+# have the volume mounted somewhere else; the files themselves are the
+# person's only (uid=, fmask/dmask below).
+own=$base/$uid
+if [ -L "$own" ] || { [ -e "$own" ] && [ ! -d "$own" ]; }; then
+    rm -f -- "$own" 2>/dev/null || refuse unreadable
+fi
+mkdir -p -m 755 -- "$own" && chown 0:0 -- "$own" && chmod 755 -- "$own" || refuse unreadable
+where=$own/$name
+[ -L "$where" ] && refuse unreadable
+findmnt -rn -M "$where" >/dev/null 2>&1 && refuse busy
+mkdir -p -- "$where" || refuse unreadable
+
+# files 0400 and folders 0500, the person's: read, never write
+if ! mount -t ntfs-3g -o "ro,nosuid,nodev,noexec,uid=$uid,gid=$gid,fmask=0377,dmask=0277" \
+        -- "$dev" "$where" 2>/dev/null; then
+    rmdir -- "$where" 2>/dev/null
+    refuse unreadable
+fi
+
+release() {
+    trap - EXIT HUP INT TERM PIPE
+    tries=0
+    while findmnt -rn -M "$where" >/dev/null 2>&1; do
+        umount -- "$where" 2>/dev/null && break
+        tries=$((tries + 1))
+        if [ $tries -ge 10 ]; then
+            # still held by a file someone opened: let go of it when they close it
+            umount -l -- "$where" 2>/dev/null
+            break
+        fi
+        sleep 1
+    done
+    rmdir -- "$where" 2>/dev/null
+    say unmounted 2>/dev/null
+    exit 0
+}
+trap release EXIT HUP INT TERM PIPE
+
+[ -n "$warning" ] && say "warning $warning"
+say "mounted $where"
+# Settings closes our standard input when it is done, or when it goes
+cat >/dev/null
+release

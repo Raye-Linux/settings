@@ -832,6 +832,17 @@
                     "requires": "raye-account"
                 },
                 {
+                    "id": "accounts/windows-files",
+                    "icon": "org.raye.settings-backup",
+                    "icon_fallback": "folder-download",
+                    "name": "Files from Windows",
+                    "name_fr": "Fichiers de Windows",
+                    "summary": "Copy your documents, pictures and more from Windows",
+                    "summary_fr": "Copier vos documents, images et plus depuis Windows",
+                    "type": "qml",
+                    "component": "pages/accounts/WindowsFilesPage.qml"
+                },
+                {
                     "id": "accounts/your-devices",
                     "icon": "org.raye.settings-devices",
                     "icon_fallback": "computer",

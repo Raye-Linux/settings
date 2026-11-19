@@ -203,6 +203,12 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data/icons-avatars)
     install(DIRECTORY data/icons-avatars/ DESTINATION ${KDE_INSTALL_DATADIR}/raye-settings/avatars)
 endif()
 
+# Started after signing in (the offer of Files from Windows).
+file(GLOB RAYE_AUTOSTART CONFIGURE_DEPENDS data/autostart/*.desktop)
+if(RAYE_AUTOSTART)
+    install(FILES ${RAYE_AUTOSTART} DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
+endif()
+
 file(GLOB RAYE_USER_UNITS CONFIGURE_DEPENDS data/systemd/user/*)
 if(RAYE_USER_UNITS)
     install(FILES ${RAYE_USER_UNITS} DESTINATION ${KDE_INSTALL_SYSTEMDUSERUNITDIR})

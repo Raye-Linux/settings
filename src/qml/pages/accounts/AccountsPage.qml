@@ -33,6 +33,14 @@ PageScaffold {
     }
     NavCard {
         Layout.fillWidth: true
+        iconName: "org.raye.settings-backup"
+        iconFallback: "folder-download"
+        title: i18nc("@title settings page", "Files from Windows")
+        description: i18nc("@info", "Copy your documents, pictures and more from Windows")
+        target: "accounts/windows-files"
+    }
+    NavCard {
+        Layout.fillWidth: true
         iconName: "org.raye.settings-sign-in"
         iconFallback: "preferences-desktop-user-password"
         title: i18nc("@title settings page", "Sign-in options")

@@ -28,7 +28,7 @@ Depends: qml6-module-org-kde-kirigami, qml6-module-qtquick-layouts,
          bluedevil, plasma-nm, power-profiles-daemon, accountsservice,
          kinfocenter, print-manager, kdeconnect, krdp, kaccounts-integration,
          kde-config-flatpak, kde-config-tablet, plasma-firewall, ufw,
-         fwupd, packagekit, debsums, python3, openssl, iproute2,
+         fwupd, packagekit, debsums, python3, openssl, iproute2, ntfs-3g,
          ${shlibs:Depends}, ${misc:Depends}
 Recommends: fprintd, snapper, orca, avahi-utils
 Description: Raye Linux settings

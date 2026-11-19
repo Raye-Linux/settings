@@ -10,6 +10,7 @@
 #include "router.h"
 #include "systeminfo.h"
 #include "updatestatus.h"
+#include "windowsimport.h"
 
 #include <KAboutData>
 #include <KDBusService>
@@ -179,6 +180,15 @@ int main(int argc, char *argv[])
         if (std::strcmp(argv[i], "--knows") == 0) {
             QCoreApplication ask(argc, argv);
             return knows(QString::fromLocal8Bit(argv[i + 1])) ? 0 : 1;
+        }
+    }
+
+    // after the first sign-in: Windows is on this PC, bring its files over?
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--offer-windows-import") == 0) {
+            QCoreApplication offer(argc, argv);
+            KLocalizedString::setApplicationDomain("raye-settings");
+            return WindowsImport::offerAtSignIn();
         }
     }
 

@@ -1,0 +1,13 @@
+[Desktop Entry]
+# Once per account, after the first sign-in: when Windows is on this PC,
+# a notification offers to bring its files over (Accounts > Files from
+# Windows). It decides for itself and exits at once when there is nothing
+# to offer, from the USB stick, or when it was offered before.
+Type=Application
+Name=Files from Windows
+Name[fr]=Fichiers de Windows
+Exec=raye-settings --offer-windows-import
+Icon=org.raye.settings
+NoDisplay=true
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2

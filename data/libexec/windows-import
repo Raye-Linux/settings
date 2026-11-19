@@ -1,0 +1,1145 @@
+#!/usr/bin/python3 -I
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Accounts > Files from Windows: finds the folders of the Windows accounts
+on a drive and copies the ones the person ticks into their own folders.
+
+    windows-import volumes          the drives that may hold Windows files (JSON)
+    windows-import scan DIR         the accounts under DIR and their folders (JSON)
+    windows-import copy PLAN        copies what PLAN names, one JSON line per event
+
+Always run as the person whose folders receive the files. The Windows
+volume itself is mounted read-only by windows-import-mount, through pkexec;
+nothing here ever writes to the source.
+
+A file counts as copied once it has been read back from the disk with the
+same size and SHA-256, the way Setup checks the files it keeps when it
+replaces Windows (installer: rayedisk_keep.Copier). It is written under a
+temporary name and only takes its real name after that read-back, so an
+interrupted copy never leaves half a file behind a good name. Copying again
+skips what is already there with the same size and time, which is how a
+stopped copy picks up where it was.
+
+Every folder is opened one name at a time with O_NOFOLLOW from the one
+above it: a link or a junction anywhere on the way is never followed, and
+links met inside the folders are left out and counted.
+"""
+import hashlib
+import json
+import os
+import signal
+import sqlite3
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from html import escape
+
+KINDS = ("desktop", "documents", "downloads", "music", "pictures", "videos")
+ENGLISH = {"desktop": "Desktop", "documents": "Documents", "downloads": "Downloads",
+           "music": "Music", "pictures": "Pictures", "videos": "Videos"}
+# OneDrive's folder backup moves these three under the account's OneDrive
+ONEDRIVE = ("desktop", "documents", "pictures")
+WINDOWS_SKIP = {"default", "default user", "public", "all users", "defaultuser0",
+                "defaultuser100000", "wdagutilityaccount", "defaultapppool"}
+# files Windows makes in every folder, and shortcuts to places on C:
+WINDOWS_FILES = {"desktop.ini", "thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", ".ds_store"}
+WINDOWS_SUFFIXES = (".lnk",)
+WALLPAPER = "AppData/Roaming/Microsoft/Windows/Themes/TranscodedWallpaper"
+CHROMIUM = (("chrome", "Google Chrome", "AppData/Local/Google/Chrome/User Data"),
+            ("edge", "Microsoft Edge", "AppData/Local/Microsoft/Edge/User Data"))
+FIREFOX = "AppData/Roaming/Mozilla/Firefox/Profiles"
+# the recovery partition Windows makes, never a person's files
+WINRE_TYPE = "de94bba4-06d1-4d40-a16a-bfd50179d6ac"
+BASIC_DATA = {"ebd0a0a2-b9e5-4433-87c0-68b6b72699c7", "0x7"}
+GIB = 1024 ** 3
+CHUNK = 4 * 1024 * 1024
+PART_NAME = ".raye-import.part"
+DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+FILE_FLAGS = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
+# space left free on the receiving drive, so the PC can still work
+MARGIN = GIB
+
+
+class Stopped(Exception):
+    """The person stopped the copy."""
+
+
+class CopyFailed(Exception):
+    """A file that did not arrive whole."""
+
+
+class BadPlan(Exception):
+    """A plan that names something it may not."""
+
+
+# --- paths ---------------------------------------------------------------
+
+def clean(relative):
+    """A relative path as a list of names; None when it is empty or leaves its folder."""
+    if not isinstance(relative, str) or relative.startswith("/") or "\0" in relative:
+        return None
+    names = [n for n in relative.split("/") if n not in ("", ".")]
+    if not names or any(n == ".." for n in names):
+        return None
+    return names
+
+
+def open_dir(base_fd, relative):
+    """An fd on base_fd/relative, every step a real folder; None when one is not."""
+    names = clean(relative) if relative else []
+    if names is None:
+        return None
+    fd = os.dup(base_fd)
+    for name in names:
+        try:
+            nxt = os.open(name, DIR_FLAGS, dir_fd=fd)
+        except OSError:
+            os.close(fd)
+            return None
+        os.close(fd)
+        fd = nxt
+    return fd
+
+
+def open_root(path):
+    """The folder a scan or a copy starts from. It may itself be a link
+    (a drive mounted under a linked folder); below it nothing is followed."""
+    try:
+        return os.open(os.path.realpath(path), DIR_FLAGS)
+    except OSError:
+        return None
+
+
+def names_in(fd):
+    """{lowercase name: real name} of the folders in fd (links left out)."""
+    found = {}
+    try:
+        with os.scandir(fd) as it:
+            for entry in it:
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        found.setdefault(entry.name.lower(), entry.name)
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return found
+
+
+def read_head(fd, name, size):
+    """The first bytes of a regular file in fd, b"" when it is not one."""
+    try:
+        f = os.open(name, FILE_FLAGS, dir_fd=fd)
+    except OSError:
+        return b""
+    try:
+        if not stat.S_ISREG(os.fstat(f).st_mode):
+            return b""
+        return os.read(f, size)
+    finally:
+        os.close(f)
+
+
+def file_in(fd, relative):
+    """The size of a regular file at fd/relative (no link on the way), or -1."""
+    names = clean(relative)
+    if names is None:
+        return -1
+    parent = open_dir(fd, "/".join(names[:-1])) if len(names) > 1 else os.dup(fd)
+    if parent is None:
+        return -1
+    try:
+        info = os.stat(names[-1], dir_fd=parent, follow_symlinks=False)
+        return info.st_size if stat.S_ISREG(info.st_mode) else -1
+    except OSError:
+        return -1
+    finally:
+        os.close(parent)
+
+
+# --- what is on the drive -------------------------------------------------
+
+def is_skipped_name(name):
+    lower = name.lower()
+    return lower in WINDOWS_FILES or lower.endswith(WINDOWS_SUFFIXES)
+
+
+def measure(fd):
+    """{files, bytes, links, skipped, unreadable} under fd, nothing followed."""
+    count = {"files": 0, "bytes": 0, "links": 0, "skipped": 0, "unreadable": 0}
+    stack = [os.dup(fd)]
+    while stack:
+        here = stack.pop()
+        try:
+            with os.scandir(here) as it:
+                entries = list(it)
+        except OSError:
+            count["unreadable"] += 1
+            entries = []
+        for entry in entries:
+            try:
+                info = entry.stat(follow_symlinks=False)
+            except OSError:
+                count["unreadable"] += 1
+                continue
+            if stat.S_ISLNK(info.st_mode):
+                count["links"] += 1
+            elif stat.S_ISDIR(info.st_mode):
+                try:
+                    stack.append(os.open(entry.name, DIR_FLAGS, dir_fd=here))
+                except OSError:
+                    count["unreadable"] += 1
+            elif stat.S_ISREG(info.st_mode) and not is_skipped_name(entry.name):
+                count["files"] += 1
+                count["bytes"] += info.st_size
+            else:
+                count["skipped"] += 1
+        os.close(here)
+    return count
+
+
+def hibernated(root_fd):
+    """Windows hibernated, or shut down with Fast Startup: hiberfil.sys
+    still says "hibr". The same test ntfs-3g makes before writing."""
+    try:
+        with os.scandir(root_fd) as it:
+            names = [e.name for e in it]
+    except OSError:
+        return False
+    for name in names:
+        if name.lower() == "hiberfil.sys":
+            return read_head(root_fd, name, 4).lower() == b"hibr"
+    return False
+
+
+def account_folders(account_fd):
+    """The folders of one account that hold files, with their size."""
+    folders = []
+    top = names_in(account_fd)
+    onedrive = top.get("onedrive")
+    for kind in KINDS:
+        candidates = [top.get(ENGLISH[kind].lower())]
+        if onedrive and kind in ONEDRIVE:
+            sub = open_dir(account_fd, onedrive)
+            if sub is not None:
+                real = names_in(sub).get(ENGLISH[kind].lower())
+                os.close(sub)
+                candidates.append(onedrive + "/" + real if real else None)
+        for relative in candidates:
+            if not relative:
+                continue
+            fd = open_dir(account_fd, relative)
+            if fd is None:
+                continue
+            size = measure(fd)
+            os.close(fd)
+            if size["files"]:
+                folders.append({"kind": kind, "path": relative, "files": size["files"],
+                                "bytes": size["bytes"], "unreadable": size["unreadable"],
+                                "onedrive": relative != candidates[0]})
+    return folders
+
+
+def browsers_of(account_fd):
+    """The browsers of an account whose bookmarks can be brought over."""
+    found = []
+    for key, name, data in CHROMIUM:
+        fd = open_dir(account_fd, data)
+        if fd is None:
+            continue
+        for profile in sorted(names_in(fd).values()):
+            if file_in(fd, profile + "/Bookmarks") > 0:
+                found.append({"browser": key, "name": name, "path": data + "/" + profile + "/Bookmarks"})
+        os.close(fd)
+    fd = open_dir(account_fd, FIREFOX)
+    if fd is not None:
+        for profile in sorted(names_in(fd).values()):
+            if file_in(fd, profile + "/places.sqlite") > 0:
+                found.append({"browser": "firefox", "name": "Firefox",
+                              "path": FIREFOX + "/" + profile + "/places.sqlite"})
+        os.close(fd)
+    return found
+
+
+def account_of(base_fd, relative, name):
+    fd = open_dir(base_fd, relative) if relative else os.dup(base_fd)
+    if fd is None:
+        return None
+    try:
+        folders = account_folders(fd)
+        wallpaper = file_in(fd, WALLPAPER)
+        browsers = browsers_of(fd)
+    finally:
+        os.close(fd)
+    if not folders and wallpaper <= 0 and not browsers:
+        return None
+    return {"name": name, "path": relative, "folders": folders,
+            "wallpaper": wallpaper if wallpaper > 0 else 0, "browsers": browsers}
+
+
+def scan(root):
+    """What a drive, a Users folder or one account's folder holds.
+
+    {"root", "state": "ok" | "hibernated" | "nothing" | "unreadable",
+     "layout": "drive" | "users" | "account", "accounts": [...]}
+    """
+    result = {"root": root, "state": "unreadable", "layout": "", "accounts": []}
+    fd = open_root(root)
+    if fd is None:
+        return result
+    try:
+        top = names_in(fd)
+        if "users" in top and "windows" in top or "users" in top and not any(
+                ENGLISH[k].lower() in top for k in KINDS):
+            result["layout"] = "drive"
+            if hibernated(fd):
+                result["state"] = "hibernated"
+                return result
+            users = open_dir(fd, top["users"])
+            base, prefix = users, top["users"] + "/"
+        elif any(ENGLISH[k].lower() in top for k in KINDS):
+            result["layout"] = "account"
+            account = account_of(fd, "", os.path.basename(os.path.realpath(root)) or "Windows")
+            result["accounts"] = [account] if account else []
+            result["state"] = "ok" if account else "nothing"
+            return result
+        else:
+            result["layout"] = "users"
+            base, prefix = os.dup(fd), ""
+        if base is None:
+            return result
+        try:
+            for name in sorted(names_in(base).values(), key=str.lower):
+                if name.lower() in WINDOWS_SKIP or name.startswith("."):
+                    continue
+                account = account_of(base, name, name)
+                if account:
+                    account["path"] = prefix + name
+                    result["accounts"].append(account)
+        finally:
+            os.close(base)
+        result["state"] = "ok" if result["accounts"] else "nothing"
+        return result
+    finally:
+        os.close(fd)
+
+
+# --- drives --------------------------------------------------------------
+
+SYSTEM_MOUNTS = ("/", "/boot", "/boot/efi", "/efi", "/home", "/usr", "/var", "/srv", "/opt")
+
+
+def _user_mount(path):
+    return bool(path) and path not in SYSTEM_MOUNTS and \
+        path.startswith(("/media/", "/run/media/", "/mnt/", "/run/raye-windows-import/"))
+
+
+def volumes(tree):
+    """The drives worth looking at, from lsblk's JSON tree.
+
+    Windows volumes not mounted (opened read-only with a password), locked
+    BitLocker volumes (said, not opened), and drives already mounted where a
+    person can read them (a USB drive opened in Explorer).
+    """
+    found = []
+
+    def walk(device, disk):
+        kind = device.get("type") or ""
+        if kind == "disk":
+            disk = device
+        if kind in ("part", "disk") and not str(device.get("path", "")).startswith("/dev/loop"):
+            entry = _volume(device, disk or device)
+            if entry:
+                found.append(entry)
+        for child in device.get("children") or []:
+            walk(child, disk)
+
+    for device in tree.get("blockdevices") or []:
+        walk(device, None)
+    return found
+
+
+def _flag(value):
+    return value in (True, 1, "1", "true")
+
+
+def _volume(device, disk):
+    fstype = (device.get("fstype") or "").lower()
+    if not fstype:
+        return None
+    mounts = [m for m in device.get("mountpoints") or [] if m]
+    external = _flag(disk.get("rm")) or _flag(disk.get("hotplug")) or \
+        (disk.get("tran") or "") in ("usb", "mmc", "ieee1394")
+    size = int(device.get("size") or 0)
+    parttype = (device.get("parttype") or "").lower()
+    if mounts and not any(_user_mount(m) for m in mounts):
+        return None
+    if fstype == "bitlocker":
+        state = "bitlocker"
+    elif fstype == "ntfs":
+        if parttype == WINRE_TYPE:
+            return None
+        state = "ok"
+    elif mounts and external:
+        state = "ok"
+    else:
+        return None
+    mount = next((m for m in mounts if _user_mount(m)), "")
+    return {"device": device.get("path") or "", "fstype": fstype, "label": device.get("label") or "",
+            "uuid": device.get("uuid") or "", "size": size, "external": external,
+            "mountPoint": mount, "state": state,
+            # what the first sign-in asks about: Windows next to Raye
+            "windows": fstype in ("ntfs", "bitlocker") and not external and size >= 16 * GIB
+                       and (parttype in BASIC_DATA or not parttype)}
+
+
+def list_volumes(run=subprocess.run):
+    columns = "PATH,TYPE,FSTYPE,SIZE,LABEL,UUID,PARTTYPE,MOUNTPOINTS,RM,HOTPLUG,TRAN"
+    try:
+        out = run(["lsblk", "-J", "-b", "-p", "-o", columns], capture_output=True, text=True,
+                  timeout=20).stdout
+        return volumes(json.loads(out or "{}"))
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return []
+
+
+# --- copying -------------------------------------------------------------
+
+def free_name(folder_fd, name):
+    """name, or "name (2).ext" and so on when the folder already has one."""
+    def taken(candidate):
+        try:
+            os.stat(candidate, dir_fd=folder_fd, follow_symlinks=False)
+            return True
+        except FileNotFoundError:
+            return False
+    if not taken(name):
+        return name
+    stem, dot, ext = name.rpartition(".")
+    if not dot or not stem:
+        stem, ext = name, ""
+    else:
+        ext = "." + ext
+    number = 2
+    while taken("%s (%d)%s" % (stem, number, ext)):
+        number += 1
+    return "%s (%d)%s" % (stem, number, ext)
+
+
+def _hash_of(fd):
+    digest = hashlib.sha256()
+    size = 0
+    while True:
+        block = os.read(fd, CHUNK)
+        if not block:
+            return digest.hexdigest(), size
+        digest.update(block)
+        size += len(block)
+
+
+def _path_of(folder_fd, name):
+    return os.path.join(os.readlink("/proc/self/fd/%d" % folder_fd), name)
+
+
+class Journal:
+    """The files this copy wrote and read back, one per line, so a copy
+    picking up again does not read them all a second time."""
+
+    def __init__(self, path, fresh=False):
+        self.path = path
+        self.seen = set()
+        if not fresh:
+            try:
+                with open(path, encoding="utf-8", errors="surrogateescape") as f:
+                    self.seen = {line.rstrip("\n") for line in f}
+            except OSError:
+                pass
+        os.makedirs(os.path.dirname(path), 0o700, exist_ok=True)
+        self.out = open(path, "w" if fresh else "a", encoding="utf-8", errors="surrogateescape")
+
+    def known(self, path):
+        return path in self.seen
+
+    def add(self, path):
+        if "\n" in path:
+            return
+        self.seen.add(path)
+        self.out.write(path + "\n")
+        self.out.flush()
+
+    def close(self):
+        self.out.close()
+
+
+def _drop_cache(fd):
+    try:
+        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+    except (AttributeError, OSError):
+        pass
+
+
+class Copier:
+    """Copies folders file by file and reads every file back.
+
+    progress(copied bytes) is called after each block. stop() makes the
+    copy end at the next block, leaving no half-written file.
+    """
+
+    def __init__(self, progress=lambda done: None, file_mode=0o644, journal=None):
+        self.progress = progress
+        self.journal = journal
+        self.file_mode = file_mode
+        self.stopping = False
+        self.files = 0
+        self.bytes = 0
+        self.already = 0
+        self.already_bytes = 0
+        self.links = 0
+        self.windows = 0
+        self.special = 0
+        self.failed = []
+        self.done = 0  # bytes, copied or found already there
+
+    def stop(self):
+        self.stopping = True
+
+    def folder(self, parent_fd, name):
+        """An fd on parent/name, made when missing. A link there is refused."""
+        try:
+            os.mkdir(name, 0o755, dir_fd=parent_fd)
+        except FileExistsError:
+            pass
+        try:
+            return os.open(name, DIR_FLAGS, dir_fd=parent_fd)
+        except OSError as error:
+            raise CopyFailed(name) from error
+
+    def _same(self, folder_fd, name, info, src):
+        """Already there: same size and time, and either copied and read back
+        by an earlier run of this copy (its journal) or the same SHA-256."""
+        try:
+            there = os.stat(name, dir_fd=folder_fd, follow_symlinks=False)
+        except OSError:
+            return False
+        if not stat.S_ISREG(there.st_mode) or there.st_size != info.st_size \
+                or there.st_mtime_ns != info.st_mtime_ns:
+            return False
+        if self.journal is not None and self.journal.known(_path_of(folder_fd, name)):
+            return True
+        try:
+            fd = os.open(name, FILE_FLAGS, dir_fd=folder_fd)
+        except OSError:
+            return False
+        try:
+            mine = _hash_of(fd)
+        finally:
+            os.close(fd)
+        theirs = _hash_of(src)
+        os.lseek(src, 0, os.SEEK_SET)
+        return mine == theirs
+
+    def copy_file(self, src_dir, name, folder_fd, as_name=None):
+        """One file, read back before it gets its name. Returns the name it got."""
+        src = os.open(name, FILE_FLAGS, dir_fd=src_dir)
+        name = as_name or name
+        try:
+            info = os.fstat(src)
+            if not stat.S_ISREG(info.st_mode):
+                raise CopyFailed(name)
+            if self._same(folder_fd, name, info, src):
+                self.already += 1
+                self.already_bytes += info.st_size
+                self.done += info.st_size
+                self.progress(self.done)
+                return name
+            try:
+                os.unlink(PART_NAME, dir_fd=folder_fd)
+            except FileNotFoundError:
+                pass
+            dst = os.open(PART_NAME, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC,
+                          0o600, dir_fd=folder_fd)
+            digest = hashlib.sha256()
+            size = 0
+            try:
+                while True:
+                    if self.stopping:
+                        raise Stopped()
+                    block = os.read(src, CHUNK)
+                    if not block:
+                        break
+                    digest.update(block)
+                    size += len(block)
+                    view = memoryview(block)
+                    while view:
+                        view = view[os.write(dst, view):]
+                    self.progress(self.done + size)
+                os.fsync(dst)
+                os.fchmod(dst, self.file_mode)
+                os.utime(dst, ns=(info.st_atime_ns, info.st_mtime_ns))
+            except BaseException:
+                os.close(dst)
+                os.unlink(PART_NAME, dir_fd=folder_fd)
+                raise
+            os.close(dst)
+        finally:
+            os.close(src)
+        try:
+            if size != info.st_size:
+                raise CopyFailed(name)
+            # read back from the disk, not from what the kernel still remembers
+            check = os.open(PART_NAME, FILE_FLAGS, dir_fd=folder_fd)
+            try:
+                _drop_cache(check)
+                again, again_size = _hash_of(check)
+            finally:
+                os.close(check)
+            if again != digest.hexdigest() or again_size != size:
+                raise CopyFailed(name)
+            final = self._take_name(folder_fd, name)
+        except BaseException:
+            try:
+                os.unlink(PART_NAME, dir_fd=folder_fd)
+            except OSError:
+                pass
+            raise
+        if self.journal is not None:
+            self.journal.add(_path_of(folder_fd, final))
+        self.files += 1
+        self.bytes += size
+        self.done += size
+        self.progress(self.done)
+        return final
+
+    def _take_name(self, folder_fd, name):
+        """Gives the checked part its name, never over a file already there."""
+        while True:
+            final = free_name(folder_fd, name)
+            try:
+                os.link(PART_NAME, final, src_dir_fd=folder_fd, dst_dir_fd=folder_fd,
+                        follow_symlinks=False)
+            except FileExistsError:
+                continue
+            except OSError:
+                # a drive without hard links (FAT): the name was free a moment ago
+                os.rename(PART_NAME, final, src_dir_fd=folder_fd, dst_dir_fd=folder_fd)
+                return final
+            os.unlink(PART_NAME, dir_fd=folder_fd)
+            return final
+
+    def copy_tree(self, src_fd, folder_fd, where=""):
+        """Everything in src_fd into folder_fd. where names it in the report."""
+        try:
+            with os.scandir(src_fd) as it:
+                entries = sorted(it, key=lambda e: e.name)
+        except OSError:
+            self.failed.append(where or ".")
+            return
+        for entry in entries:
+            if self.stopping:
+                raise Stopped()
+            label = where + "/" + entry.name if where else entry.name
+            if entry.name == PART_NAME:
+                continue
+            try:
+                info = entry.stat(follow_symlinks=False)
+            except OSError:
+                self.failed.append(label)
+                continue
+            try:
+                if stat.S_ISLNK(info.st_mode):
+                    self.links += 1
+                elif stat.S_ISDIR(info.st_mode):
+                    sub = os.open(entry.name, DIR_FLAGS, dir_fd=src_fd)
+                    try:
+                        target = self.folder(folder_fd, entry.name)
+                        try:
+                            self.copy_tree(sub, target, label)
+                        finally:
+                            os.close(target)
+                    finally:
+                        os.close(sub)
+                elif stat.S_ISREG(info.st_mode):
+                    if is_skipped_name(entry.name):
+                        self.windows += 1
+                    else:
+                        self.copy_file(src_fd, entry.name, folder_fd)
+                else:
+                    self.special += 1
+            except (OSError, CopyFailed):
+                self.failed.append(label)
+
+    def report(self):
+        return {"files": self.files, "bytes": self.bytes, "already": self.already,
+                "alreadyBytes": self.already_bytes, "links": self.links,
+                "windows": self.windows, "special": self.special,
+                "failed": len(self.failed), "examples": self.failed[:10]}
+
+
+# --- the plan ------------------------------------------------------------
+
+def destination(account, several):
+    """Where one folder lands below the person's folder for that kind."""
+    if not several:
+        return []
+    name = str(account).replace("/", "_").strip()
+    return [name if name not in ("", ".", "..") else "Windows"]
+
+
+def folder_paths(kind):
+    """The places a folder of that kind may be at in an account."""
+    paths = [ENGLISH[kind].lower()]
+    if kind in ONEDRIVE:
+        paths.append("onedrive/" + ENGLISH[kind].lower())
+    return paths
+
+
+def check_plan(plan, home):
+    """The plan, checked. Raises BadPlan naming what is wrong."""
+    if not isinstance(plan, dict):
+        raise BadPlan("plan")
+    root = plan.get("root")
+    if not isinstance(root, str) or not os.path.isabs(root):
+        raise BadPlan("root")
+    real_root = os.path.realpath(root)
+    dest = plan.get("dest")
+    if not isinstance(dest, dict):
+        raise BadPlan("dest")
+    checked_dest = {}
+    for kind, path in dest.items():
+        if kind not in KINDS or not isinstance(path, str) or not os.path.isabs(path):
+            raise BadPlan("dest " + str(kind))
+        real = os.path.realpath(path)
+        if real == real_root or real.startswith(real_root.rstrip("/") + "/") or \
+                real_root.startswith(real.rstrip("/") + "/"):
+            raise BadPlan("dest inside the source " + kind)
+        checked_dest[kind] = real
+    accounts = []
+    for account in plan.get("accounts") or []:
+        relative = account.get("path", "")
+        if relative and clean(relative) is None:
+            raise BadPlan("account path")
+        folders = []
+        for folder in account.get("folders") or []:
+            kind, path = folder.get("kind"), folder.get("path")
+            if kind not in checked_dest or not isinstance(path, str) or clean(path) is None \
+                    or path.lower() not in folder_paths(kind):
+                raise BadPlan("folder " + str(path))
+            folders.append({"kind": kind, "path": path})
+        browsers = []
+        for browser in account.get("browsers") or []:
+            path = browser.get("path", "")
+            if clean(path) is None or not (path.endswith("/Bookmarks") or path.endswith("/places.sqlite")):
+                raise BadPlan("browser")
+            browsers.append({"browser": str(browser.get("browser", "")), "name": str(browser.get("name", "")),
+                             "path": path})
+        accounts.append({"name": str(account.get("name") or "Windows"), "path": relative,
+                         "folders": folders, "wallpaper": bool(account.get("wallpaper")),
+                         "browsers": browsers})
+    if not any(a["folders"] or a["wallpaper"] or a["browsers"] for a in accounts):
+        raise BadPlan("nothing")
+    if any(a["wallpaper"] for a in accounts) and "pictures" not in checked_dest:
+        raise BadPlan("wallpaper")
+    if any(a["browsers"] for a in accounts) and "documents" not in checked_dest:
+        raise BadPlan("bookmarks")
+    for real in checked_dest.values():
+        if not (real == home or real.startswith(home.rstrip("/") + "/")) \
+                and not os.path.isdir(os.path.dirname(real)):
+            raise BadPlan("dest outside the home")
+    return {"root": real_root, "dest": checked_dest, "accounts": accounts,
+            "lang": str(plan.get("lang") or "en")}
+
+
+def open_dest(path):
+    """An fd on a receiving folder, made when it is missing (as the person)."""
+    os.makedirs(path, 0o755, exist_ok=True)
+    return os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+
+
+def subfolder(copier, fd, names):
+    for name in names:
+        nxt = copier.folder(fd, name)
+        os.close(fd)
+        fd = nxt
+    return fd
+
+
+def pending_bytes(plan, root_fd):
+    """{files, bytes} still to copy for the whole plan, for the bar and the room check."""
+    total = {"files": 0, "bytes": 0}
+    for account in plan["accounts"]:
+        base = open_dir(root_fd, account["path"]) if account["path"] else os.dup(root_fd)
+        if base is None:
+            continue
+        for folder in account["folders"]:
+            fd = open_dir(base, folder["path"])
+            if fd is None:
+                continue
+            size = measure(fd)
+            os.close(fd)
+            total["files"] += size["files"]
+            total["bytes"] += size["bytes"]
+        if account["wallpaper"]:
+            total["bytes"] += max(0, file_in(base, WALLPAPER))
+        os.close(base)
+    return total
+
+
+def room_on(paths):
+    """Free bytes on the drive of the first receiving folder (a person's
+    folders are on one drive nearly always)."""
+    for path in paths:
+        at = path
+        while not os.path.isdir(at):
+            at = os.path.dirname(at)
+        info = os.statvfs(at)
+        return info.f_bavail * info.f_frsize
+    return 0
+
+
+def picture_kind(head):
+    if head.startswith(b"\x89PNG"):
+        return ".png"
+    if head.startswith(b"BM"):
+        return ".bmp"
+    return ".jpg"
+
+
+def copy_wallpaper(copier, base_fd, pictures_fd, account, several):
+    """The wallpaper Windows showed, as a picture in Pictures. Its new name."""
+    names = clean(WALLPAPER)
+    themes = open_dir(base_fd, "/".join(names[:-1]))
+    if themes is None:
+        return ""
+    try:
+        head = read_head(themes, names[-1], 8)
+        if not head:
+            return ""
+        wanted = "Windows wallpaper%s" % picture_kind(head)
+        if several:
+            wanted = "Windows wallpaper (%s)%s" % (account.replace("/", "_"), picture_kind(head))
+        return copier.copy_file(themes, names[-1], pictures_fd, as_name=wanted)
+    finally:
+        os.close(themes)
+
+
+# bookmarks -----------------------------------------------------------------
+
+def _chromium_tree(node):
+    if node.get("type") == "url":
+        return {"title": node.get("name", ""), "url": node.get("url", "")}
+    return {"title": node.get("name", ""), "children": [_chromium_tree(c) for c in node.get("children", [])
+                                                         if isinstance(c, dict)]}
+
+
+def chromium_bookmarks(data):
+    """A Chromium Bookmarks file, as one folder."""
+    roots = json.loads(data.decode("utf-8", "replace")).get("roots", {})
+    children = []
+    for key in ("bookmark_bar", "other", "synced"):
+        if isinstance(roots.get(key), dict):
+            tree = _chromium_tree(roots[key])
+            if tree.get("children"):
+                children.append(tree)
+    return children
+
+
+def firefox_bookmarks(path):
+    """places.sqlite (a copy of it), as folders."""
+    # a private copy, with its -wal file next to it when there was one
+    db = sqlite3.connect(path)
+    try:
+        rows = db.execute("SELECT b.id, b.parent, b.type, b.title, p.url FROM moz_bookmarks b "
+                          "LEFT JOIN moz_places p ON p.id = b.fk ORDER BY b.parent, b.position").fetchall()
+    finally:
+        db.close()
+    nodes = {}
+    for ident, parent, kind, title, url in rows:
+        if kind == 1 and url and not url.startswith("place:"):
+            nodes[ident] = {"title": title or url, "url": url, "parent": parent}
+        elif kind == 2:
+            nodes[ident] = {"title": title or "", "children": [], "parent": parent}
+    for ident, node in nodes.items():
+        parent = nodes.get(node["parent"])
+        if parent is not None and "children" in parent:
+            parent["children"].append(node)
+    # the menu, the toolbar and the other bookmarks hang from the root (1)
+    return [n for n in nodes.values() if n["parent"] == 1 and n.get("children")]
+
+
+def bookmarks_html(sections):
+    """Bookmarks in the file every browser imports (Netscape bookmarks)."""
+    lines = ["<!DOCTYPE NETSCAPE-Bookmark-file-1>",
+             '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+             "<TITLE>Bookmarks</TITLE>", "<H1>Bookmarks</H1>", "<DL><p>"]
+
+    def put(node, depth):
+        pad = "    " * depth
+        if "url" in node:
+            url = node["url"]
+            if url.split(":", 1)[0].lower() not in ("http", "https", "ftp", "file"):
+                return
+            lines.append('%s<DT><A HREF="%s">%s</A>' % (pad, escape(url, True), escape(node["title"])))
+            return
+        lines.append("%s<DT><H3>%s</H3>" % (pad, escape(node["title"])))
+        lines.append("%s<DL><p>" % pad)
+        for child in node.get("children", []):
+            put(child, depth + 1)
+        lines.append("%s</DL><p>" % pad)
+
+    for section in sections:
+        put(section, 1)
+    lines.append("</DL><p>")
+    return "\n".join(lines) + "\n"
+
+
+def _read_file(base_fd, relative, limit=256 * 1024 * 1024):
+    names = clean(relative)
+    parent = open_dir(base_fd, "/".join(names[:-1]))
+    if parent is None:
+        raise OSError(relative)
+    try:
+        fd = os.open(names[-1], FILE_FLAGS, dir_fd=parent)
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                raise OSError(relative)
+            chunks, size = [], 0
+            while size < limit:
+                block = os.read(fd, CHUNK)
+                if not block:
+                    break
+                chunks.append(block)
+                size += len(block)
+            return b"".join(chunks)
+        finally:
+            os.close(fd)
+    finally:
+        os.close(parent)
+
+
+def collect_bookmarks(base_fd, account):
+    """[(browser name, folder)] of one account; the browsers that failed."""
+    sections, failed = [], []
+    for browser in account["browsers"]:
+        try:
+            if browser["path"].endswith("/places.sqlite"):
+                with tempfile.TemporaryDirectory(prefix="raye-import-") as tmp:
+                    copy = os.path.join(tmp, "places.sqlite")
+                    with open(copy, "wb") as out:
+                        out.write(_read_file(base_fd, browser["path"]))
+                    try:
+                        wal = _read_file(base_fd, browser["path"] + "-wal")
+                        with open(copy + "-wal", "wb") as out:
+                            out.write(wal)
+                    except OSError:
+                        pass
+                    children = firefox_bookmarks(copy)
+            else:
+                children = chromium_bookmarks(_read_file(base_fd, browser["path"]))
+        except (OSError, ValueError, RecursionError, sqlite3.Error):
+            failed.append(browser["name"])
+            continue
+        if children:
+            sections.append({"title": browser["name"], "children": children})
+    return sections, failed
+
+
+def write_bookmarks(documents_fd, sections, lang):
+    name = "Favoris de Windows.html" if lang.startswith("fr") else "Bookmarks from Windows.html"
+    final = free_name(documents_fd, name)
+    fd = os.open(final, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC,
+                 0o644, dir_fd=documents_fd)
+    with os.fdopen(fd, "w", encoding="utf-8") as out:
+        out.write(bookmarks_html(sections))
+    return final
+
+
+# state ----------------------------------------------------------------------
+
+def state_dir():
+    base = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local/state")
+    return os.path.join(base, "raye-settings", "windows-import")
+
+
+def write_json(path, data):
+    os.makedirs(os.path.dirname(path), 0o700, exist_ok=True)
+    tmp = path + ".new"
+    with open(tmp, "w", encoding="utf-8") as out:
+        json.dump(data, out)
+    os.replace(tmp, path)
+
+
+class Events:
+    """JSON lines on stdout, progress at most four times a second, and the
+    state file Settings reads when it opens again."""
+
+    def __init__(self, out, state_file, clock=time.monotonic):
+        self.out = out
+        self.state_file = state_file
+        self.clock = clock
+        self.last = 0.0
+        self.saved = 0.0
+        self.state = {"status": "running", "pid": os.getpid(), "started": int(time.time())}
+
+    def send(self, event, **fields):
+        fields["event"] = event
+        try:
+            self.out.write(json.dumps(fields) + "\n")
+            self.out.flush()
+        except (OSError, ValueError):
+            pass
+
+    def save(self, **fields):
+        self.state.update(fields)
+        if self.state_file:
+            write_json(self.state_file, self.state)
+
+    def progress(self, done, files, current=""):
+        now = self.clock()
+        if now - self.last >= 0.25:
+            self.last = now
+            self.send("progress", bytes=done, files=files, current=current)
+        if now - self.saved >= 2:
+            self.saved = now
+            self.save(done=done)
+
+
+def copy_plan(plan, events, copier):
+    """Copies the plan. Returns the report."""
+    root_fd = open_root(plan["root"])
+    if root_fd is None:
+        raise BadPlan("root")
+    try:
+        if hibernated(root_fd):
+            events.send("refused", reason="hibernated")
+            return None
+        total = pending_bytes(plan, root_fd)
+        events.save(total=total["bytes"], totalFiles=total["files"])
+        events.send("total", bytes=total["bytes"], files=total["files"])
+        free = room_on(list(plan["dest"].values()))
+        # a copy picking up already has most of it on this PC
+        if total["bytes"] + MARGIN > free and not plan.get("resume"):
+            events.send("refused", reason="room", needed=total["bytes"], free=free)
+            return None
+        several = sum(1 for a in plan["accounts"] if a["folders"]) > 1
+        report = {"wallpaper": "", "bookmarks": "", "bookmarksFailed": [], "folders": {}}
+        for account in plan["accounts"]:
+            base = open_dir(root_fd, account["path"]) if account["path"] else os.dup(root_fd)
+            if base is None:
+                copier.failed.append(account["path"])
+                continue
+            try:
+                for folder in account["folders"]:
+                    src = open_dir(base, folder["path"])
+                    if src is None:
+                        copier.failed.append(account["path"] + "/" + folder["path"])
+                        continue
+                    target = open_dest(plan["dest"][folder["kind"]])
+                    target = subfolder(copier, target, destination(account["name"], several))
+                    try:
+                        events.send("folder", kind=folder["kind"], account=account["name"])
+                        copier.copy_tree(src, target, folder["path"])
+                        report["folders"][folder["kind"]] = plan["dest"][folder["kind"]]
+                    finally:
+                        os.close(target)
+                        os.close(src)
+                if account["wallpaper"]:
+                    pictures = open_dest(plan["dest"]["pictures"])
+                    try:
+                        name = copy_wallpaper(copier, base, pictures, account["name"], several)
+                        if name:
+                            report["wallpaper"] = os.path.join(plan["dest"]["pictures"], name)
+                    except (OSError, CopyFailed):
+                        copier.failed.append(WALLPAPER)
+                    finally:
+                        os.close(pictures)
+                if account["browsers"]:
+                    sections, failed = collect_bookmarks(base, account)
+                    report["bookmarksFailed"] += failed
+                    if sections:
+                        documents = open_dest(plan["dest"]["documents"])
+                        try:
+                            name = write_bookmarks(documents, sections, plan["lang"])
+                            report["bookmarks"] = os.path.join(plan["dest"]["documents"], name)
+                        except (OSError, RecursionError):
+                            # a bookmarks file nested too deep never costs the copy itself
+                            report["bookmarksFailed"] += [s["title"] for s in sections]
+                        finally:
+                            os.close(documents)
+            finally:
+                os.close(base)
+        report.update(copier.report())
+        return report
+    finally:
+        os.close(root_fd)
+
+
+def run_copy(plan_file, out=sys.stdout):
+    home = os.path.realpath(os.path.expanduser("~"))
+    folder = state_dir()
+    state_file = os.path.join(folder, "state.json")
+    try:
+        with open(plan_file, encoding="utf-8") as f:
+            raw = json.load(f)
+        plan = check_plan(raw, home)
+    except (OSError, ValueError, BadPlan) as error:
+        Events(out, None).send("error", reason="plan", detail=str(error))
+        return 1
+    plan["resume"] = bool(raw.get("resume"))
+    keep = os.path.join(folder, "plan.json")
+    if os.path.realpath(plan_file) != os.path.realpath(keep):
+        write_json(keep, raw)
+    events = Events(out, state_file)
+    events.save(status="running", report=None, source=raw.get("source") or {})
+    journal = Journal(os.path.join(folder, "copied.txt"), fresh=not plan["resume"])
+    copier = Copier(progress=lambda done: events.progress(done, copier.files + copier.already),
+                    journal=journal)
+    signal.signal(signal.SIGTERM, lambda *_: copier.stop())
+    signal.signal(signal.SIGINT, lambda *_: copier.stop())
+    os.umask(0o022)
+    try:
+        try:
+            report = copy_plan(plan, events, copier)
+        finally:
+            journal.close()
+    except Stopped:
+        report = copier.report()
+        events.save(status="stopped", report=report)
+        events.send("stopped", report=report)
+        return 3
+    except (OSError, BadPlan, CopyFailed) as error:
+        events.save(status="failed", report=copier.report())
+        events.send("error", reason="copy", detail=str(error))
+        return 1
+    if report is None:
+        events.save(status="refused")
+        return 2
+    events.save(status="done", report=report, done=copier.done)
+    events.send("done", report=report)
+    return 0
+
+
+def main(argv):
+    if len(argv) < 2:
+        sys.stderr.write(__doc__)
+        return 64
+    if os.geteuid() == 0 and not os.environ.get("RAYE_WINDOWS_IMPORT_AS_ROOT"):
+        # never as root: the files must belong to the person they are for
+        sys.stderr.write("windows-import: run this as the person the files are for\n")
+        return 64
+    command = argv[1]
+    if command == "volumes":
+        json.dump({"volumes": list_volumes()}, sys.stdout)
+    elif command == "scan" and len(argv) == 3:
+        json.dump(scan(argv[2]), sys.stdout)
+    elif command == "copy" and len(argv) == 3:
+        return run_copy(argv[2])
+    else:
+        sys.stderr.write(__doc__)
+        return 64
+    sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

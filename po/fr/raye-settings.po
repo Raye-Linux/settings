@@ -10264,3 +10264,399 @@ msgstr "%1 à télécharger · %2"
 msgctxt "@info"
 msgid "Drivers for your hardware, Raye kernel"
 msgstr "Pilotes de votre matériel, noyau Raye"
+
+msgctxt "@title settings page"
+msgid "Files from Windows"
+msgstr "Fichiers de Windows"
+
+msgctxt "@title:window"
+msgid "Choose the folder with your Windows files"
+msgstr "Choisir le dossier avec vos fichiers Windows"
+
+msgctxt "@label a folder"
+msgid "Desktop"
+msgstr "Bureau"
+
+msgctxt "@label a folder"
+msgid "Documents"
+msgstr "Documents"
+
+msgctxt "@label a folder"
+msgid "Downloads"
+msgstr "Téléchargements"
+
+msgctxt "@label a folder"
+msgid "Music"
+msgstr "Musique"
+
+msgctxt "@label a folder"
+msgid "Pictures"
+msgstr "Images"
+
+msgctxt "@label a folder"
+msgid "Videos"
+msgstr "Vidéos"
+
+msgctxt "@info %2 is a size"
+msgid "%1 file, %2"
+msgid_plural "%1 files, %2"
+msgstr[0] "%1 fichier, %2"
+msgstr[1] "%1 fichiers, %2"
+
+msgctxt "@label a drive"
+msgid "USB drive"
+msgstr "Clé USB"
+
+msgctxt "@label a drive"
+msgid "Windows"
+msgstr "Windows"
+
+msgctxt "@info a drive"
+msgid "External drive"
+msgstr "Disque externe"
+
+msgctxt "@info a drive"
+msgid "On this PC"
+msgstr "Sur ce PC"
+
+msgctxt "@info %1 is where the drive is, %2 its size"
+msgid "%1, %2, locked with BitLocker"
+msgstr "%1, %2, verrouillé par BitLocker"
+
+msgctxt "@info %1 is where the drive is, %2 its size"
+msgid "%1, %2"
+msgstr "%1, %2"
+
+msgctxt "@info"
+msgid "Working out how long it will take…"
+msgstr "Calcul du temps restant…"
+
+msgctxt "@info"
+msgid "Less than a minute left"
+msgstr "Moins d'une minute restante"
+
+msgctxt "@info"
+msgid "About %1 minute left"
+msgid_plural "About %1 minutes left"
+msgstr[0] "Environ %1 minute restante"
+msgstr[1] "Environ %1 minutes restantes"
+
+msgctxt "@info"
+msgid "About %1 hour left"
+msgid_plural "About %1 hours left"
+msgstr[0] "Environ %1 heure restante"
+msgstr[1] "Environ %1 heures restantes"
+
+msgctxt "@info"
+msgid "This drive is locked with BitLocker"
+msgstr "Ce disque est verrouillé par BitLocker"
+
+msgctxt "@info"
+msgid "Windows didn't fully shut down"
+msgstr "Windows ne s'est pas complètement arrêté"
+
+msgctxt "@info"
+msgid "This drive is in use"
+msgstr "Ce disque est utilisé"
+
+msgctxt "@info"
+msgid "No Windows files here"
+msgstr "Aucun fichier Windows ici"
+
+msgctxt "@info"
+msgid "Not enough space on this PC"
+msgstr "Pas assez d'espace sur ce PC"
+
+msgctxt "@info"
+msgid "The drive with your files isn't here"
+msgstr "Le disque avec vos fichiers n'est pas là"
+
+msgctxt "@info"
+msgid "The drive wasn't opened"
+msgstr "Le disque n'a pas été ouvert"
+
+msgctxt "@info"
+msgid "The copy couldn't start"
+msgstr "La copie n'a pas pu commencer"
+
+msgctxt "@info"
+msgid "This drive can't be read"
+msgstr "Ce disque ne peut pas être lu"
+
+msgctxt "@info"
+msgid "Start Windows and turn BitLocker off for this drive: Settings › Privacy & security › Device encryption, or Control Panel › BitLocker Drive Encryption › Turn off BitLocker. When it's done, come back here."
+msgstr "Démarrez Windows et désactivez BitLocker pour ce disque : Paramètres › Confidentialité et sécurité › Chiffrement de l'appareil, ou Panneau de configuration › Chiffrement de lecteur BitLocker › Désactiver BitLocker. Quand c'est fait, revenez ici."
+
+msgctxt "@info"
+msgid "Windows is hibernated or uses Fast startup, so some of your files may only be in its memory. Start Windows, open Control Panel › Power Options › Choose what the power buttons do, turn off Fast startup, then choose Shut down. Then come back here."
+msgstr "Windows est en veille prolongée ou utilise le démarrage rapide : certains de vos fichiers ne sont peut-être que dans sa mémoire. Démarrez Windows, ouvrez Panneau de configuration › Options d'alimentation › Choisir l'action des boutons d'alimentation, désactivez le démarrage rapide, puis choisissez Arrêter. Revenez ensuite ici."
+
+msgctxt "@info"
+msgid "Close the windows that show this drive in Explorer, then try again."
+msgstr "Fermez les fenêtres qui affichent ce disque dans l'Explorateur, puis réessayez."
+
+msgctxt "@info"
+msgid "No Windows account with Documents, Pictures, Music, Videos, Downloads or a Desktop was found there."
+msgstr "Aucun compte Windows avec Documents, Images, Musique, Vidéos, Téléchargements ou un Bureau n'a été trouvé ici."
+
+msgctxt "@info %1 and %2 are sizes"
+msgid "You chose %1, and %2 is free. Untick some folders, or free up space in System › Storage."
+msgstr "Vous avez choisi %1, et %2 est libre. Décochez des dossiers, ou libérez de l'espace dans Système › Stockage."
+
+msgctxt "@info"
+msgid "Plug in the drive your files were on, then choose Continue again."
+msgstr "Branchez le disque où étaient vos fichiers, puis choisissez Continuer."
+
+msgctxt "@info"
+msgid "Opening the Windows drive needs root access."
+msgstr "Ouvrir le disque Windows demande l'accès root."
+
+msgctxt "@info"
+msgid "Something went wrong before any file was copied. Try again."
+msgstr "Un problème est survenu avant la copie du moindre fichier. Réessayez."
+
+msgctxt "@info"
+msgid "Start Windows and check the drive for errors (right-click it in File Explorer › Properties › Tools › Check), then try again."
+msgstr "Démarrez Windows et recherchez les erreurs sur le disque (clic droit dans l'Explorateur de fichiers › Propriétés › Outils › Vérifier), puis réessayez."
+
+msgctxt "@info"
+msgid "Copy your documents, pictures, music, videos, downloads and desktop from Windows. Your files are copied, never moved: Windows keeps everything as it is."
+msgstr "Copiez vos documents, images, musique, vidéos, téléchargements et votre bureau depuis Windows. Vos fichiers sont copiés, jamais déplacés : Windows garde tout tel quel."
+
+msgctxt "@info"
+msgid "The copy from Windows stopped"
+msgstr "La copie depuis Windows s'est arrêtée"
+
+msgctxt "@info %1 and %2 are sizes"
+msgid "%1 of %2 is already here. Continue to copy the rest."
+msgstr "%1 sur %2 est déjà ici. Continuez pour copier le reste."
+
+msgctxt "@info"
+msgid "Continue to copy the rest."
+msgstr "Continuez pour copier le reste."
+
+msgctxt "@info"
+msgid "Windows wasn't shut down properly"
+msgstr "Windows n'a pas été arrêté correctement"
+
+msgctxt "@info"
+msgid "What Windows was saving last may be missing. To be sure, start Windows and choose Shut down, then copy again."
+msgstr "Ce que Windows enregistrait en dernier peut manquer. Pour en être sûr, démarrez Windows et choisissez Arrêter, puis copiez à nouveau."
+
+msgctxt "@action:button"
+msgid "Back"
+msgstr "Retour"
+
+msgctxt "@title"
+msgid "Where are your files?"
+msgstr "Où sont vos fichiers ?"
+
+msgctxt "@info"
+msgid "Looking for drives…"
+msgstr "Recherche des disques…"
+
+msgctxt "@action:button"
+msgid "What to do"
+msgstr "Que faire"
+
+msgctxt "@action:button"
+msgid "Look for files"
+msgstr "Chercher les fichiers"
+
+msgctxt "@info"
+msgid "No Windows drive found"
+msgstr "Aucun disque Windows trouvé"
+
+msgctxt "@info"
+msgid "Plug in the USB drive or disk with your files, or choose a folder."
+msgstr "Branchez la clé USB ou le disque avec vos fichiers, ou choisissez un dossier."
+
+msgctxt "@action:button"
+msgid "Look again"
+msgstr "Chercher à nouveau"
+
+msgctxt "@label"
+msgid "Choose a folder"
+msgstr "Choisir un dossier"
+
+msgctxt "@info"
+msgid "A copy of your Windows folders on a USB drive or another disk"
+msgstr "Une copie de vos dossiers Windows sur une clé USB ou un autre disque"
+
+msgctxt "@info"
+msgid "Opening the drive…"
+msgstr "Ouverture du disque…"
+
+msgctxt "@info"
+msgid "Looking for your files…"
+msgstr "Recherche de vos fichiers…"
+
+msgctxt "@info"
+msgid "It's opened read-only: nothing on it can change."
+msgstr "Il est ouvert en lecture seule : rien ne peut y changer."
+
+msgctxt "@info"
+msgid "Counting what's in each folder. A big drive can take a minute."
+msgstr "Décompte du contenu de chaque dossier. Un gros disque peut prendre une minute."
+
+msgctxt "@title %1 is the name of a Windows account"
+msgid "Files of %1"
+msgstr "Fichiers de %1"
+
+msgctxt "@title"
+msgid "Choose what to copy"
+msgstr "Choisir quoi copier"
+
+msgctxt "@label %1 is a folder"
+msgid "%1 (OneDrive)"
+msgstr "%1 (OneDrive)"
+
+msgctxt "@label"
+msgid "Windows wallpaper"
+msgstr "Fond d'écran Windows"
+
+msgctxt "@info"
+msgid "Use the picture you had on Windows on Raye too"
+msgstr "Utiliser aussi sur Raye l'image que vous aviez sur Windows"
+
+msgctxt "@label"
+msgid "Browser favorites"
+msgstr "Favoris du navigateur"
+
+msgctxt "@info %2 is a size"
+msgid "%1 file to copy, %2"
+msgid_plural "%1 files to copy, %2"
+msgstr[0] "%1 fichier à copier, %2"
+msgstr[1] "%1 fichiers à copier, %2"
+
+msgctxt "@info"
+msgid "Nothing chosen yet"
+msgstr "Rien n'est choisi pour l'instant"
+
+msgctxt "@info %1 is a size"
+msgid "%1 free on this PC"
+msgstr "%1 libre sur ce PC"
+
+msgctxt "@action:button"
+msgid "Copy files"
+msgstr "Copier les fichiers"
+
+msgctxt "@info %1 and %2 are numbers of files"
+msgid "Copying %1 of %2 files"
+msgstr "Copie de %1 fichiers sur %2"
+
+msgctxt "@info"
+msgid "Getting ready to copy…"
+msgstr "Préparation de la copie…"
+
+msgctxt "@info %1 and %2 are sizes, %3 how long is left"
+msgid "%1 of %2 · %3"
+msgstr "%1 sur %2 · %3"
+
+msgctxt "@info %1 is a folder"
+msgid "Now copying: %1"
+msgstr "En cours : %1"
+
+msgctxt "@info"
+msgid "Each file is checked once copied. You can keep using your PC; leave Settings open until it's done."
+msgstr "Chaque fichier est vérifié une fois copié. Vous pouvez continuer à utiliser votre PC ; laissez les Paramètres ouverts jusqu'à la fin."
+
+msgctxt "@info"
+msgid "Most of your files are here"
+msgstr "La plupart de vos fichiers sont ici"
+
+msgctxt "@info"
+msgid "Your files are here"
+msgstr "Vos fichiers sont ici"
+
+msgctxt "@info"
+msgid "Windows still has its own copy of everything."
+msgstr "Windows garde toujours sa propre copie de tout."
+
+msgctxt "@title"
+msgid "What was copied"
+msgstr "Ce qui a été copié"
+
+msgctxt "@info"
+msgid "%1 file copied"
+msgid_plural "%1 files copied"
+msgstr[0] "%1 fichier copié"
+msgstr[1] "%1 fichiers copiés"
+
+msgctxt "@info %1 is a size"
+msgid "%1, each one read back to check it"
+msgstr "%1, chacun relu pour le vérifier"
+
+msgctxt "@action:button"
+msgid "Open Documents"
+msgstr "Ouvrir Documents"
+
+msgctxt "@info"
+msgid "%1 file was already here"
+msgid_plural "%1 files were already here"
+msgstr[0] "%1 fichier était déjà ici"
+msgstr[1] "%1 fichiers étaient déjà ici"
+
+msgctxt "@info"
+msgid "Copied before, so they were left as they are."
+msgstr "Copiés auparavant, ils ont été laissés tels quels."
+
+msgctxt "@info"
+msgid "%1 file couldn't be copied"
+msgid_plural "%1 files couldn't be copied"
+msgstr[0] "%1 fichier n'a pas pu être copié"
+msgstr[1] "%1 fichiers n'ont pas pu être copiés"
+
+msgctxt "@info"
+msgid "They could not be read. Often these are OneDrive files kept only online: in Windows, right-click them and choose Always keep on this device, then copy again."
+msgstr "Ils n'ont pas pu être lus. Ce sont souvent des fichiers OneDrive gardés seulement en ligne : dans Windows, faites un clic droit dessus et choisissez Toujours conserver sur cet appareil, puis copiez à nouveau."
+
+msgctxt "@info"
+msgid "%1 item left out"
+msgid_plural "%1 items left out"
+msgstr[0] "%1 élément laissé de côté"
+msgstr[1] "%1 éléments laissés de côté"
+
+msgctxt "@info"
+msgid "Windows shortcuts and links to other places (they don't work on Raye), and files Windows keeps for itself, like desktop.ini and Thumbs.db."
+msgstr "Les raccourcis Windows et les liens vers d'autres emplacements (ils ne fonctionnent pas sur Raye), et les fichiers que Windows garde pour lui, comme desktop.ini et Thumbs.db."
+
+msgctxt "@info"
+msgid "Your Windows wallpaper is on your desktop"
+msgstr "Votre fond d'écran Windows est sur votre bureau"
+
+msgctxt "@info"
+msgid "It's also in your Pictures folder."
+msgstr "Il est aussi dans votre dossier Images."
+
+msgctxt "@info"
+msgid "Your browser favorites are in Documents"
+msgstr "Les favoris de votre navigateur sont dans Documents"
+
+msgctxt "@info"
+msgid "To add them to Firefox: Bookmarks › Manage bookmarks › Import and Backup › Import Bookmarks from HTML, then pick this file."
+msgstr "Pour les ajouter à Firefox : Marque-pages › Gérer les marque-pages › Importation et sauvegarde › Importer des marque-pages au format HTML, puis choisissez ce fichier."
+
+msgctxt "@action:button"
+msgid "Show"
+msgstr "Afficher"
+
+msgctxt "@info"
+msgid "Copy your documents, pictures and more from Windows"
+msgstr "Copier vos documents, images et plus depuis Windows"
+
+msgctxt "@action:button"
+msgid "Bring my files"
+msgstr "Récupérer mes fichiers"
+
+msgctxt "@title"
+msgid "Settings"
+msgstr "Paramètres"
+
+msgctxt "@title notification"
+msgid "Bring your files from Windows"
+msgstr "Récupérez vos fichiers de Windows"
+
+msgctxt "@info notification"
+msgid "Windows is on this PC. Copy your documents, pictures and more to Raye. Windows stays as it is."
+msgstr "Windows est sur ce PC. Copiez vos documents, images et plus vers Raye. Windows reste tel quel."
