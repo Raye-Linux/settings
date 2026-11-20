@@ -6,6 +6,11 @@ raye-settings (1.0~beta2) resolute; urgency=medium
     opened read-only, every file is checked after copying, a stopped copy
     picks up where it was, and after the first sign-in a notification
     offers it when Windows is on the PC.
+  * New page, Personalization > Desktop environment: KDE Plasma or Hyprland
+    with a picture of each, the one in use marked; choosing the other
+    installs it if needed, makes it the desktop of your next sign-in and
+    offers to sign out now or later. Hyprland can be removed there when
+    it is not in use. Automatic sign-in opens the chosen desktop.
   * Personalization offers a Windows 10 desktop style; Taskbar alignment
     stays on the left in it. The "Windows open and close" switch now
     follows Raye's own window effect.
@@ -36,6 +41,14 @@ raye-settings (1.0~beta2) resolute; urgency=medium
     Panel and graphics switching; not offered on the Raye kernel.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 10:00:00 +0000
+
+raye-settings (1.0~beta1.1) resolute; urgency=high
+
+  * Optional updates: an NVIDIA card shows only its recommended driver (open
+    and NVIDIA kernel module), one NVIDIA driver at a time, with its Control
+    Panel and graphics switching; not offered on the Raye kernel.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Fri, 20 Nov 2026 01:15:00 +0000
 
 raye-settings (1.0~beta1) resolute; urgency=medium
 
