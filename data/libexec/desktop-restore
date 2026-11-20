@@ -1,0 +1,60 @@
+#!/bin/sh
+# Started with every Plasma and Hyprland session (autostart). After a
+# switch from Settings > Personalization > Desktop environment, it opens
+# again the apps that were open on the other desktop, then forgets them:
+# the list is read once, only by the desktop it was written for, and only
+# in the few minutes after the switch. Apps are named by their desktop id
+# and started from their own .desktop file: nothing else is ever run.
+set -u
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}
+list=$state/raye/desktop-switch
+max_age=${RAYE_RESTORE_MAX_AGE:-180}
+launcher=${RAYE_LAUNCHER:-}
+
+[ -f "$list" ] && [ ! -L "$list" ] || exit 0
+content=$(head -c 65536 "$list")
+# read once, whatever happens next
+rm -f "$list"
+
+value() { printf '%s\n' "$content" | sed -n "s/^$1=//p" | head -n 1; }
+to=$(value to)
+at=$(value at)
+
+case ${XDG_CURRENT_DESKTOP:-} in
+*KDE*) here=plasma ;;
+*Hyprland*) here=hyprland ;;
+*) here= ;;
+esac
+[ -n "$here" ] && [ "$to" = "$here" ] || exit 0
+case $at in ''|*[!0-9]*) exit 0 ;; esac
+now=$(date +%s)
+[ $((now - at)) -le "$max_age" ] && [ $((now - at)) -ge -60 ] || exit 0
+
+# the .desktop file of an id, where the session looks for apps
+find_app() {
+    for d in "${XDG_DATA_HOME:-$HOME/.local/share}" $(printf '%s' "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" | tr ':' ' '); do
+        [ -f "$d/applications/$1.desktop" ] && { echo "$d/applications/$1.desktop"; return 0; }
+    done
+    return 1
+}
+
+start() { # desktop id, its file
+    if [ -n "$launcher" ]; then
+        "$launcher" "$1" "$2"
+    elif [ "$1" = org.raye.settings ]; then
+        # back where the switch was made
+        setsid raye-settings personalization/desktop >/dev/null 2>&1 &
+    elif command -v gio >/dev/null 2>&1; then
+        setsid gio launch "$2" >/dev/null 2>&1 &
+    elif command -v gtk-launch >/dev/null 2>&1; then
+        setsid gtk-launch "$1" >/dev/null 2>&1 &
+    fi
+}
+
+printf '%s\n' "$content" | sed -n 's/^app=//p' | head -n 40 | while IFS= read -r id; do
+    case $id in ''|*[!A-Za-z0-9._-]*) continue ;; esac
+    file=$(find_app "$id") || continue
+    start "$id" "$file"
+done
+exit 0

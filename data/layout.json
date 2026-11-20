@@ -630,6 +630,17 @@
                     ]
                 },
                 {
+                    "id": "personalization/desktop",
+                    "icon": "org.raye.settings-personalization",
+                    "icon_fallback": "preferences-desktop",
+                    "name": "Desktop environment",
+                    "name_fr": "Environnement de bureau",
+                    "summary": "KDE Plasma or Hyprland",
+                    "summary_fr": "KDE Plasma ou Hyprland",
+                    "type": "qml",
+                    "component": "pages/personalization/DesktopEnvironmentPage.qml"
+                },
+                {
                     "id": "personalization/lock-screen",
                     "icon": "org.raye.settings-lock-screen",
                     "icon_fallback": "system-lock-screen",

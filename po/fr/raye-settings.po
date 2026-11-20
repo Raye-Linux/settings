@@ -10990,3 +10990,199 @@ msgstr "La mise en veille est réactivée"
 msgctxt "@info"
 msgid "Sleep shows in the power menu after you sign out and back in. If the PC doesn't wake up twice in a row, Raye turns sleep off again."
 msgstr "La mise en veille apparaît dans le menu d'alimentation après vous être déconnecté puis reconnecté. Si le PC ne se réveille pas deux fois de suite, Raye la désactive de nouveau."
+
+# Personalization > Desktop environment
+
+msgctxt "@title settings page"
+msgid "Desktop environment"
+msgstr "Environnement de bureau"
+
+msgctxt "@title desktop environment"
+msgid "Hyprland"
+msgstr "Hyprland"
+
+msgctxt "@title desktop environment"
+msgid "KDE Plasma"
+msgstr "KDE Plasma"
+
+msgctxt "@title desktop environment"
+msgid "KDE Plasma (the Raye desktop)"
+msgstr "KDE Plasma (le bureau Raye)"
+
+msgctxt "@info desktop environment"
+msgid "Installing…"
+msgstr "Installation…"
+
+msgctxt "@info desktop environment"
+msgid "Removing…"
+msgstr "Suppression…"
+
+msgctxt "@info desktop environment"
+msgid "Not installed"
+msgstr "Pas installé"
+
+msgctxt "@info desktop environment"
+msgid "In use"
+msgstr "Utilisé"
+
+msgctxt "@info desktop environment"
+msgid "In use until you sign out"
+msgstr "Utilisé jusqu'à la déconnexion"
+
+msgctxt "@info desktop environment"
+msgid "Opens the next time you sign in"
+msgstr "S'ouvre à la prochaine connexion"
+
+msgctxt "@info desktop environment"
+msgid "Installed"
+msgstr "Installé"
+
+msgctxt "@info"
+msgid "Choose the desktop you see after you sign in. You can also pick it on the sign-in screen, with the Desktop button at the bottom right."
+msgstr "Choisissez le bureau que vous voyez après la connexion. Vous pouvez aussi le choisir sur l'écran de connexion, avec le bouton Bureau en bas à droite."
+
+msgctxt "@title"
+msgid "Sign out to switch"
+msgstr "Déconnectez-vous pour changer"
+
+msgctxt "@info"
+msgid "Your next sign-in opens %1."
+msgstr "Votre prochaine connexion ouvre %1."
+
+msgctxt "@info"
+msgid "This PC can't switch right away (another account signs in by itself). Your next sign-in opens %1."
+msgstr "Ce PC ne peut pas changer tout de suite (un autre compte se connecte automatiquement). Votre prochaine connexion ouvre %1."
+
+msgctxt "@action:button end the session"
+msgid "Sign out now"
+msgstr "Se déconnecter maintenant"
+
+msgctxt "@title"
+msgid "%1 couldn't be installed"
+msgstr "%1 n'a pas pu être installé"
+
+msgctxt "@title"
+msgid "%1 couldn't be removed"
+msgstr "%1 n'a pas pu être supprimé"
+
+msgctxt "@title"
+msgid "The desktop wasn't changed"
+msgstr "Le bureau n'a pas été changé"
+
+msgctxt "@title"
+msgid "An app is still open"
+msgstr "Une application est encore ouverte"
+
+msgctxt "@info"
+msgid "Check that you're connected to the internet, then try again."
+msgstr "Vérifiez que vous êtes connecté à Internet, puis réessayez."
+
+msgctxt "@info"
+msgid "Try again. If it keeps failing, restart the PC."
+msgstr "Réessayez. Si ça échoue encore, redémarrez le PC."
+
+msgctxt "@info"
+msgid "Save your work and close it, then switch again. Nothing was changed."
+msgstr "Enregistrez votre travail et fermez-la, puis changez de nouveau. Rien n'a été modifié."
+
+msgctxt "@info"
+msgid "A tiling desktop: windows line up side by side on their own, and you do most things with the keyboard. For people who already know Hyprland."
+msgstr "Un bureau en mosaïque : les fenêtres se rangent côte à côte d'elles-mêmes et presque tout se fait au clavier. Pour ceux qui connaissent déjà Hyprland."
+
+msgctxt "@info"
+msgid "The full Raye desktop, made to work like Windows: taskbar, Start menu, windows you drag and snap."
+msgstr "Le bureau Raye complet, pensé pour fonctionner comme Windows : barre des tâches, menu Démarrer, fenêtres qu'on déplace et qu'on aligne."
+
+msgctxt "@info"
+msgid "You're using %1 now. Your next sign-in opens %2."
+msgstr "Vous utilisez %1 maintenant. Votre prochaine connexion ouvre %2."
+
+msgctxt "@info"
+msgid "Open apps close and open again on %1. Save your work first."
+msgstr "Les applications ouvertes se ferment et se rouvrent sur %1. Enregistrez votre travail d'abord."
+
+msgctxt "@info"
+msgid "%1 opens the next time you sign in."
+msgstr "%1 s'ouvre à votre prochaine connexion."
+
+msgctxt "@info"
+msgid "No other apps are open."
+msgstr "Aucune autre application n'est ouverte."
+
+msgctxt "@info"
+msgid "%1 isn't installed yet. Raye downloads it first, so stay connected to the internet."
+msgstr "%1 n'est pas encore installé. Raye le télécharge d'abord, restez donc connecté à Internet."
+
+msgctxt "@action:button"
+msgid "Switch to %1 now"
+msgstr "Passer à %1 maintenant"
+
+msgctxt "@action:button"
+msgid "Install and switch now"
+msgstr "Installer et changer maintenant"
+
+msgctxt "@action:button"
+msgid "Keep %1"
+msgstr "Garder %1"
+
+msgctxt "@action:button"
+msgid "At my next sign-in"
+msgstr "À ma prochaine connexion"
+
+msgctxt "@action:button"
+msgid "Install for my next sign-in"
+msgstr "Installer pour ma prochaine connexion"
+
+msgctxt "@info"
+msgid "Installing %1. This can take a few minutes."
+msgstr "Installation de %1. Cela peut prendre quelques minutes."
+
+msgctxt "@info"
+msgid "Removing %1…"
+msgstr "Suppression de %1…"
+
+msgctxt "@info"
+msgid "Waiting for your apps to close. If one asks, save your work."
+msgstr "En attente de la fermeture de vos applications. Si l'une le demande, enregistrez votre travail."
+
+msgctxt "@info"
+msgid "Getting %1 ready…"
+msgstr "Préparation de %1…"
+
+msgctxt "@info"
+msgid "Setting up your next sign-in…"
+msgstr "Préparation de votre prochaine connexion…"
+
+msgctxt "@info:status"
+msgid "Switching to %1…"
+msgstr "Passage à %1…"
+
+msgctxt "@title"
+msgid "Remove Hyprland"
+msgstr "Supprimer Hyprland"
+
+msgctxt "@info"
+msgid "Frees a little space. KDE Plasma isn't touched, and you can install Hyprland again here."
+msgstr "Libère un peu d'espace. KDE Plasma n'est pas touché, et vous pourrez réinstaller Hyprland ici."
+
+msgctxt "@info"
+msgid "Switch to KDE Plasma first: Hyprland is in use or opens at your next sign-in."
+msgstr "Passez d'abord à KDE Plasma : Hyprland est utilisé ou s'ouvre à votre prochaine connexion."
+
+msgctxt "@title:window"
+msgid "Remove Hyprland?"
+msgstr "Supprimer Hyprland ?"
+
+msgctxt "@info"
+msgid "Hyprland and what it brought are removed from this PC. KDE Plasma stays as it is."
+msgstr "Hyprland et ce qu'il a apporté sont supprimés de ce PC. KDE Plasma reste tel quel."
+
+msgctxt "@info"
+msgid "KDE Plasma or Hyprland, the desktop you sign in to"
+msgstr "KDE Plasma ou Hyprland, le bureau de votre session"
+
+msgctxt "@info %2 is a list of app names"
+msgid "1 app is open: %2"
+msgid_plural "%1 apps are open: %2"
+msgstr[0] "%1 application est ouverte : %2"
+msgstr[1] "%1 applications sont ouvertes : %2"

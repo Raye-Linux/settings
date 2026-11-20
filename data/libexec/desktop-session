@@ -1,0 +1,343 @@
+#!/bin/sh
+# Personalization > Desktop environment: makes KDE Plasma or Hyprland the
+# desktop this account signs in to next. Run through pkexec
+# (org.raye.settings.desktop), and only ever for the person who asked:
+# the account comes from PKEXEC_UID, never from the command line.
+#
+#   desktop-session set plasma|hyprland   the next sign-in opens this desktop
+#   desktop-session switch DESKTOP SESSION  the same, and when SESSION (the
+#                                         caller's own, on the screen now)
+#                                         ends, sign the caller straight back
+#                                         in to DESKTOP, once, no password
+#   desktop-session cancel                take a switch back before it happens
+#   desktop-session --check               the desktop the next sign-in opens
+#
+# A switch is an automatic sign-in for one sign-in only: a file of its own
+# in /etc/sddm.conf.d ([Autologin] User=me, Session=..., Relogin=true),
+# which SDDM reads again when a session ends (Seat::createDisplay, sddm
+# 0.21). A watcher run by systemd (desktop-session watch, no PKEXEC_UID)
+# takes it away as soon as the new session is there, after 90 seconds at
+# the latest; tmpfiles takes it away at boot. Never for another account,
+# never for another session than the caller's on the screen, never left on.
+#
+# What the sign-in screen reads, in the order it trusts them:
+#  - Raye's sign-in screen keeps the desktop each account last used in
+#    ~sddm/.config/raye-signin.conf ([sessions] <login>=<file name>);
+#  - SDDM's own last session, ~sddm/state.conf [Last] Session=<path>, one
+#    for the whole PC: changed only when it is this account's;
+#  - automatic sign-in: the Session= of the file that signs this account
+#    in (zz-raye-autologin.conf, or /etc/sddm.conf as Setup writes it);
+#  - AccountsService (other display managers), asked over D-Bus.
+# The desktop must be installed: its session file has to be there.
+set -u
+
+sessions=/usr/share/wayland-sessions
+conf=/etc/sddm.conf.d
+main=/etc/sddm.conf
+system=/usr/lib/sddm/sddm.conf.d
+sddm_home=$(getent passwd sddm | cut -d: -f6)
+# the tests point them at folders of their own; never under pkexec
+if [ -z "${PKEXEC_UID:-}" ]; then
+    sessions=${RAYE_SESSION_DIR:-$sessions}
+    conf=${RAYE_SDDM_CONF_DIR:-$conf}
+    main=${RAYE_SDDM_MAIN:-$main}
+    system=${RAYE_SDDM_SYSTEM_DIR:-$system}
+    sddm_home=${RAYE_SDDM_HOME:-$sddm_home}
+fi
+autologin=$conf/zz-raye-autologin.conf
+switchfile=$conf/zz-raye-switch.conf
+loginctl=loginctl
+systemd_run=systemd-run
+self=/usr/libexec/raye-settings/desktop-session
+if [ -z "${PKEXEC_UID:-}" ]; then
+    loginctl=${RAYE_LOGINCTL:-$loginctl}
+    systemd_run=${RAYE_SYSTEMD_RUN:-$systemd_run}
+    self=${RAYE_SELF:-$self}
+fi
+# how long a switch waits for the old session to end and the new one to start
+window=${RAYE_SWITCH_WINDOW:-90}
+[ -n "${PKEXEC_UID:-}" ] && window=90
+
+die() { echo "desktop-session: $2" >&2; exit "$1"; }
+
+file_of() { # desktop key -> session file name
+    case $1 in
+    plasma) echo plasma.desktop ;;
+    hyprland) echo raye-hyprland.desktop ;;
+    *) return 1 ;;
+    esac
+}
+key_of() { # session file name or path -> desktop key, "" for any other
+    case ${1##*/} in
+    plasma.desktop) echo plasma ;;
+    raye-hyprland.desktop) echo hyprland ;;
+    esac
+}
+
+# value of key in [group] of an ini file ("" when absent)
+ini_get() {
+    [ -f "$1" ] || return 0
+    awk -v g="[$2]" -v k="$3" '
+        { sub(/\r$/, ""); line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line) }
+        line ~ /^\[/ { inside = (line == g); next }
+        inside { n = index(line, "="); if (n > 0) {
+            name = substr(line, 1, n - 1); gsub(/[ \t]+$/, "", name)
+            if (name == k) { v = substr(line, n + 1); gsub(/^[ \t]+/, "", v); found = v } } }
+        END { print found }
+    ' "$1"
+}
+
+# key=value in [group] of an ini file, every other line kept; replaced in
+# one step through a file of the same folder, never through a link
+ini_set() { # file group key value mode [owner]
+    f=$1
+    [ -L "$f" ] && die 1 "$f is a link, not touched"
+    tmp=$(mktemp "${f%/*}/.raye-desktop.XXXXXX") || die 1 "cannot write next to $f"
+    {
+        [ -f "$f" ] && cat "$f"
+        :
+    } | awk -v g="[$2]" -v k="$3" -v v="$4" '
+        function put() { print k "=" v; done = 1 }
+        { sub(/\r$/, ""); line = $0; trimmed = line; gsub(/^[ \t]+|[ \t]+$/, "", trimmed) }
+        trimmed ~ /^\[/ {
+            if (inside && !done) put()
+            inside = (trimmed == g); if (inside) seen = 1
+            print line; next
+        }
+        inside && !done {
+            n = index(trimmed, "=")
+            if (n > 0) { name = substr(trimmed, 1, n - 1); gsub(/[ \t]+$/, "", name)
+                if (name == k) { put(); next } }
+        }
+        inside && !done && trimmed == "" { put() }
+        { print line }
+        END {
+            if (inside && !done) put()
+            else if (!seen) { if (NR > 0) print ""; print g; put() }
+        }
+    ' > "$tmp" || { rm -f "$tmp"; die 1 "cannot write $f"; }
+    chmod "$5" "$tmp"
+    if [ -n "${6:-}" ] && [ "$(id -u)" = 0 ]; then
+        chown "$6" "$tmp" || { rm -f "$tmp"; die 1 "cannot give $f to $6"; }
+    fi
+    mv -f "$tmp" "$f" || { rm -f "$tmp"; die 1 "cannot replace $f"; }
+}
+
+# who and what SDDM signs in by itself: its folders, then sddm.conf, the
+# last value wins (as the autologin helper reads it)
+effective() { # key of [Autologin]
+    set -- "$1"
+    for d in "$system" "$conf"; do
+        [ -d "$d" ] || continue
+        for f in "$d"/*.conf; do
+            [ -f "$f" ] && set -- "$@" "$f"
+        done
+    done
+    [ -f "$main" ] && set -- "$@" "$main"
+    key=$1; shift
+    [ $# -gt 0 ] || return 0
+    awk -v k="$key" '
+        { sub(/\r$/, ""); line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line) }
+        line ~ /^\[/ { section = line; next }
+        section == "[Autologin]" { n = index(line, "="); if (n > 0) {
+            name = substr(line, 1, n - 1); gsub(/[ \t]+$/, "", name)
+            if (name == k) { v = substr(line, n + 1); gsub(/^[ \t]+/, "", v); value = v } } }
+        END { print value }
+    ' "$@"
+}
+
+# the session SESSION of this uid, on the screen now: Active, a graphical
+# one of a person, on seat0
+own_session() { # uid session
+    case $2 in ''|*[!0-9a-zA-Z_-]*) return 1 ;; esac
+    info=$($loginctl show-session "$2" -p User -p Active -p Class -p Type -p Seat -p State 2>/dev/null) || return 1
+    echo "$info" | grep -qx "User=$1" || return 1
+    echo "$info" | grep -qx "Active=yes" || return 1
+    echo "$info" | grep -qx "Class=user" || return 1
+    echo "$info" | grep -qx "Seat=seat0" || return 1
+    echo "$info" | grep -qxE "Type=(wayland|x11)" || return 1
+}
+
+# the sessions of this uid other than SESSION, still alive
+other_sessions() { # uid session
+    $loginctl list-sessions --no-legend 2>/dev/null | awk -v u="$1" -v s="$2" '$2 == u && $1 != s { print $1 }'
+}
+
+remove_switch() { # only a switch file of this login
+    [ -f "$switchfile" ] || return 0
+    [ "$(ini_get "$switchfile" Autologin User)" = "$1" ] || [ -z "$1" ] || return 0
+    rm -f "$switchfile"
+}
+
+# the desktop the next sign-in of this login opens
+next_of() {
+    login=$1
+    remembered=$(ini_get "$sddm_home/.config/raye-signin.conf" sessions "$login")
+    key=$(key_of "$remembered")
+    if [ -n "$key" ]; then echo "$key"; return; fi
+    last_user=$(ini_get "$sddm_home/state.conf" Last User)
+    if [ -z "$last_user" ] || [ "$last_user" = "$login" ]; then
+        key=$(key_of "$(ini_get "$sddm_home/state.conf" Last Session)")
+        if [ -n "$key" ]; then echo "$key"; return; fi
+    fi
+    echo plasma
+}
+
+caller() {
+    uid=${PKEXEC_UID:-${RAYE_TEST_UID:-}}
+    case $uid in
+    ''|*[!0-9]*) die 2 "run me through pkexec" ;;
+    0) die 2 "not for the root account" ;;
+    esac
+    login=$(getent passwd "$uid" | cut -d: -f1)
+    [ -n "$login" ] || die 3 "no account for uid $uid"
+    echo "$login"
+}
+
+case ${1:-} in
+set)
+    [ $# -eq 2 ] || die 2 "usage: desktop-session set plasma|hyprland"
+    file=$(file_of "$2") || die 2 "no desktop called $2"
+    login=$(caller) || exit $?
+    [ -f "$sessions/$file" ] || die 5 "$2 is not installed ($sessions/$file)"
+    [ -n "$sddm_home" ] && [ -d "$sddm_home" ] || die 1 "no home folder for the sign-in screen"
+    [ -L "$sddm_home" ] && die 1 "$sddm_home is a link, not touched"
+    sddm_owner=
+    if [ "$(id -u)" = 0 ]; then
+        sddm_owner=$(stat -c %u:%g "$sddm_home") || die 1 "cannot read $sddm_home"
+    fi
+
+    # 1. what Raye's sign-in screen remembers for this account (the login
+    # is a key there: only the plain ones it writes itself)
+    case $login in
+    [a-z_]*[!a-z0-9_.-]*) ;;
+    [a-z_]*)
+        dir=$sddm_home/.config
+        [ -L "$dir" ] && die 1 "$dir is a link, not touched"
+        if [ ! -d "$dir" ]; then
+            mkdir -m 700 "$dir" || die 1 "cannot make $dir"
+            [ -n "$sddm_owner" ] && chown "$sddm_owner" "$dir"
+        fi
+        ini_set "$dir/raye-signin.conf" sessions "$login" "$file" 600 "$sddm_owner"
+        ;;
+    esac
+
+    # 2. SDDM's last session, when the last one to sign in was this account
+    state=$sddm_home/state.conf
+    last_user=$(ini_get "$state" Last User)
+    if [ -z "$last_user" ] || [ "$last_user" = "$login" ]; then
+        mode=644; owner=$sddm_owner
+        if [ -f "$state" ]; then
+            mode=$(stat -c %a "$state"); [ "$(id -u)" = 0 ] && owner=$(stat -c %u:%g "$state")
+        fi
+        ini_set "$state" Last Session "$sessions/$file" "$mode" "$owner"
+    fi
+
+    # 3. automatic sign-in into this account opens the same desktop (Setup
+    # leaves "[Autologin] Session=plasma" without a User in sddm.conf: that
+    # one follows too, it is read last and would decide a switch)
+    for f in "$autologin" "$main"; do
+        [ -f "$f" ] || continue
+        who=$(ini_get "$f" Autologin User)
+        [ "$who" = "$login" ] || { [ "$f" = "$main" ] && [ -z "$who" ]; } || continue
+        if [ "$f" = "$autologin" ] || [ -n "$(ini_get "$f" Autologin Session)" ]; then
+            ini_set "$f" Autologin Session "$file" "$(stat -c %a "$f")"
+        fi
+    done
+
+    # 4. AccountsService, for whatever else reads it; not needed by SDDM
+    if [ -n "${PKEXEC_UID:-}" ] && command -v busctl >/dev/null 2>&1; then
+        path=$(timeout 5 busctl --system call org.freedesktop.Accounts /org/freedesktop/Accounts \
+            org.freedesktop.Accounts FindUserByName s "$login" 2>/dev/null | awk '{ gsub(/"/, "", $2); print $2 }')
+        if [ -n "$path" ]; then
+            timeout 5 busctl --system call org.freedesktop.Accounts "$path" \
+                org.freedesktop.Accounts.User SetSession s "${file%.desktop}" >/dev/null 2>&1
+            timeout 5 busctl --system call org.freedesktop.Accounts "$path" \
+                org.freedesktop.Accounts.User SetSessionType s wayland >/dev/null 2>&1
+        fi
+    fi
+
+    # what was asked has to be what the sign-in screen now reads
+    [ "$(next_of "$login")" = "$2" ] || die 4 "the sign-in screen would still open another desktop"
+    ;;
+switch)
+    [ $# -eq 3 ] || die 2 "usage: desktop-session switch plasma|hyprland SESSION"
+    file=$(file_of "$2") || die 2 "no desktop called $2"
+    login=$(caller) || exit $?
+    uid=${PKEXEC_UID:-$RAYE_TEST_UID}
+    own_session "$uid" "$3" || die 6 "session $3 is not yours on the screen now"
+    # someone else is signed in by themselves: no second automatic sign-in
+    other_user=$(effective User)
+    if [ -n "$other_user" ] && [ "$other_user" != "$login" ] && [ ! -f "$switchfile" ]; then
+        die 6 "$other_user signs in automatically on this PC"
+    fi
+    # a switch asked before and not used yet gives way to this one (its
+    # watcher takes its file away as it stops)
+    unit=raye-desktop-switch-$uid
+    [ -n "${PKEXEC_UID:-}" ] && systemctl stop "$unit.service" >/dev/null 2>&1
+    sh "$0" set "$2" || exit $?
+    mkdir -p "$conf" || die 1 "cannot make $conf"
+    [ -L "$switchfile" ] && die 1 "$switchfile is a link, not touched"
+    tmp=$(mktemp "$conf/.raye-switch.XXXXXX") || die 1 "cannot write in $conf"
+    {
+        printf '# Written by Settings > Personalization > Desktop environment, for one\n'
+        printf '# sign-in only: removed as soon as it is used, at the latest after %s s.\n' "$window"
+        printf '[Autologin]\nUser=%s\nSession=%s\nRelogin=true\n' "$login" "$file"
+    } > "$tmp" || { rm -f "$tmp"; die 1 "cannot write $switchfile"; }
+    chmod 644 "$tmp"
+    mv -f "$tmp" "$switchfile" || { rm -f "$tmp"; die 1 "cannot write $switchfile"; }
+    # what SDDM will read has to be this, or nothing is left behind
+    if [ "$(effective User)" != "$login" ] || [ "$(effective Session | sed 's/\.desktop$//')" != "${file%.desktop}" ] \
+        || [ "$(effective Relogin)" != true ]; then
+        rm -f "$switchfile"
+        die 6 "another file of the sign-in screen decides; sign out instead"
+    fi
+    # the watcher, outside this process: it outlives the session
+    $systemd_run --quiet --collect --unit="$unit" --property=RuntimeMaxSec=$((window + 30)) \
+        "$self" watch "$uid" "$3" "$login" >/dev/null 2>&1 || {
+        remove_switch "$login"
+        die 1 "cannot start the watcher"
+    }
+    ;;
+cancel)
+    login=$(caller) || exit $?
+    uid=${PKEXEC_UID:-$RAYE_TEST_UID}
+    remove_switch "$login"
+    [ -n "${PKEXEC_UID:-}" ] && systemctl stop "raye-desktop-switch-$uid.service" >/dev/null 2>&1
+    [ ! -f "$switchfile" ] || [ "$(ini_get "$switchfile" Autologin User)" != "$login" ] || die 1 "the switch is still there"
+    ;;
+watch)
+    # run by systemd from "switch", as root, never through pkexec
+    [ -z "${PKEXEC_UID:-}" ] || die 2 "not through pkexec"
+    [ $# -eq 4 ] || die 2 "usage: desktop-session watch UID SESSION LOGIN"
+    uid=$2; old=$3; login=$4
+    case $uid in ''|*[!0-9]*) die 2 "bad uid" ;; esac
+    trap 'remove_switch "$login"' EXIT
+    trap 'exit 0' TERM INT
+    # SDDM reads its files again the moment the old session ends: once it
+    # is over, the new session gets 15 seconds, then the file goes anyway
+    gone=0; waited=0; after=${RAYE_SWITCH_AFTER:-30}
+    [ -n "${PKEXEC_UID:-}" ] && after=30
+    while [ "$waited" -lt $((window * 2)) ]; do
+        if [ $gone = 0 ]; then
+            state=$($loginctl show-session "$old" -p State --value 2>/dev/null)
+            case $state in ''|closing) gone=$waited ; [ "$gone" -gt 0 ] || gone=1 ;; esac
+        fi
+        if [ $gone != 0 ]; then
+            # the old session is over and a new one of this account is there
+            [ -n "$(other_sessions "$uid" "$old")" ] && exit 0
+            [ $((waited - gone)) -ge "$after" ] && exit 0
+        fi
+        sleep 0.5
+        waited=$((waited + 1))
+    done
+    ;;
+--check)
+    login=$(caller) || exit $?
+    next_of "$login"
+    ;;
+*)
+    die 2 "usage: desktop-session set|switch|cancel|--check"
+    ;;
+esac
+exit 0

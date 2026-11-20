@@ -12,11 +12,15 @@ set -u
 dir=/etc/sddm.conf.d
 system=/usr/lib/sddm/sddm.conf.d
 main=/etc/sddm.conf
+sessions=/usr/share/wayland-sessions
+sddm_home=$(getent passwd sddm | cut -d: -f6)
 # the tests point them at folders of their own; never under pkexec
 if [ -z "${PKEXEC_UID:-}" ]; then
     dir=${RAYE_SDDM_CONF_DIR:-$dir}
     system=${RAYE_SDDM_SYSTEM_DIR:-$system}
     main=${RAYE_SDDM_MAIN:-$main}
+    sessions=${RAYE_SESSION_DIR:-$sessions}
+    sddm_home=${RAYE_SDDM_HOME:-$sddm_home}
 fi
 # read after every file the packages install in that folder
 file=$dir/zz-raye-autologin.conf
@@ -43,6 +47,23 @@ effective() {
     ' "$@"
 }
 
+# the desktop this account signs in to: what Personalization > Desktop
+# environment or the sign-in screen last chose for it
+# (~sddm/.config/raye-signin.conf), Plasma when nothing was chosen
+session_of() {
+    chosen=$(awk -v k="$1" '
+        { sub(/\r$/, ""); line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line) }
+        line ~ /^\[/ { inside = (line == "[sessions]"); next }
+        inside && index(line, k "=") == 1 { v = substr(line, length(k) + 2) }
+        END { print v }
+    ' "$sddm_home/.config/raye-signin.conf" 2>/dev/null)
+    case $chosen in
+    raye-hyprland.desktop)
+        if [ -f "$sessions/$chosen" ]; then echo "$chosen"; return; fi ;;
+    esac
+    echo plasma
+}
+
 write() { # the file we own, with this User= (empty: nobody)
     mkdir -p "$dir" || exit 1
     tmp=$file.new
@@ -50,7 +71,7 @@ write() { # the file we own, with this User= (empty: nobody)
     {
         printf '# Written by Settings > Accounts > Sign-in options.\n'
         if [ -n "$1" ]; then
-            printf '[Autologin]\nUser=%s\nSession=plasma\nRelogin=false\n' "$1"
+            printf '[Autologin]\nUser=%s\nSession=%s\nRelogin=false\n' "$1" "$(session_of "$1")"
         else
             printf '[Autologin]\nUser=\n'
         fi

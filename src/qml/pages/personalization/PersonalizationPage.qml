@@ -67,6 +67,15 @@ PageScaffold {
 
     NavCard {
         Layout.fillWidth: true
+        iconName: "org.raye.settings-personalization"
+        iconFallback: "preferences-desktop"
+        title: i18nc("@title settings page", "Desktop environment")
+        description: i18nc("@info", "KDE Plasma or Hyprland, the desktop you sign in to")
+        searchId: "desktop-environment"
+        target: "personalization/desktop"
+    }
+    NavCard {
+        Layout.fillWidth: true
         iconName: "org.raye.settings-background"
         iconFallback: "preferences-desktop-wallpaper"
         title: i18nc("@title settings page", "Background")

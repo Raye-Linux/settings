@@ -1,0 +1,12 @@
+[Desktop Entry]
+# After a switch made in Settings > Personalization > Desktop environment,
+# opens again the apps that were open on the other desktop. Exits at once
+# on any other sign-in.
+Type=Application
+Name=Apps from your other desktop
+Name[fr]=Applications de votre autre bureau
+Exec=/usr/libexec/raye-settings/desktop-restore
+Icon=org.raye.settings
+NoDisplay=true
+OnlyShowIn=KDE;Hyprland;
+X-KDE-autostart-phase=2

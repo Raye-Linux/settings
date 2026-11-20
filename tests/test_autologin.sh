@@ -11,7 +11,7 @@ check() { # description, then a command that must succeed
     what=$1; shift
     if "$@"; then echo "ok $what"; else echo "FAILED $what"; failed=1; fi
 }
-export RAYE_SDDM_CONF_DIR=$dir/conf.d
+export RAYE_SDDM_CONF_DIR=$dir/conf.d RAYE_SDDM_HOME=$dir/sddm RAYE_SESSION_DIR=$dir/sessions
 export RAYE_TEST_UID=$(id -u)
 me=$(id -un)
 [ "$RAYE_TEST_UID" != 0 ] || { me=$(getent passwd 1 | cut -d: -f1); export RAYE_TEST_UID=1; }
@@ -77,7 +77,21 @@ check "pkexec ignores the test system folder" sh -c "printf '[Autologin]\nUser=f
 rm -f "$dir/system.d/t.conf"
 unset RAYE_SDDM_SYSTEM_DIR RAYE_SDDM_MAIN
 
-for file in autologin printing fingerprint-signin; do
+# the desktop chosen in Personalization > Desktop environment (or on the
+# sign-in screen) is the one automatic sign-in opens
+mkdir -p "$dir/sddm/.config" "$dir/sessions"
+printf '[sessions]\n%s=raye-hyprland.desktop\n' "$me" > "$dir/sddm/.config/raye-signin.conf"
+check "on with Hyprland chosen but not installed" sh "$helper" on
+check "opens Plasma, the desktop that is there" grep -qx 'Session=plasma' "$dir/conf.d/zz-raye-autologin.conf"
+touch "$dir/sessions/raye-hyprland.desktop"
+check "on with Hyprland chosen" sh "$helper" on
+check "opens Hyprland" grep -qx 'Session=raye-hyprland.desktop' "$dir/conf.d/zz-raye-autologin.conf"
+printf '[sessions]\nsomeoneelse=raye-hyprland.desktop\n' > "$dir/sddm/.config/raye-signin.conf"
+check "on with Hyprland chosen by someone else" sh "$helper" on
+check "opens my own desktop" grep -qx 'Session=plasma' "$dir/conf.d/zz-raye-autologin.conf"
+sh "$helper" off
+
+for file in autologin printing fingerprint-signin desktop-session; do
     check "$file has a policy that runs it" grep -qs "/usr/libexec/raye-settings/$file<" "$SOURCE_DIR"/data/polkit/*.policy
 done
 exit $failed

@@ -203,7 +203,18 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data/icons-avatars)
     install(DIRECTORY data/icons-avatars/ DESTINATION ${KDE_INSTALL_DATADIR}/raye-settings/avatars)
 endif()
 
-# Started after signing in (the offer of Files from Windows).
+# SDDM's automatic sign-in defaults, read first: a desktop switch's one
+# automatic sign-in really ends when its file goes (desktop-session).
+install(FILES data/sddm/00-raye-autologin-defaults.conf DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/sddm/sddm.conf.d)
+
+# Removed at boot: a desktop switch's one automatic sign-in (desktop-session).
+file(GLOB RAYE_TMPFILES CONFIGURE_DEPENDS data/tmpfiles/*.conf)
+if(RAYE_TMPFILES)
+    install(FILES ${RAYE_TMPFILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/tmpfiles.d)
+endif()
+
+# Started after signing in (the offer of Files from Windows, the apps
+# of the other desktop after a switch).
 file(GLOB RAYE_AUTOSTART CONFIGURE_DEPENDS data/autostart/*.desktop)
 if(RAYE_AUTOSTART)
     install(FILES ${RAYE_AUTOSTART} DESTINATION ${KDE_INSTALL_AUTOSTARTDIR})
