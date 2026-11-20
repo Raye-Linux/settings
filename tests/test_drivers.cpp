@@ -81,7 +81,8 @@ private Q_SLOTS:
         nvidia.modules = QStringLiteral("linux-modules-nvidia-580-open-generic");
         QCOMPARE(DriverUpdates::stateOf(nvidia), QStringLiteral("installable"));
         QCOMPARE(DriverUpdates::packagesOf(nvidia),
-                 (QStringList{QStringLiteral("nvidia-driver-580-open"), QStringLiteral("linux-modules-nvidia-580-open-generic")}));
+                 (QStringList{QStringLiteral("nvidia-driver-580-open"), QStringLiteral("linux-modules-nvidia-580-open-generic"),
+                              QStringLiteral("nvidia-settings"), QStringLiteral("nvidia-prime")}));
         nvidia.installed = true;
         QCOMPARE(DriverUpdates::stateOf(nvidia), QStringLiteral("installed"));
 
@@ -99,6 +100,84 @@ private Q_SLOTS:
         firmware.package = QStringLiteral("intel-microcode");
         QCOMPARE(DriverUpdates::stateOf(firmware), QStringLiteral("installable"));
         QCOMPARE(DriverUpdates::packagesOf(firmware), QStringList{QStringLiteral("intel-microcode")});
+    }
+
+    // what ubuntu-drivers lists for an RTX 3060 on Raye 1.0 (resolute):
+    // ten NVIDIA drivers, of three branches, server builds included
+    void onlyTheRecommendedBranchIsOffered()
+    {
+        QList<DriverEntry> all;
+        for (const char *p : {"nvidia-driver-580", "nvidia-driver-580-open", "nvidia-driver-580-server",
+                              "nvidia-driver-580-server-open", "nvidia-driver-595", "nvidia-driver-595-open",
+                              "nvidia-driver-595-server", "nvidia-driver-595-server-open", "nvidia-driver-615-open",
+                              "nvidia-driver-615-server-open", "xserver-xorg-video-nouveau"}) {
+            DriverEntry e;
+            e.device = QStringLiteral("NVIDIA Corporation · GA106 [GeForce RTX 3060]");
+            e.package = QString::fromLatin1(p);
+            e.modules = QStringLiteral("linux-modules-") + e.package.mid(7) + QStringLiteral("-generic-hwe-26.04");
+            e.recommended = e.package == QLatin1String("nvidia-driver-595-open");
+            e.builtin = e.package.startsWith(QLatin1String("xserver-"));
+            all << e;
+        }
+        QStringList shown;
+        for (const DriverEntry &e : DriverUpdates::offered(all, {}))
+            shown << e.package;
+        QCOMPARE(shown, (QStringList{QStringLiteral("nvidia-driver-595"), QStringLiteral("nvidia-driver-595-open"),
+                                     QStringLiteral("xserver-xorg-video-nouveau")}));
+        for (const DriverEntry &e : DriverUpdates::offered(all, {}))
+            QVERIFY(DriverUpdates::stateOf(e) != QLatin1String("other"));
+
+        // one driver in: the other one says to remove it first, and the
+        // installed one (here an older branch picked by hand) stays shown
+        const QList<DriverEntry> after = DriverUpdates::offered(all, {QStringLiteral("nvidia-driver-580-server")});
+        QStringList states;
+        for (const DriverEntry &e : after)
+            states << e.package + QLatin1Char('=') + DriverUpdates::stateOf(e);
+        QCOMPARE(states, (QStringList{QStringLiteral("nvidia-driver-580-server=installed"),
+                                      QStringLiteral("nvidia-driver-595=other"), QStringLiteral("nvidia-driver-595-open=other"),
+                                      QStringLiteral("xserver-xorg-video-nouveau=builtin")}));
+    }
+
+    void notOfferedOnTheRayeKernel()
+    {
+        DriverEntry e;
+        e.device = QStringLiteral("NVIDIA Corporation · AD104");
+        e.package = QStringLiteral("nvidia-driver-595-open");
+        e.modules = QStringLiteral("linux-modules-nvidia-595-open-generic-hwe-26.04");
+        e.recommended = true;
+        QCOMPARE(DriverUpdates::stateOf(DriverUpdates::offered({e}, {}, QStringLiteral("7.0.14-raye")).at(0)),
+                 QStringLiteral("kernel"));
+        QCOMPARE(DriverUpdates::stateOf(DriverUpdates::offered({e}, {}, QStringLiteral("7.0.0-44-generic")).at(0)),
+                 QStringLiteral("installable"));
+    }
+
+    void withoutARecommendationTheNewestBranch()
+    {
+        QList<DriverEntry> all;
+        for (const char *p : {"nvidia-driver-580", "nvidia-driver-595-server", "nvidia-driver-595"}) {
+            DriverEntry e;
+            e.device = QStringLiteral("NVIDIA Corporation · TU106");
+            e.package = QString::fromLatin1(p);
+            all << e;
+        }
+        const QList<DriverEntry> shown = DriverUpdates::offered(all, {});
+        QCOMPARE(shown.size(), 1);
+        QCOMPARE(shown.at(0).package, QStringLiteral("nvidia-driver-595"));
+    }
+
+    void otherDevicesKeepAllTheirDrivers()
+    {
+        DriverEntry wifi;
+        wifi.device = QStringLiteral("Broadcom");
+        wifi.package = QStringLiteral("bcmwl-kernel-source");
+        DriverEntry cpu;
+        cpu.device = QStringLiteral("Intel");
+        cpu.package = QStringLiteral("intel-microcode");
+        const QList<DriverEntry> shown = DriverUpdates::offered({wifi, cpu}, {QStringLiteral("nvidia-driver-595")});
+        QCOMPARE(shown.size(), 2);
+        // the NVIDIA rule is for NVIDIA drivers only
+        QVERIFY(!shown.at(0).otherInstalled && !shown.at(1).otherInstalled);
+        QCOMPARE(DriverUpdates::packagesOf(cpu), QStringList{QStringLiteral("intel-microcode")});
     }
 };
 

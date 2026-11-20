@@ -1,3 +1,11 @@
+raye-settings (1.0~beta1.1) resolute; urgency=high
+
+  * Optional updates: an NVIDIA card shows only its recommended driver (open
+    and NVIDIA kernel module), one NVIDIA driver at a time, with its Control
+    Panel and graphics switching; not offered on the Raye kernel.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Fri, 20 Nov 2026 01:15:00 +0000
+
 raye-settings (1.0~beta1) resolute; urgency=medium
 
   * New page, System > Performance options: one choice turns animations,

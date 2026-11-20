@@ -85,6 +85,10 @@ PageScaffold {
                         parts.push(i18nc("@info driver", "Built into Raye"))
                     else if (model.state === "unsigned")
                         parts.push(i18nc("@info driver", "Not available with Secure Boot yet"))
+                    else if (model.state === "kernel")
+                        parts.push(i18nc("@info driver", "Not available with the Raye kernel yet"))
+                    else if (model.state === "other")
+                        parts.push(i18nc("@info driver", "Remove the NVIDIA driver in use to choose this one"))
                     return parts.join(" · ")
                 }
 

@@ -4,10 +4,12 @@
 #include <QProcess>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QSysInfo>
 
 #include <PackageKit/Daemon>
 #include <PackageKit/Transaction>
 
+#include <algorithm>
 #include <memory>
 
 namespace {
@@ -16,6 +18,20 @@ bool buildsModules(const QString &package)
 {
     static const QRegularExpression dkms(QStringLiteral("^(nvidia-driver-|bcmwl-)|-dkms$"));
     return dkms.match(package).hasMatch();
+}
+
+bool isNvidia(const QString &package)
+{
+    return package.startsWith(QLatin1String("nvidia-driver-"));
+}
+
+// "nvidia-driver-595-open" -> "595"; "" for a data-centre build or a
+// package that is not an NVIDIA driver
+QString nvidiaBranch(const QString &package)
+{
+    static const QRegularExpression branch(QStringLiteral("^nvidia-driver-(\\d+)(-open)?$"));
+    const QRegularExpressionMatch m = branch.match(package);
+    return m.hasMatch() ? m.captured(1) : QString();
 }
 
 QProcess *start(QObject *parent, const QString &program, const QStringList &arguments)
@@ -116,6 +132,10 @@ QString DriverUpdates::stateOf(const DriverEntry &entry)
         return QStringLiteral("installed");
     if (entry.builtin)
         return QStringLiteral("builtin");
+    if (entry.rayeKernel)
+        return QStringLiteral("kernel");
+    if (entry.otherInstalled)
+        return QStringLiteral("other");
     if (entry.modules.isEmpty() && buildsModules(entry.package))
         return QStringLiteral("unsigned");
     return QStringLiteral("installable");
@@ -126,7 +146,48 @@ QStringList DriverUpdates::packagesOf(const DriverEntry &entry)
     QStringList packages{entry.package};
     if (!entry.modules.isEmpty())
         packages << entry.modules;
+    // Recommends of the driver, which raye-drivers gets through apt: the
+    // NVIDIA Control Panel in Start, and graphics switching (PRIME) on a
+    // laptop with two graphics chips
+    if (isNvidia(entry.package))
+        packages << QStringLiteral("nvidia-settings") << QStringLiteral("nvidia-prime");
     return packages;
+}
+
+QList<DriverEntry> DriverUpdates::offered(const QList<DriverEntry> &all, const QStringList &installed, const QString &kernel)
+{
+    const bool rayeKernel = kernel.endsWith(QLatin1String("-raye"));
+    // the NVIDIA branch to show for each device: the recommended one, or
+    // the newest when ubuntu-drivers recommends none
+    QHash<QString, QString> recommended;
+    QHash<QString, int> newest;
+    bool nvidiaIn = false;
+    for (const DriverEntry &e : all) {
+        const QString b = nvidiaBranch(e.package);
+        if (!b.isEmpty()) {
+            if (e.recommended)
+                recommended.insert(e.device, b);
+            newest.insert(e.device, std::max(newest.value(e.device), b.toInt()));
+        }
+        if (isNvidia(e.package) && installed.contains(e.package))
+            nvidiaIn = true;
+    }
+
+    QList<DriverEntry> out;
+    for (DriverEntry e : all) {
+        e.installed = installed.contains(e.package);
+        if (isNvidia(e.package) && !e.installed) {
+            const QString branch = nvidiaBranch(e.package);
+            const QString wanted = recommended.contains(e.device) ? recommended.value(e.device)
+                                                                  : QString::number(newest.value(e.device));
+            if (branch.isEmpty() || branch != wanted)
+                continue;
+            e.otherInstalled = nvidiaIn;
+            e.rayeKernel = rayeKernel;
+        }
+        out << e;
+    }
+    return out;
 }
 
 int DriverUpdates::rowCount(const QModelIndex &parent) const
@@ -203,21 +264,17 @@ void DriverUpdates::listed(const QString &devices, const QString &modules)
     const QHash<QString, QString> signedModules = parseModules(modules);
     for (DriverEntry &e : entries)
         e.modules = signedModules.value(e.package);
-    const int before = m_entries.size();
-    beginResetModel();
-    m_entries = entries;
-    endResetModel();
-    if (before != m_entries.size())
-        Q_EMIT countChanged();
+    m_all = entries;
     readInstalled();
 }
 
 void DriverUpdates::readInstalled()
 {
     QStringList names;
-    for (const DriverEntry &e : std::as_const(m_entries))
+    for (const DriverEntry &e : std::as_const(m_all))
         names << e.package;
     if (names.isEmpty()) {
+        show({});
         m_checking = false;
         Q_EMIT checkingChanged();
         return;
@@ -227,13 +284,20 @@ void DriverUpdates::readInstalled()
     connect(query, &QProcess::finished, this, [this, query] {
         const QStringList installed = parseInstalled(QString::fromUtf8(query->readAllStandardOutput()));
         query->deleteLater();
-        for (int i = 0; i < m_entries.size(); ++i)
-            m_entries[i].installed = installed.contains(m_entries.at(i).package);
-        if (!m_entries.isEmpty())
-            Q_EMIT dataChanged(index(0), index(m_entries.size() - 1));
+        show(installed);
         m_checking = false;
         Q_EMIT checkingChanged();
     });
+}
+
+void DriverUpdates::show(const QStringList &installed)
+{
+    const int before = m_entries.size();
+    beginResetModel();
+    m_entries = offered(m_all, installed, QSysInfo::kernelVersion());
+    endResetModel();
+    if (before != m_entries.size())
+        Q_EMIT countChanged();
 }
 
 const DriverEntry *DriverUpdates::find(const QString &package) const

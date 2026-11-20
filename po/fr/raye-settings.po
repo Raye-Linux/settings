@@ -7731,6 +7731,14 @@ msgctxt "@info driver"
 msgid "Not available with Secure Boot yet"
 msgstr "Pas encore disponible avec le démarrage sécurisé"
 
+msgctxt "@info driver"
+msgid "Remove the NVIDIA driver in use to choose this one"
+msgstr "Supprimez le pilote NVIDIA utilisé pour choisir celui-ci"
+
+msgctxt "@info driver"
+msgid "Not available with the Raye kernel yet"
+msgstr "Pas encore disponible avec le noyau Raye"
+
 msgctxt "@title"
 msgid "Other updates"
 msgstr "Autres mises à jour"
