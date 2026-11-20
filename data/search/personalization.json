@@ -1,7 +1,6 @@
 {
     "version": 1,
     "entries": [
-        {"id": "personalization/desktop", "label": "Desktop environment", "label_fr": "Environnement de bureau", "keywords": ["desktop", "change desktop", "switch desktop", "kde", "kde plasma", "plasma", "hyprland", "tiling", "tiling window manager", "window manager", "session", "desktop session", "sign-in session", "wayland session"], "keywords_fr": ["bureau", "changer de bureau", "passer à un autre bureau", "kde", "kde plasma", "plasma", "hyprland", "mosaïque", "gestionnaire de fenêtres en mosaïque", "gestionnaire de fenêtres", "session", "session de bureau", "session de connexion", "session wayland"]},
         {"id": "personalization/desktop#hyprland", "label": "Use Hyprland", "label_fr": "Utiliser Hyprland", "keywords": ["install hyprland", "hyprland session", "tiling desktop"], "keywords_fr": ["installer hyprland", "session hyprland", "bureau en mosaïque"]},
         {"id": "personalization/desktop#plasma", "label": "Use KDE Plasma", "label_fr": "Utiliser KDE Plasma", "keywords": ["back to kde", "back to plasma", "raye desktop", "plasma session"], "keywords_fr": ["revenir à kde", "revenir à plasma", "bureau raye", "session plasma"]},
         {"id": "personalization/desktop#remove-hyprland", "label": "Remove Hyprland", "label_fr": "Supprimer Hyprland", "keywords": ["uninstall hyprland", "delete hyprland"], "keywords_fr": ["désinstaller hyprland", "enlever hyprland"]},

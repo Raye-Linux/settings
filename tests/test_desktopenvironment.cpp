@@ -328,19 +328,22 @@ private Q_SLOTS:
         QFile search(QStringLiteral(SOURCE_DIR "/data/search/personalization.json"));
         QVERIFY(search.open(QIODevice::ReadOnly));
         QStringList ids;
-        QString keywords;
         const QJsonArray entries = QJsonDocument::fromJson(search.readAll()).object().value(QStringLiteral("entries")).toArray();
-        for (const QJsonValue &v : entries) {
-            const QJsonObject o = v.toObject();
-            ids << o.value(QStringLiteral("id")).toString();
-            if (o.value(QStringLiteral("id")).toString() == QLatin1String("personalization/desktop"))
-                keywords = QString::fromUtf8(QJsonDocument(o).toJson());
-        }
-        for (const char *id : {"personalization/desktop", "personalization/desktop#plasma", "personalization/desktop#hyprland",
-                               "personalization/desktop#remove-hyprland"})
+        for (const QJsonValue &v : entries)
+            ids << v.toObject().value(QStringLiteral("id")).toString();
+        for (const char *id : {"personalization/desktop#plasma", "personalization/desktop#hyprland", "personalization/desktop#remove-hyprland"})
             QVERIFY2(ids.contains(QLatin1String(id)), id);
+        // the page itself is in the index from the layout; its words are synonyms
+        QVERIFY(!ids.contains(QLatin1String("personalization/desktop")));
+        QFile synonyms(QStringLiteral(SOURCE_DIR "/data/search/synonyms.json"));
+        QVERIFY(synonyms.open(QIODevice::ReadOnly));
+        QString terms;
+        const QJsonArray pages = QJsonDocument::fromJson(synonyms.readAll()).object().value(QStringLiteral("targets")).toArray();
+        for (const QJsonValue &v : pages)
+            if (v.toObject().value(QStringLiteral("id")).toString() == QLatin1String("personalization/desktop"))
+                terms = QString::fromUtf8(QJsonDocument(v.toObject()).toJson());
         for (const char *word : {"hyprland", "kde", "session", "bureau", "changer de bureau"})
-            QVERIFY2(keywords.contains(QString::fromUtf8(word)), word);
+            QVERIFY2(terms.contains(QString::fromUtf8(word)), word);
     }
 
     // --- a switch right now ------------------------------------------------

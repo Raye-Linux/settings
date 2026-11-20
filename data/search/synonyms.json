@@ -37,6 +37,7 @@
         ["region", "région", "country", "pays"]
     ],
     "targets": [
+        {"id": "personalization/desktop", "terms": ["desktop", "change desktop", "switch desktop", "kde", "kde plasma", "plasma", "hyprland", "tiling", "tiling window manager", "window manager", "session", "desktop session", "sign-in session", "wayland session", "bureau", "changer de bureau", "passer à un autre bureau", "kde", "kde plasma", "plasma", "hyprland", "mosaïque", "gestionnaire de fenêtres en mosaïque", "gestionnaire de fenêtres", "session", "session de bureau", "session de connexion", "session wayland"]},
         {"id": "personalization/colors", "terms": ["dark", "dark mode", "dark theme", "light mode", "light theme", "night mode", "mode sombre", "thème sombre", "mode clair", "thème clair", "accent colour", "accent color", "couleur d'accentuation"]},
         {"id": "personalization/themes", "terms": ["raye night", "raye day", "raye nuit", "raye jour", "look", "icons", "icônes", "cursor theme"]},
         {"id": "home", "terms": ["control panel", "panneau de configuration", "settings home"]},
