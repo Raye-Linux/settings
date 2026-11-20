@@ -31,7 +31,7 @@ strip_comments() {
 # --- the release ---------------------------------------------------------
 
 case $version in
-    [0-9]*.[0-9]*' Beta') ok "VERSION is a beta release: $version" ;;
+    [0-9]*.[0-9]*' Beta'|[0-9]*.[0-9]*' Beta '[0-9]) ok "VERSION is a beta release: $version" ;;
     *) fail "VERSION is '$version', expected something like '0.5 Beta'" ;;
 esac
 
