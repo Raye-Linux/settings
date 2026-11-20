@@ -59,18 +59,58 @@ UpdateStatus::UpdateStatus(const QString &path, QObject *parent)
     , m_restart(requestRestart)
 {
     // the file is replaced on every write, so watch the folder too
-    m_watcher.addPath(QFileInfo(path).absolutePath());
+    watchStateFolder();
     if (QFile::exists(path))
         m_watcher.addPath(path);
     m_watcher.addPath(QFileInfo(m_rebootRequiredPath).absolutePath());
     connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, [this](const QString &dir) {
-        if (dir == QFileInfo(m_path).absolutePath())
+        if (dir == m_watchedFolder) {
+            // the state folder may have just been made: watch it instead
+            watchStateFolder();
             reload();
-        else
+        } else {
             checkRebootRequired();
+        }
     });
     connect(&m_watcher, &QFileSystemWatcher::fileChanged, this, &UpdateStatus::reload);
+    // while a press waits for its answer the file is read every second too:
+    // an answer must never depend on a watch alone
+    m_checkPoll.setInterval(CheckPoll);
+    connect(&m_checkPoll, &QTimer::timeout, this, &UpdateStatus::reload);
+    m_checkStart.setSingleShot(true);
+    connect(&m_checkStart, &QTimer::timeout, this, [this] {
+        if (!m_checkRequested || m_sawChecking)
+            return;
+        reload();
+        if (!m_checkRequested)
+            return;
+        // the press was joined to a check that ended just before it, or the
+        // check never began: an answer from the last minutes is the answer
+        const qint64 now = QDateTime::currentSecsSinceEpoch();
+        endCheck(m_checked > 0 && now - m_checked < 15 * 60 ? QString() : QStringLiteral("no-start"));
+    });
     reload();
+}
+
+// The folder of the state file. A fresh 1.0 Beta had no /var/lib/raye-update
+// until the first check wrote it: a watch on a folder that does not exist
+// fails without a word, and the page stayed on "Check for updates" while
+// the check ran. Until it exists, the nearest folder above is watched.
+void UpdateStatus::watchStateFolder()
+{
+    QString folder = QFileInfo(m_path).absolutePath();
+    while (!QFileInfo(folder).isDir()) {
+        const QString up = QFileInfo(folder).absolutePath();
+        if (up == folder)
+            break;
+        folder = up;
+    }
+    if (folder == m_watchedFolder)
+        return;
+    if (!m_watchedFolder.isEmpty() && m_watchedFolder != QFileInfo(m_rebootRequiredPath).absolutePath())
+        m_watcher.removePath(m_watchedFolder);
+    m_watchedFolder = folder;
+    m_watcher.addPath(folder);
 }
 
 void UpdateStatus::checkRebootRequired()
@@ -123,6 +163,7 @@ void UpdateStatus::reload()
             m_watcher.addPath(m_path);
     }
     m_rebootRequired = QFile::exists(m_rebootRequiredPath);
+    followCheck();
     Q_EMIT changed();
     // an install that just ended has written to apt's log
     const qint64 stamp = qint64(m_lastInstall.value(QStringLiteral("time")).toDouble());
@@ -219,9 +260,68 @@ QVariantList UpdateStatus::parseAptHistory(const QByteArray &log, int limit)
 
 void UpdateStatus::checkNow()
 {
+    if (m_checkRequested)
+        return;                 // one press is enough: the check is coming
+    m_checkRequested = true;
+    m_sawChecking = false;
+    m_checkProblem.clear();
+    m_requestedAt = QDateTime::currentSecsSinceEpoch();
+    m_checkPoll.start();
+    m_checkStart.start(m_checkStartTimeout);
+    Q_EMIT changed();
     // through pkexec like the rest: no password for the people who run this
-    // computer, and anyone else may take their time to type one
-    runTool({QStringLiteral("check-now")});
+    // computer, and anyone else may take their time to type one. Started
+    // as a child, not detached, so a refusal comes back to the page.
+    auto *p = new QProcess(this);
+    p->setProgram(m_toolPath);
+    p->setArguments({QStringLiteral("check-now")});
+    p->setProcessChannelMode(QProcess::ForwardedChannels);
+    connect(p, &QProcess::finished, this, [this, p](int code, QProcess::ExitStatus status) {
+        p->deleteLater();
+        if (!m_checkRequested)
+            return;
+        if (status != QProcess::NormalExit)
+            endCheck(QStringLiteral("failed"));
+        else if (code == 126 || code == 127)
+            endCheck(QStringLiteral("cancelled"));
+        else if (code != 0)
+            endCheck(QStringLiteral("failed"));
+        else
+            reload();           // the check may already be under way
+    });
+    connect(p, &QProcess::errorOccurred, this, [this, p](QProcess::ProcessError error) {
+        if (error != QProcess::FailedToStart)
+            return;
+        p->deleteLater();
+        if (m_checkRequested)
+            endCheck(QStringLiteral("failed"));
+    });
+    p->start();
+}
+
+// A press is answered once the state file shows a check that ran for it:
+// "checking" was seen, or a check time from after the press, and the
+// phase moved on (the result, an error, a download that follows).
+void UpdateStatus::followCheck()
+{
+    if (!m_checkRequested)
+        return;
+    if (m_phase == QLatin1String("checking")) {
+        m_sawChecking = true;
+        return;
+    }
+    if (m_sawChecking || (m_checked > 0 && m_checked >= m_requestedAt))
+        endCheck(QString());
+}
+
+void UpdateStatus::endCheck(const QString &problem)
+{
+    m_checkRequested = false;
+    m_sawChecking = false;
+    m_checkProblem = problem;
+    m_checkPoll.stop();
+    m_checkStart.stop();
+    Q_EMIT changed();
 }
 
 void UpdateStatus::installNow()

@@ -93,6 +93,27 @@ private Q_SLOTS:
     }
 
     // Downloaded updates that need no restart are installed, not restarted for
+    // "Check for updates" pressed: "Checking" at once, before the state file
+    // says anything (2026-11-20: a fresh install showed nothing at all)
+    void aPressShowsCheckingAtOnce()
+    {
+        QCOMPARE(state(QStringLiteral("{phase: 'idle', checked: 0, checkRequested: true}")), QStringLiteral("checking"));
+        QCOMPARE(state(QStringLiteral("{phase: 'idle', checked: 5, pending: [{name: 'a'}], checkRequested: true}")),
+                 QStringLiteral("checking"));
+        // a download that follows is shown as it is
+        QCOMPARE(state(QStringLiteral("{phase: 'downloading', checkRequested: true}")), QStringLiteral("downloading"));
+        // the answer came: the page follows the file again
+        QCOMPARE(state(QStringLiteral("{phase: 'idle', checked: 5, checkRequested: false}")), QStringLiteral("uptodate"));
+    }
+
+    void aPressWithoutAnswerSaysSo()
+    {
+        QCOMPARE(state(QStringLiteral("{phase: 'idle', checked: 0, checkProblem: 'no-start'}")), QStringLiteral("error"));
+        QCOMPARE(state(QStringLiteral("{phase: 'idle', checked: 5, checkProblem: 'failed'}")), QStringLiteral("error"));
+        // no password given: back to what was there
+        QCOMPARE(state(QStringLiteral("{phase: 'idle', checked: 0, checkProblem: 'cancelled'}")), QStringLiteral("never"));
+    }
+
     void installsWithoutARestart()
     {
         // right after the download they install on their own: no "Install now"

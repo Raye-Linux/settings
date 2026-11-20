@@ -98,6 +98,8 @@ PageScaffold {
         case "broken": return i18nc("@info", "Some updates can't be installed together. We'll try again later.")
         case "install-failed": return i18nc("@info", "Updates couldn't be installed. Your PC was not changed.")
         case "firmware-failed": return i18nc("@info", "A firmware update couldn't be installed.")
+        case "check-no-start":
+        case "check-failed": return i18nc("@info", "We couldn't start checking for updates. Try again in a moment.")
         default: return i18nc("@info", "Something went wrong. We'll try again later.")
         }
     }
@@ -270,7 +272,8 @@ PageScaffold {
                                             return i18nc("@info", "Plug in your PC to install these updates.")
                                         return i18ncp("@info", "It installs without a restart.", "They install without a restart.", page.liveCount)
                         case "waiting": return page.waitText(page.status.reason)
-                        case "error": return page.errorText(page.status.errorCode)
+                        case "error": return page.errorText(page.status.phase !== "error" && page.status.checkProblem
+                                                            ? "check-" + page.status.checkProblem : page.status.errorCode)
                         case "available": return page.status.totalBytes > 0
                                                  ? i18nc("@info %1 a size, %2 when it last checked", "%1 to download · %2",
                                                          page.sizeText(page.status.totalBytes), page.lastChecked())

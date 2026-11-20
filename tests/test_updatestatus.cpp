@@ -157,6 +157,90 @@ private Q_SLOTS:
         QTRY_COMPARE(calls(), QByteArray("install-now\n"));
     }
 
+    // the check runs, writes "checking", then its answer: the page saw
+    // "Checking" the whole time, from the press on
+    void aPressIsCheckingUntilTheAnswer()
+    {
+        writeTool(0);
+        writeState("idle");
+        auto u = make();
+        QVERIFY(!u->checkRequested());
+        u->checkNow();
+        QVERIFY(u->checkRequested());          // at once, before the tool ran
+        QTRY_COMPARE(calls(), QByteArray("check-now\n"));
+        QVERIFY(u->checkRequested());          // the file still says idle
+        writeState("checking");
+        QTRY_COMPARE(u->phase(), QStringLiteral("checking"));
+        QVERIFY(u->checkRequested());
+        writeRaw("{\"version\": 2, \"phase\": \"idle\", \"state\": \"idle\", \"checked\": "
+                 + QByteArray::number(QDateTime::currentSecsSinceEpoch()) + "}");
+        QTRY_VERIFY(!u->checkRequested());
+        QVERIFY(u->checkProblem().isEmpty());
+    }
+
+    // a fresh 1.0 Beta had no /var/lib/raye-update: the watch on it failed
+    // without a word and the page never saw the check the press started
+    void aStateFolderMadeAfterTheStartIsFollowed()
+    {
+        writeTool(0);
+        const QString folder = path(QStringLiteral("fresh/var-lib-raye-update"));
+        QDir(folder).removeRecursively();
+        QDir(path(QStringLiteral("fresh"))).mkpath(QStringLiteral("."));
+        auto u = std::make_unique<UpdateStatus>(folder + QStringLiteral("/state.json"));
+        u->setToolPath(path(QStringLiteral("raye-update")));
+        u->setRebootRequiredPath(path(QStringLiteral("reboot-required")));
+        // a long give-up: only the watch can bring the change in time
+        u->setCheckStartTimeout(600000);
+        QCOMPARE(u->phase(), QStringLiteral("idle"));
+        QVERIFY(QDir().mkpath(folder));
+        QFile f(folder + QStringLiteral("/state.json"));
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("{\"version\": 2, \"phase\": \"checking\", \"state\": \"checking\"}");
+        f.close();
+        QTRY_COMPARE(u->phase(), QStringLiteral("checking"));
+    }
+
+    void aRefusedCheckSaysSo()
+    {
+        writeTool(1);
+        writeState("idle");
+        auto u = make();
+        u->checkNow();
+        QTRY_VERIFY(!u->checkRequested());
+        QCOMPARE(u->checkProblem(), QStringLiteral("failed"));
+        writeTool(126);                        // no password given
+        u->checkNow();
+        QVERIFY(u->checkProblem().isEmpty());  // a new press starts clean
+        QTRY_VERIFY(!u->checkRequested());
+        QCOMPARE(u->checkProblem(), QStringLiteral("cancelled"));
+    }
+
+    // the unit never wrote "checking": after a while the page says so
+    // instead of turning for ever
+    void aCheckThatNeverStartsGivesUp()
+    {
+        writeTool(0);
+        writeState("idle");
+        auto u = make();
+        u->setCheckStartTimeout(300);
+        u->checkNow();
+        QTRY_VERIFY(!u->checkRequested());
+        QCOMPARE(u->checkProblem(), QStringLiteral("no-start"));
+    }
+
+    // joined to a check that ended just before: its answer is the answer
+    void aPressJoinedToARecentCheckEndsQuietly()
+    {
+        writeTool(0);
+        writeRaw("{\"version\": 2, \"phase\": \"idle\", \"state\": \"idle\", \"checked\": "
+                 + QByteArray::number(QDateTime::currentSecsSinceEpoch() - 30) + "}");
+        auto u = make();
+        u->setCheckStartTimeout(300);
+        u->checkNow();
+        QTRY_VERIFY(!u->checkRequested());
+        QVERIFY(u->checkProblem().isEmpty());
+    }
+
     void rayeKernelIsNotASecondKernel()
     {
         QCOMPARE(UpdateStatus::kindOf(QStringLiteral("raye-kernel")), QStringLiteral("system"));

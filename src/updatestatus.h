@@ -7,6 +7,7 @@
 #include <QFileSystemWatcher>
 #include <QObject>
 #include <QStringList>
+#include <QTimer>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -61,6 +62,13 @@ class UpdateStatus : public QObject
     Q_PROPERTY(int activeHoursStart READ activeHoursStart NOTIFY changed)
     Q_PROPERTY(int activeHoursEnd READ activeHoursEnd NOTIFY changed)
     Q_PROPERTY(bool autoRestart READ autoRestart NOTIFY changed)
+    // "Check for updates" was pressed and its answer has not come yet: the
+    // page says "Checking" at once, whatever the state file says so far
+    Q_PROPERTY(bool checkRequested READ checkRequested NOTIFY changed)
+    // why the last press brought no answer: "no-start" (the check never
+    // began), "failed" (raye-update refused), "cancelled" (no password);
+    // empty after an answer
+    Q_PROPERTY(QString checkProblem READ checkProblem NOTIFY changed)
     // updates installed so far, newest first: [{ time, packages: [{ name, from, to, kind }] }]
     Q_PROPERTY(QVariantList history READ history NOTIFY historyChanged)
 
@@ -100,6 +108,8 @@ public:
     int activeHoursStart() const { return m_activeStart; }
     int activeHoursEnd() const { return m_activeEnd; }
     bool autoRestart() const { return m_autoRestart; }
+    bool checkRequested() const { return m_checkRequested; }
+    QString checkProblem() const { return m_checkProblem; }
     // read from apt's log the first time someone asks (the history page)
     QVariantList history();
 
@@ -133,6 +143,11 @@ public:
     void setRestartRequest(RestartRequest request) { m_restart = std::move(request); }
 
     static constexpr int RestartGrace = 60000; // ms
+    // a press whose check never shows up in the state file gives up then
+    static constexpr int CheckStartTimeout = 90000; // ms
+    static constexpr int CheckPoll = 1000;          // ms, while a press waits
+    // for the tests
+    void setCheckStartTimeout(int ms) { m_checkStartTimeout = ms; }
 
 Q_SIGNALS:
     void changed();
@@ -147,6 +162,9 @@ private:
     void restart();
     void finish(const QString &failure);
     void runTool(const QStringList &arguments);
+    void watchStateFolder();
+    void followCheck();
+    void endCheck(const QString &problem);
 
     QString m_path;
     QString m_toolPath = QStringLiteral("/usr/bin/raye-update");
@@ -185,4 +203,14 @@ private:
     bool m_historyLoaded = false;
     bool m_restarting = false;
     RestartRequest m_restart;
+    // the folder of the state file, or the nearest one that exists while it
+    // does not (a fresh install had no /var/lib/raye-update)
+    QString m_watchedFolder;
+    bool m_checkRequested = false;
+    bool m_sawChecking = false;
+    qint64 m_requestedAt = 0;   // seconds
+    QString m_checkProblem;
+    QTimer m_checkPoll;
+    QTimer m_checkStart;
+    int m_checkStartTimeout = CheckStartTimeout;
 };

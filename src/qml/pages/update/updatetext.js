@@ -21,6 +21,11 @@ function pageState(u, now) {
         return "armed"
     if (u.installingNow)
         return "installing"
+    // "Check for updates" was pressed: "Checking" at once, until the state
+    // file has the answer (a fresh install wrote nothing for seconds, and
+    // the page used to sit on the button as if nothing happened)
+    if (u.checkRequested && phase !== "downloading")
+        return "checking"
     // updates that install without a restart come first: "Restart now"
     // only once they are in, or a restart would cut them off
     if (phase === "ready" && (u.pending || []).some(p => !needsRestart(p)))
@@ -31,6 +36,9 @@ function pageState(u, now) {
         return "restart"
     if (phase === "downloading" || phase === "checking" || phase === "waiting" || phase === "error")
         return phase
+    // the press brought no answer: say so rather than show the old state
+    if (u.checkProblem === "no-start" || u.checkProblem === "failed")
+        return "error"
     if (waitingCount(u) > 0)
         return "available"
     if (!(u.checked > 0))

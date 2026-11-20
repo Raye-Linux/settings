@@ -43,6 +43,10 @@ raye-settings (1.0~beta2) resolute; urgency=medium
   * Optional updates: an NVIDIA card shows only its recommended driver (open
     and NVIDIA kernel module), one NVIDIA driver at a time, with its Control
     Panel and graphics switching; not offered on the Raye kernel.
+  * Check for updates shows Checking at once and always ends with an
+    answer, also right after the install, when the update folder did not
+    exist yet and the page missed the check it had started; a check that
+    never begins says so instead of doing nothing.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 10:00:00 +0000
 

@@ -7100,6 +7100,10 @@ msgid "The update service didn't answer. We'll try again later."
 msgstr "Le service de mises à jour n'a pas répondu. Nouvel essai plus tard."
 
 msgctxt "@info"
+msgid "We couldn't start checking for updates. Try again in a moment."
+msgstr "Impossible de lancer la recherche de mises à jour. Réessayez dans un instant."
+
+msgctxt "@info"
 msgid "There isn't enough free space to update. Free up some space and try again."
 msgstr "Il n'y a pas assez d'espace libre pour la mise à jour. Libérez de l'espace et réessayez."
 
