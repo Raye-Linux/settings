@@ -129,6 +129,9 @@ public:
     // how this desktop signs out: {program, arguments...}; "dbus:<service>
     // <path> <interface> <method>" for a D-Bus call
     static QStringList signOutCommand(const QString &desktop, const QString &sessionId);
+    // XDG_SESSION_ID, or else the person's graphical session from logind
+    // (an app started by systemd, as the switch's restore does, has none)
+    static QString sessionOrDisplay(const QString &fromEnvironment, const std::function<QString()> &display);
     // a window's class (Hyprland) -> the desktop id of its app, from
     // (desktop id, StartupWMClass) pairs; "" when none fits
     static QString desktopIdForClass(const QString &windowClass, const QList<QPair<QString, QString>> &apps);

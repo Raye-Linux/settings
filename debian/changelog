@@ -47,6 +47,8 @@ raye-settings (1.0~beta2) resolute; urgency=medium
     answer, also right after the install, when the update folder did not
     exist yet and the page missed the check it had started; a check that
     never begins says so instead of doing nothing.
+  * Switch now works from Settings when the switch itself opened it again:
+    it found no session to leave, so the button did nothing.
 
  -- techoraye <190692880+techoraye@users.noreply.github.com>  Thu, 19 Nov 2026 10:00:00 +0000
 

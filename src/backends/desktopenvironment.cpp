@@ -87,12 +87,34 @@ QJsonArray hyprClients()
         return {};
     return QJsonDocument::fromJson(p.readAllStandardOutput()).array();
 }
+
+// the person's graphical session, as logind keeps it (its Display)
+QString loginctlDisplay()
+{
+    QProcess p;
+    p.start(QStringLiteral("loginctl"),
+            {QStringLiteral("show-user"), QString::number(getuid()), QStringLiteral("-p"), QStringLiteral("Display"),
+             QStringLiteral("--value")});
+    if (!p.waitForFinished(2000) || p.exitCode() != 0)
+        return {};
+    return QString::fromUtf8(p.readAllStandardOutput());
+}
 } // namespace
+
+QString DesktopEnvironment::sessionOrDisplay(const QString &fromEnvironment, const std::function<QString()> &display)
+{
+    if (!fromEnvironment.isEmpty())
+        return fromEnvironment;
+    const QString id = display ? display().trimmed() : QString();
+    static const QRegularExpression plain(QStringLiteral("^[A-Za-z0-9]+$"));
+    return plain.match(id).hasMatch() ? id : QString();
+}
 
 DesktopEnvironment::DesktopEnvironment(QObject *parent)
     : DesktopEnvironment(QStringLiteral("/usr/share/wayland-sessions"),
                          {QStringLiteral("pkexec"), QStringLiteral(RAYE_LIBEXECDIR "/desktop-session")},
-                         qEnvironmentVariable("XDG_CURRENT_DESKTOP"), qEnvironmentVariable("XDG_SESSION_ID"),
+                         qEnvironmentVariable("XDG_CURRENT_DESKTOP"),
+                         sessionOrDisplay(qEnvironmentVariable("XDG_SESSION_ID"), loginctlDisplay),
                          QStringLiteral("raye-settingsrc"), packageKit(), {}, {}, parent)
 {
     m_apps = liveApps(this);

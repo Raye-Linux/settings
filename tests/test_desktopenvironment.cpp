@@ -181,6 +181,27 @@ private Q_SLOTS:
             QVERIFY(session.readAll().contains("DesktopNames=Hyprland"));
     }
 
+    // Settings opened again by the desktop switch runs as a systemd unit,
+    // without XDG_SESSION_ID: "Switch to KDE Plasma now" did nothing on
+    // Hyprland (VM 130, 1.0 Beta Sundog). logind's graphical session of
+    // the person is asked then.
+    void theSessionIsAskedOfLogindWhenTheEnvironmentHasNone()
+    {
+        bool asked = false;
+        const auto display = [&asked](const QString &answer) {
+            return [&asked, answer] {
+                asked = true;
+                return answer;
+            };
+        };
+        QCOMPARE(DesktopEnvironment::sessionOrDisplay(QStringLiteral("5"), display(QStringLiteral("9\n"))), QStringLiteral("5"));
+        QVERIFY(!asked);
+        QCOMPARE(DesktopEnvironment::sessionOrDisplay(QString(), display(QStringLiteral("17\n"))), QStringLiteral("17"));
+        QVERIFY(asked);
+        QCOMPARE(DesktopEnvironment::sessionOrDisplay(QString(), display(QString())), QString());
+        QCOMPARE(DesktopEnvironment::sessionOrDisplay(QString(), display(QStringLiteral("3 --now"))), QString());
+    }
+
     void installedIsWhatTheSessionFilesSay()
     {
         touch(QStringLiteral("plasma.desktop"));
