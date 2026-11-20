@@ -7,6 +7,14 @@
 // A driver whose kernel modules would have to be built on the machine
 // is shown but not offered: with Secure Boot it needs a key enrolment
 // screen, the same rule raye-drivers follows at the first start.
+//
+// For an NVIDIA card only the branch ubuntu-drivers recommends is shown,
+// in its two kinds (open and NVIDIA's own kernel module): the older and
+// newer branches and the data-centre ("-server") builds it also lists are
+// not for games, and installing them one after the other ("install
+// everything") left a PC on whichever came last. One NVIDIA driver at a
+// time: while one is in, the others say to remove it first. A driver that
+// is installed is always shown, so it can be removed.
 #pragma once
 
 #include <QAbstractListModel>
@@ -29,6 +37,11 @@ struct DriverEntry {
     bool free = false;
     bool builtin = false;
     bool installed = false;
+    // another NVIDIA driver is installed: remove it before this one
+    bool otherInstalled = false;
+    // an NVIDIA driver while the Raye kernel runs: its signed modules are
+    // built for Ubuntu's kernel only, the card would get no driver
+    bool rayeKernel = false;
 };
 
 class DriverUpdates : public QAbstractListModel
@@ -51,7 +64,7 @@ public:
         RecommendedRole,
         InstalledRole,
         BuiltinRole,
-        // "installable", "installed", "builtin", "unsigned"
+        // "installable", "installed", "builtin", "unsigned", "other", "kernel"
         StateRole,
     };
     Q_ENUM(Roles)
@@ -79,8 +92,14 @@ public:
     // `dpkg-query -W -f '${Package} ${db:Status-Abbrev}\n'`: installed names
     static QStringList parseInstalled(const QString &output);
     static QString stateOf(const DriverEntry &entry);
-    // what to ask PackageKit for: the driver and its modules
+    // what to ask PackageKit for: the driver and its modules (and, for
+    // NVIDIA, its Control Panel and PRIME, as raye-drivers installs them)
     static QStringList packagesOf(const DriverEntry &entry);
+    // the entries the page shows, from all ubuntu-drivers lists and the
+    // installed names and the running kernel's release; sets
+    // otherInstalled and rayeKernel
+    static QList<DriverEntry> offered(const QList<DriverEntry> &all, const QStringList &installed,
+                                      const QString &kernel = QString());
 
 Q_SIGNALS:
     void countChanged();
@@ -91,11 +110,13 @@ Q_SIGNALS:
 private:
     void listed(const QString &devices, const QString &modules);
     void readInstalled();
+    void show(const QStringList &installed);
     void run(const DriverEntry &entry, bool installing);
     void done(bool ok, const QString &message);
     const DriverEntry *find(const QString &package) const;
 
-    QList<DriverEntry> m_entries;
+    QList<DriverEntry> m_all;      // everything ubuntu-drivers lists
+    QList<DriverEntry> m_entries;  // what the page shows (offered)
     bool m_checking = false;
     QString m_busyPackage;
     bool m_busyRemoving = false;
