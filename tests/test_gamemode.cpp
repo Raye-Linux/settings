@@ -316,6 +316,67 @@ private Q_SLOTS:
         qunsetenv("LANGUAGE");
         QVERIFY2(qmlWarnings.isEmpty(), qPrintable(qmlWarnings.join(QLatin1Char('\n'))));
     }
+
+    void switchesStayInsideTheirCards_data()
+    {
+        QTest::addColumn<int>("width");
+        QTest::newRow("narrow") << 760;
+        QTest::newRow("usual") << 1120;
+        QTest::newRow("wide") << 1700;
+        QTest::newRow("very wide") << 2560;
+    }
+
+    // the owner's photo: on a wide window the On/Off switches of the games
+    // were cut off at the right edge of their cards
+    void switchesStayInsideTheirCards()
+    {
+        QFETCH(int, width);
+        steamGame(QStringLiteral("570"));
+        storeApp(QStringLiteral("org.vinegarhq.Sober"));
+        writeFile(games(), "steam:570\tDota 2\napp:org.vinegarhq.Sober\tSober\n");
+        // and a Windows program, which comes in after the page is drawn
+        QDir().mkpath(path(QStringLiteral("data/raye/windows/fl-studio/drive_c")));
+        const QString lister = path(QStringLiteral("lister"));
+        writeFile(lister, "#!/bin/sh\necho '[{\"space\": \"fl-studio\", \"name\": \"FL Studio\"}]'\n");
+        QFile::setPermissions(lister, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+        qputenv("RAYE_WINDOWS_LIST", lister.toUtf8());
+        SystemInfo system;
+        QQuickView view;
+        view.engine()->rootContext()->setContextObject(new KLocalizedContext(view.engine()));
+        view.engine()->rootContext()->setContextProperty(QStringLiteral("system"), &system);
+        view.setResizeMode(QQuickView::SizeRootObjectToView);
+        view.resize(width, 900);
+        view.setSource(QUrl(QStringLiteral("qrc:/qt/qml/org/raye/settings/pages/gaming/GamingPage.qml")));
+        QCOMPARE(view.status(), QQuickView::Ready);
+        view.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&view));
+        QTRY_VERIFY(withProperty(view.rootObject(), "title", QStringLiteral("FL Studio")));
+        QTest::qWait(150);
+        qputenv("RAYE_WINDOWS_LIST", path(QStringLiteral("no-lister")).toUtf8());
+        for (const QString &title : {QStringLiteral("Dota 2"), QStringLiteral("Sober"), QStringLiteral("FL Studio")}) {
+            // the card is the item titled after the game with a "checked"
+            QQuickItem *card = withProperty(view.rootObject(), "title", title);
+            while (card && card->metaObject()->indexOfProperty("onText") < 0)
+                card = card->parentItem();
+            QVERIFY2(card, qPrintable(title));
+            QVERIFY2(card->metaObject()->indexOfProperty("onText") >= 0, qPrintable(title));
+            // the switch inside it: titled the same, checkable
+            QQuickItem *toggle = nullptr;
+            const auto all = card->findChildren<QQuickItem *>();
+            for (QQuickItem *item : all)
+                if (item != card && item->property("text").toString() == title && item->property("checkable").toBool())
+                    toggle = item;
+            QVERIFY2(toggle, qPrintable(title));
+            QVERIFY(toggle->isVisible() && toggle->width() > 0);
+            const QRectF inCard = toggle->mapRectToItem(card, QRectF(0, 0, toggle->width(), toggle->height()));
+            const QRectF inView = card->mapRectToItem(view.contentItem(), QRectF(0, 0, card->width(), card->height()));
+            QVERIFY2(inCard.left() >= 0 && inCard.right() <= card->width() + 0.5,
+                     qPrintable(QStringLiteral("%1: switch %2..%3, card 0..%4").arg(title).arg(inCard.left())
+                                    .arg(inCard.right()).arg(card->width())));
+            QVERIFY2(inView.right() <= view.width() + 0.5,
+                     qPrintable(QStringLiteral("%1: card ends at %2, window %3").arg(title).arg(inView.right()).arg(view.width())));
+        }
+    }
 };
 
 QTEST_MAIN(TestGameMode)
