@@ -1,5 +1,9 @@
 raye-settings (1.0~beta2.1) resolute; urgency=medium
 
+  * Gaming > Game Mode lists only what is installed: Windows programs whose
+    space really holds one (never the "default" space), Steam games whose
+    files are there and Store apps still installed. A space a program was
+    never installed in, or one played then removed, no longer shows.
   * Switching desktops from Settings covers every screen fully, over the
     taskbar, until the other desktop draws: the desktop no longer shows
     around the animation, and no text screen flashes in between.

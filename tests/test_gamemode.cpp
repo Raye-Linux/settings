@@ -92,6 +92,9 @@ private Q_SLOTS:
         qputenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/nonexistent");
         // no profile reader: every Windows program starts off
         qputenv("RAYE_WINDOWS_PROFILE", path(QStringLiteral("no-reader")).toUtf8());
+        // no lister either: the tests say what is installed
+        qputenv("RAYE_WINDOWS_LIST", path(QStringLiteral("no-lister")).toUtf8());
+        qputenv("RAYE_GAME_FLATPAK_SYSTEM", path(QStringLiteral("flatpak")).toUtf8());
         // the watcher is installed
         writeFile(path(QStringLiteral("raye-game-watch")), "#!/bin/sh\n");
         qputenv("RAYE_GAME_WATCH", path(QStringLiteral("raye-game-watch")).toUtf8());
@@ -103,6 +106,8 @@ private Q_SLOTS:
         QFile::remove(conf());
         QFile::remove(games());
         QDir(path(QStringLiteral("data"))).removeRecursively();
+        QDir(path(QStringLiteral("home/.steam"))).removeRecursively();
+        QDir(path(QStringLiteral("flatpak"))).removeRecursively();
         QFile::remove(path(QStringLiteral("run/raye-game-mode/active")));
         QDir().mkpath(path(QStringLiteral("run")));
         QFile::setPermissions(path(QStringLiteral("run")),
@@ -148,8 +153,24 @@ private Q_SLOTS:
         QCOMPARE(quiet.count(), 0);
     }
 
+    void steamGame(const QString &id, const QString &library = {})
+    {
+        writeFile((library.isEmpty() ? path(QStringLiteral("data/Steam")) : library)
+                      + QStringLiteral("/steamapps/appmanifest_") + id + QStringLiteral(".acf"),
+                  "\"AppState\" {}\n");
+    }
+
+    void storeApp(const QString &id)
+    {
+        QDir().mkpath(path(QStringLiteral("flatpak/app/")) + id + QStringLiteral("/x86_64/stable/active"));
+        QFile::link(QStringLiteral("x86_64/stable"), path(QStringLiteral("flatpak/app/")) + id + QStringLiteral("/current"));
+    }
+
     void playedGamesAreListedLastFirst()
     {
+        steamGame(QStringLiteral("570"));
+        steamGame(QStringLiteral("1091500"));
+        storeApp(QStringLiteral("org.vinegarhq.Sober"));
         writeFile(games(), "steam:570\tDota 2\napp:org.vinegarhq.Sober\tSober\nsteam:1091500\t\n");
         GameModeSettings gm;
         const QVariantList list = gm.games();
@@ -163,8 +184,47 @@ private Q_SLOTS:
         QVERIFY(list.at(0).toMap().value(QStringLiteral("on")).toBool());
     }
 
+    void onlyInstalledGamesAreListed()
+    {
+        // played once, then uninstalled: Steam removed its manifest, the
+        // Store app is gone, the Windows space holds no program any more
+        writeFile(games(), "steam:570\tDota 2\napp:org.vinegarhq.Sober\tSober\nwindows:fl-studio\tFL Studio\n"
+                           "steam:730\tCounter-Strike 2\n");
+        steamGame(QStringLiteral("730"), path(QStringLiteral("games-disk/SteamLibrary")));
+        writeFile(path(QStringLiteral("home/.steam/steam/steamapps/libraryfolders.vdf")),
+                  QStringLiteral("\"libraryfolders\" { \"1\" { \"path\" \"%1\" } }\n")
+                      .arg(path(QStringLiteral("games-disk/SteamLibrary"))).toUtf8());
+        for (const char *space : {"default", "fl-studio", "roblox-studio", "winrar", "notepad-plus"})
+            QDir().mkpath(path(QStringLiteral("data/raye/windows/")) + QLatin1String(space) + QStringLiteral("/drive_c"));
+        GameModeSettings gm;
+        gm.setWindowsKinds(QByteArray(
+            "{\"fl-studio\": {\"name\": \"FL Studio\", \"game\": null}, \"roblox-studio\": {\"name\": \"Roblox Studio\", \"game\": null},"
+            " \"winrar\": {\"name\": \"WinRAR\", \"game\": null}, \"default\": {\"name\": null, \"game\": null}}"));
+        // no program installed in any space yet
+        gm.setWindowsPrograms("[]");
+        QVariantList list = gm.games();
+        QCOMPARE(list.size(), 1);
+        QCOMPARE(list.at(0).toMap().value(QStringLiteral("key")).toString(), QStringLiteral("steam:730"));
+        // WinRAR installed (and something in the default space): only WinRAR
+        gm.setWindowsPrograms(QByteArray("[{\"space\": \"winrar\", \"key\": \"WinRAR archiver\", \"name\": \"WinRAR 7.0 (64-bit)\"},"
+                                         " {\"space\": \"default\", \"key\": \"x\", \"name\": \"Something\"},"
+                                         " {\"space\": \"notepad-plus\", \"key\": \"Notepad++\", \"name\": \"Notepad++\"}]"));
+        list = gm.games();
+        QStringList keys;
+        for (const QVariant &v : list)
+            keys << v.toMap().value(QStringLiteral("key")).toString();
+        QCOMPARE(keys, (QStringList{QStringLiteral("steam:730"), QStringLiteral("windows:notepad-plus"), QStringLiteral("windows:winrar")}));
+        // the profile's name first, the program's own otherwise
+        QCOMPARE(gameOf(gm, QStringLiteral("windows:winrar")).value(QStringLiteral("name")).toString(), QStringLiteral("WinRAR"));
+        QCOMPARE(gameOf(gm, QStringLiteral("windows:notepad-plus")).value(QStringLiteral("name")).toString(), QStringLiteral("Notepad++"));
+        QVERIFY(gameOf(gm, QStringLiteral("windows:default")).isEmpty());
+        QVERIFY(gameOf(gm, QStringLiteral("steam:570")).isEmpty());
+        QVERIFY(gameOf(gm, QStringLiteral("app:org.vinegarhq.Sober")).isEmpty());
+    }
+
     void oneGameCanBeTurnedOff()
     {
+        steamGame(QStringLiteral("570"));
         writeFile(games(), "steam:570\tDota 2\n");
         GameModeSettings gm;
         gm.setGameOn(QStringLiteral("steam:570"), false);
@@ -181,6 +241,8 @@ private Q_SLOTS:
         QDir().mkpath(path(QStringLiteral("data/raye/windows/battle-net/drive_c")));
         QDir().mkpath(path(QStringLiteral("data/raye/windows/.template/drive_c")));
         GameModeSettings gm;
+        gm.setWindowsPrograms(QByteArray("[{\"space\": \"some-tool\", \"key\": \"t\", \"name\": \"Some Tool\"},"
+                                         " {\"space\": \"battle-net\", \"key\": \"b\", \"name\": \"Battle.net\"}]"));
         gm.setWindowsKinds(QByteArray(
             "{\"some-tool\": {\"profile\": null, \"name\": null, \"optimized\": false, \"game\": null},"
             " \"battle-net\": {\"profile\": \"battle-net\", \"name\": \"Battle.net\", \"optimized\": false, \"game\": \"launcher\"}}"));
@@ -232,6 +294,7 @@ private Q_SLOTS:
     {
         QFETCH(QByteArray, lang);
         qputenv("LANGUAGE", lang);
+        steamGame(QStringLiteral("570"));
         writeFile(games(), "steam:570\tDota 2\n");
         SystemInfo system;
         qmlWarnings.clear();

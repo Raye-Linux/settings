@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Gaming > Game Mode: the choices raye-game-watch and raye-game-start read
 // (~/.config/raye/game-mode.conf), the games the watcher has seen
-// (~/.local/state/raye/game-mode/games) and the Windows programs, each of
-// which can be turned on or off. Changes count at once, a running game
+// (~/.local/state/raye/game-mode/games) that are still installed, and the
+// Windows programs installed in a space (raye-windows list), each of which
+// can be turned on or off. A space with no program in it, the "default"
+// space, a Steam game whose files are gone and a Store app no longer
+// installed are not listed. Changes count at once, a running game
 // included: the watcher reads the file every two seconds.
 #pragma once
 
@@ -48,6 +51,12 @@ public:
     Q_INVOKABLE void refresh();
     // what raye-windows-profile says of each space (its "game" key)
     void setWindowsKinds(const QByteArray &json);
+    // what raye-windows list --json says is installed, space by space
+    void setWindowsPrograms(const QByteArray &json);
+    // Steam has the game's files (appmanifest_<id>.acf in a library)
+    static bool steamGameInstalled(const QString &id);
+    // a Store (Flatpak) app with this id is installed for the person or the PC
+    static bool storeAppInstalled(const QString &id);
 
     static bool validKey(const QString &key);
 
@@ -60,6 +69,8 @@ private:
     void setFlag(bool &flag, bool on);
     bool onByDefault(const QString &key) const;
     void askWindowsKinds();
+    void askWindowsPrograms();
+    bool listed(const QString &key) const;
 
     bool m_enabled = true;
     bool m_effects = true;
@@ -71,4 +82,6 @@ private:
     // space: game kind ("yes", "launcher") and its profile's name
     QVariantMap m_windowsKinds;
     QVariantMap m_windowsNames;
+    // space: the name of the first program installed in it
+    QVariantMap m_windowsPrograms;
 };

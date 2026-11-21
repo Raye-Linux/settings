@@ -119,7 +119,7 @@ PageScaffold {
         color: Theme.textSecondary
         text: gameMode.games.length > 0
               ? i18nc("@info", "Game Mode turns on for these when they run. Turn it off for one that plays better without it, or on for a Windows program that is a game.")
-              : i18nc("@info", "Games you play show up here, from Steam, the Store and Windows. You can turn Game Mode off for any of them.")
+              : i18nc("@info", "Games you install show up here, from Steam, the Store and Windows. You can turn Game Mode off for any of them.")
     }
     Repeater {
         model: gameMode.installed ? gameMode.games : []

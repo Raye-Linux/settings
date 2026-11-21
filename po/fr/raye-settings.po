@@ -10740,8 +10740,8 @@ msgid "Game Mode turns on for these when they run. Turn it off for one that play
 msgstr "Le mode jeu s'active pour ces jeux quand ils tournent. Désactivez-le pour un jeu qui marche mieux sans, ou activez-le pour un programme Windows qui est un jeu."
 
 msgctxt "@info"
-msgid "Games you play show up here, from Steam, the Store and Windows. You can turn Game Mode off for any of them."
-msgstr "Les jeux auxquels vous jouez apparaissent ici, depuis Steam, le Store et Windows. Vous pouvez désactiver le mode jeu pour chacun d'eux."
+msgid "Games you install show up here, from Steam, the Store and Windows. You can turn Game Mode off for any of them."
+msgstr "Les jeux que vous installez apparaissent ici, depuis Steam, le Store et Windows. Vous pouvez désactiver le mode jeu pour chacun d'eux."
 
 msgctxt "@info where a game comes from"
 msgid "Steam"
