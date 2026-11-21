@@ -1,3 +1,14 @@
+raye-settings (1.0~beta2.1) resolute; urgency=medium
+
+  * Switching desktops from Settings covers every screen fully, over the
+    taskbar, until the other desktop draws: the desktop no longer shows
+    around the animation, and no text screen flashes in between.
+  * The saved passwords (Wi-Fi, websites, accounts) stay unlocked after a
+    switch: the page asks for your password once, on the page, instead of
+    the KDE wallet window asking later.
+
+ -- techoraye <190692880+techoraye@users.noreply.github.com>  Sat, 21 Nov 2026 12:00:00 +0000
+
 raye-settings (1.0~beta2) resolute; urgency=medium
 
   * New page, Accounts > Files from Windows: copy Documents, Pictures, Music,

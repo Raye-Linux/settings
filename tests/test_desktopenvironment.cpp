@@ -11,8 +11,13 @@
 // test's own, the helper is a small script that writes down its calls and
 // packages "install" by dropping a session file there.
 #include "desktopenvironment.h"
+#include "wallethandoff.h"
 
 #include <KConfig>
+#include <LayerShellQt/Window>
+#include <QQuickWindow>
+#include <QScreen>
+#include <QGuiApplication>
 #include <KConfigGroup>
 #include <KLocalizedContext>
 #include <KLocalizedString>
@@ -130,6 +135,28 @@ class TestDesktopEnvironment : public QObject
                 QTimer::singleShot(0, [this, done] { done(m_openIds); });
             },
             [this](const QString &desktop) { m_left << desktop; });
+    }
+
+    QString makeWallet()
+    {
+        const QString folder = path(QStringLiteral("kwalletd"));
+        QDir().mkpath(folder);
+        QFile kwl(folder + QStringLiteral("/kdewallet.kwl"));
+        kwl.open(QIODevice::WriteOnly);
+        QFile salt(folder + QStringLiteral("/kdewallet.salt"));
+        salt.open(QIODevice::WriteOnly);
+        salt.write(QByteArray(56, 's'));
+        return folder;
+    }
+    QString fakeChkpwd()
+    {
+        const QString chk = path(QStringLiteral("chkpwd"));
+        QFile f(chk);
+        f.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        f.write("#!/bin/sh\n[ \"$(tr -d '\\000')\" = right ]\n");
+        f.close();
+        f.setPermissions(f.permissions() | QFile::ExeOwner);
+        return chk;
     }
 
     QByteArray restoreWritten() const
@@ -367,6 +394,47 @@ private Q_SLOTS:
             QVERIFY2(terms.contains(QString::fromUtf8(word)), word);
     }
 
+    // --- the saved passwords come along ----------------------------------
+    // Owner's PC, Beta 2: after a switch, KDE's raw "KDE has requested to
+    // open the wallet" window. The automatic sign-in of a switch has no
+    // password to open the wallet with; the page now asks for it inline,
+    // Settings checks it and leaves the wallet's key (never the password)
+    // for the new desktop.
+    void switchingNowBringsTheSavedPasswords()
+    {
+        touch(QStringLiteral("plasma.desktop"));
+        touch(QStringLiteral("raye-hyprland.desktop"));
+        auto d = make(QStringLiteral("KDE"), QStringLiteral("5"));
+        QVERIFY(!d->walletAsks());
+        QList<QByteArray> kept;
+        d->setWallet(makeWallet(), fakeChkpwd(), [&kept](const QByteArray &key, std::function<void(bool)> done) {
+            kept << QByteArray(key.constData(), key.size());
+            QTimer::singleShot(0, [done] { done(true); });
+        });
+        QVERIFY(d->walletAsks());
+        QSignalSpy done(d.get(), &DesktopEnvironment::finished);
+        QSignalSpy ready(d.get(), &DesktopEnvironment::readyToLeave);
+        // no password: nothing is armed
+        QVERIFY(!d->switchNow(QStringLiteral("hyprland")));
+        QCOMPARE(done.count(), 1);
+        QCOMPARE(done.last().at(4).toString(), QStringLiteral("wallet-password"));
+        // a wrong one: nothing is armed, nothing is kept
+        QVERIFY(d->switchNow(QStringLiteral("hyprland"), QStringLiteral("wrong")));
+        QTRY_COMPARE(done.count(), 2);
+        QCOMPARE(done.last().at(4).toString(), QStringLiteral("wallet-wrong"));
+        QCOMPARE(d->busy(), QString());
+        QVERIFY(calls().isEmpty());
+        QVERIFY(kept.isEmpty());
+        // the right one: the key pam_kwallet would make goes to the keeper,
+        // then the switch goes on as before
+        QVERIFY(d->switchNow(QStringLiteral("hyprland"), QStringLiteral("right")));
+        QVERIFY(ready.wait(10000));
+        QCOMPARE(kept.size(), 1);
+        QCOMPARE(kept.first(), WalletHandoff::deriveKey("right", QByteArray(56, 's')));
+        QCOMPARE(calls(), QStringList{QStringLiteral("switch hyprland 5")});
+        d->leave();
+    }
+
     // --- a switch right now ------------------------------------------------
     void switchingNowWritesTheAppsArmsOneSignInAndLeaves()
     {
@@ -555,11 +623,80 @@ private Q_SLOTS:
         QVERIFY(transition);
         QTRY_VERIFY(transition->property("visible").toBool());
         QCOMPARE(transition->property("title").toString(), QStringLiteral("Switching to Hyprland…"));
+        // Owner's Dell, 2026-11-21: the transition did not cover the screen.
+        // One window per screen, on the compositor's overlay layer, anchored
+        // to the four edges (the compositor sizes it to the whole screen,
+        // over the taskbar), in the colour Hyprland starts with.
+        const QList<QQuickWindow *> overlays = transition->findChildren<QQuickWindow *>(QStringLiteral("switchOverlay"));
+        QCOMPARE(overlays.size(), QGuiApplication::screens().size());
+        for (QQuickWindow *w : overlays) {
+            QTRY_VERIFY(w->isVisible());
+            auto *layer = LayerShellQt::Window::get(w);
+            QCOMPARE(layer->layer(), LayerShellQt::Window::LayerOverlay);
+            QCOMPARE(layer->anchors(), LayerShellQt::Window::Anchors(LayerShellQt::Window::AnchorTop
+                                                                     | LayerShellQt::Window::AnchorBottom
+                                                                     | LayerShellQt::Window::AnchorLeft
+                                                                     | LayerShellQt::Window::AnchorRight));
+            QCOMPARE(layer->exclusionZone(), -1);
+            QCOMPARE(w->screen(), QGuiApplication::screens().at(overlays.indexOf(w)));
+            QCOMPARE(w->size(), w->screen()->size());
+        }
+        QCOMPARE(transition->property("backdropColor").value<QColor>(), QColor(QStringLiteral("#0e0a17")));
         QTRY_COMPARE_WITH_TIMEOUT(m_left, QStringList{QStringLiteral("plasma")}, 5000);
         QCOMPARE(calls(), QStringList{QStringLiteral("switch hyprland 5")});
         QVERIFY(root->findChildren<QObject *>(QStringLiteral("installDialog")).isEmpty());
         qInstallMessageHandler(nullptr);
         QVERIFY2(qmlWarnings.isEmpty(), qPrintable(qmlWarnings.join(QLatin1Char('\n'))));
+    }
+
+    void thePageAsksThePasswordInlineWhenAWalletComesAlong()
+    {
+        touch(QStringLiteral("plasma.desktop"));
+        touch(QStringLiteral("raye-hyprland.desktop"));
+        auto d = make(QStringLiteral("KDE"), QStringLiteral("5"));
+        QList<QByteArray> kept;
+        d->setWallet(makeWallet(), fakeChkpwd(), [&kept](const QByteArray &key, std::function<void(bool)> done) {
+            kept << QByteArray(key.constData(), key.size());
+            QTimer::singleShot(0, [done] { done(true); });
+        });
+        auto view = std::make_unique<QQuickView>();
+        view->engine()->rootContext()->setContextObject(new KLocalizedContext(view->engine()));
+        view->setResizeMode(QQuickView::SizeRootObjectToView);
+        view->resize(1120, 900);
+        view->setInitialProperties({{QStringLiteral("desktops"), QVariant::fromValue(d.get())}});
+        view->setSource(QUrl(QStringLiteral("qrc:/qt/qml/org/raye/settings/pages/personalization/DesktopEnvironmentPage.qml")));
+        QCOMPARE(view->status(), QQuickView::Ready);
+        view->show();
+        QVERIFY(QTest::qWaitForWindowExposed(view.get()));
+        QQuickItem *root = view->rootObject();
+        QMetaObject::invokeMethod(named(root, QStringLiteral("hyprlandCard")), "click");
+        QTest::qWait(50);
+        // on the page, no window: what it is for, and the field
+        QVERIFY(named(root, QStringLiteral("walletBox"))->isVisible());
+        QVERIFY(named(root, QStringLiteral("walletLine"))->property("text").toString().contains(QLatin1String("saved passwords")));
+        QQuickItem *field = named(root, QStringLiteral("walletPassword"));
+        QQuickItem *now = named(root, QStringLiteral("switchNowButton"));
+        // nothing typed: said on the page, nothing armed
+        QMetaObject::invokeMethod(now, "click");
+        QTest::qWait(50);
+        QQuickItem *error = named(root, QStringLiteral("walletError"));
+        QVERIFY(error->isVisible());
+        QCOMPARE(error->property("text").toString(), QStringLiteral("Type your password first."));
+        QVERIFY(calls().isEmpty());
+        // a wrong password: said on the page, the field is emptied
+        field->setProperty("text", QStringLiteral("wrong"));
+        QMetaObject::invokeMethod(now, "click");
+        QTRY_COMPARE(error->property("text").toString(), QStringLiteral("That password isn't right. Try again."));
+        QCOMPARE(field->property("text").toString(), QString());
+        QVERIFY(calls().isEmpty());
+        // the right one: the key is kept, the switch goes on
+        QSignalSpy ready(d.get(), &DesktopEnvironment::readyToLeave);
+        field->setProperty("text", QStringLiteral("right"));
+        QMetaObject::invokeMethod(now, "click");
+        QVERIFY(ready.wait(10000));
+        QCOMPARE(kept.size(), 1);
+        QVERIFY(!error->isVisible());
+        QTRY_COMPARE_WITH_TIMEOUT(m_left, QStringList{QStringLiteral("plasma")}, 5000);
     }
 
     void laterSetsTheNextSignInAndOffersToSignOut()

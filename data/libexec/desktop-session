@@ -57,6 +57,13 @@ fi
 # how long a switch waits for the old session to end and the new one to start
 window=${RAYE_SWITCH_WINDOW:-90}
 [ -n "${PKEXEC_UID:-}" ] && window=90
+# the terminals of the PC (tests: a folder of plain files)
+vt_dir=/dev
+settle=20
+if [ -z "${PKEXEC_UID:-}" ]; then
+    vt_dir=${RAYE_VT_DIR:-$vt_dir}
+    settle=${RAYE_SWITCH_SETTLE:-$settle}
+fi
 
 die() { echo "desktop-session: $2" >&2; exit "$1"; }
 
@@ -161,6 +168,27 @@ own_session() { # uid session
 # the sessions of this uid other than SESSION, still alive
 other_sessions() { # uid session
     $loginctl list-sessions --no-legend 2>/dev/null | awk -v u="$1" -v s="$2" '$2 == u && $1 != s { print $1 }'
+}
+
+# Between the two desktops, once the old one has let go of the screen and
+# before the new one draws, the PC shows the text terminal the old session
+# ran on: on the owner's Dell, a full screen of text for a few seconds. It
+# is painted in the colour the new desktop starts with (Hyprland's
+# background, Plasma's start screen), emptied, without a cursor; given
+# back once the new desktop has had time to draw.
+painted=
+paint_vt() { # session colour
+    vt=$($loginctl show-session "$1" -p VTNr 2>/dev/null | sed -n 's/^VTNr=//p')
+    case $vt in ''|0|*[!0-9]*) return 0 ;; esac
+    tty=$vt_dir/tty$vt
+    if [ "$vt_dir" = /dev ]; then [ -c "$tty" ] || return 0; else [ -f "$tty" ] || return 0; fi
+    printf '\033]P0%s\033[0m\033[H\033[2J\033[3J\033[?25l' "$2" >> "$tty" 2>/dev/null || return 0
+    painted=$tty
+}
+unpaint_vt() {
+    [ -n "$painted" ] || return 0
+    printf '\033]R\033[?25h' >> "$painted" 2>/dev/null
+    painted=
 }
 
 remove_switch() { # only a switch file of this login
@@ -312,8 +340,20 @@ watch)
     [ $# -eq 4 ] || die 2 "usage: desktop-session watch UID SESSION LOGIN"
     uid=$2; old=$3; login=$4
     case $uid in ''|*[!0-9]*) die 2 "bad uid" ;; esac
-    trap 'remove_switch "$login"' EXIT
+    trap 'remove_switch "$login"; unpaint_vt' EXIT
     trap 'exit 0' TERM INT
+    case $(ini_get "$switchfile" Autologin Session) in
+    raye-hyprland*) colour=0e0a17 ;;   # Hyprland's background_color
+    *) colour=100f13 ;;                # Raye's Plasma start screen
+    esac
+    paint_vt "$old" "$colour"
+    # the new session is there: the file goes now, the terminal's colours
+    # come back once the new desktop had time to draw
+    arrived() {
+        remove_switch "$login"
+        sleep "$settle"
+        exit 0
+    }
     # SDDM reads its files again the moment the old session ends: once it
     # is over, the new session gets 15 seconds, then the file goes anyway
     gone=0; waited=0; after=${RAYE_SWITCH_AFTER:-30}
@@ -325,7 +365,7 @@ watch)
         fi
         if [ $gone != 0 ]; then
             # the old session is over and a new one of this account is there
-            [ -n "$(other_sessions "$uid" "$old")" ] && exit 0
+            [ -n "$(other_sessions "$uid" "$old")" ] && arrived
             [ $((waited - gone)) -ge "$after" ] && exit 0
         fi
         sleep 0.5

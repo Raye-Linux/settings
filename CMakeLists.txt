@@ -12,7 +12,7 @@ include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(FeatureSummary)
 
-find_package(Qt6 6.6 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2 DBus Multimedia Test)
+find_package(Qt6 6.6 REQUIRED COMPONENTS Core Gui Widgets Qml Quick QuickControls2 DBus Multimedia Network Test)
 # put the QML module under qrc:/qt/qml, where the engine looks for it
 qt_policy(SET QTP0001 NEW)
 find_package(KF6 6.0 REQUIRED COMPONENTS
@@ -92,7 +92,7 @@ foreach(folder ui backends search)
     endif()
 endforeach()
 target_link_libraries(raye-settings-core PUBLIC
-    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DBus Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia
+    Qt6::Core Qt6::Gui Qt6::Widgets Qt6::DBus Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Multimedia Qt6::Network
     KF6::ConfigCore KF6::ConfigGui KF6::CoreAddons KF6::I18n KF6::KIOCore KF6::Solid
     KF6::Notifications KF6::WindowSystem KF6::NetworkManagerQt KF6::BluezQt KF6::DBusAddons
     KF6::KCMUtilsQuick KF6::Screen KF6::PulseAudioQt PK::packagekitqt6 PkgConfig::Flatpak crypt)
@@ -275,6 +275,8 @@ if(BUILD_TESTING)
     endforeach()
     # Identify checks the layer surface of each number window
     target_link_libraries(test-display_identify PRIVATE LayerShellQt::Interface)
+    # the switch transition covers each screen with an overlay layer surface
+    target_link_libraries(test-desktopenvironment PRIVATE LayerShellQt::Interface)
     # helpers are tried as they ship: sh tests/test_x.sh, with the
     # source and build folders in the environment
     foreach(script ${RAYE_TEST_SCRIPTS})

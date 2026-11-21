@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "desktopenvironment.h"
+#include "wallethandoff.h"
 
 #include <KConfigGroup>
 #include <KDesktopFile>
@@ -25,6 +26,7 @@
 #include <PackageKit/Transaction>
 
 #include <memory>
+#include <pwd.h>
 #include <unistd.h>
 
 namespace {
@@ -119,6 +121,7 @@ DesktopEnvironment::DesktopEnvironment(QObject *parent)
 {
     m_apps = liveApps(this);
     m_leaver = liveLeaver();
+    m_walletFolder = WalletHandoff::walletFolder();
 }
 
 DesktopEnvironment::DesktopEnvironment(const QString &sessionDir, const QStringList &helper, const QString &currentDesktop,
@@ -386,10 +389,12 @@ void DesktopEnvironment::switchTo(const QString &desktop)
     });
 }
 
-bool DesktopEnvironment::install(const QString &desktop, bool now)
+bool DesktopEnvironment::install(const QString &desktop, bool now, const QString &walletPassword)
 {
     if (!m_busy.isEmpty() || packageOf(desktop).isEmpty() || installed(desktop) || !m_packages)
         return false;
+    // kept for the switch right after the install, used once
+    m_walletPassword = now ? walletPassword : QString();
     setBusy(QStringLiteral("installing"), desktop, 0);
     QPointer<DesktopEnvironment> self(this);
     m_packages(
@@ -416,11 +421,74 @@ bool DesktopEnvironment::install(const QString &desktop, bool now)
     return true;
 }
 
-bool DesktopEnvironment::switchNow(const QString &desktop)
+bool DesktopEnvironment::walletAsks() const
+{
+    return canSwitchNow() && WalletHandoff::loginWalletExists(m_walletFolder);
+}
+
+void DesktopEnvironment::setWallet(const QString &folder, const QString &chkpwd, KeyKeeper keeper)
+{
+    m_walletFolder = folder;
+    m_chkpwd = chkpwd;
+    m_keyKeeper = std::move(keeper);
+    Q_EMIT changed();
+}
+
+bool DesktopEnvironment::switchNow(const QString &desktop, const QString &walletPassword)
 {
     if (!m_busy.isEmpty() || !installed(desktop) || desktop == m_current || !canSwitchNow() || m_sessionId.isEmpty())
         return false;
+    QString password = walletPassword.isEmpty() ? m_walletPassword : walletPassword;
+    m_walletPassword.fill(QChar(0));
+    m_walletPassword.clear();
+    if (!walletAsks()) {
+        setBusy(QStringLiteral("preparing"), desktop);
+        armSwitch(desktop);
+        return true;
+    }
+    // the saved passwords come along: the person's password first
+    if (password.isEmpty()) {
+        Q_EMIT finished(QStringLiteral("switch-now"), desktop, false, false, QStringLiteral("wallet-password"));
+        return false;
+    }
     setBusy(QStringLiteral("preparing"), desktop);
+    const passwd *pw = getpwuid(getuid());
+    const QString login = pw ? QString::fromLocal8Bit(pw->pw_name) : QString();
+    QPointer<DesktopEnvironment> self(this);
+    WalletHandoff::checkPassword(login, password, [self, desktop, password](bool ok) mutable {
+        if (!self) {
+            password.fill(QChar(0));
+            return;
+        }
+        if (!ok) {
+            password.fill(QChar(0));
+            self->setBusy({}, {});
+            Q_EMIT self->finished(QStringLiteral("switch-now"), desktop, false, false, QStringLiteral("wallet-wrong"));
+            return;
+        }
+        const QByteArray salt = WalletHandoff::readSalt(self->m_walletFolder);
+        QByteArray secret = password.toUtf8();
+        password.fill(QChar(0));
+        QByteArray key = salt.isEmpty() ? QByteArray() : WalletHandoff::deriveKey(secret, salt);
+        secret.fill('\0');
+        if (key.isEmpty()) {
+            self->armSwitch(desktop);
+            return;
+        }
+        auto keeper = self->m_keyKeeper ? self->m_keyKeeper : KeyKeeper(&WalletHandoff::handOver);
+        keeper(key, [self, desktop](bool) {
+            // without the keeper the switch still happens; the wallet then
+            // asks on the other desktop, as before
+            if (self)
+                self->armSwitch(desktop);
+        });
+        key.fill('\0');
+    }, m_chkpwd.isEmpty() ? QStringLiteral("/usr/sbin/unix_chkpwd") : m_chkpwd);
+    return true;
+}
+
+void DesktopEnvironment::armSwitch(const QString &desktop)
+{
     QPointer<DesktopEnvironment> self(this);
     auto armed = [self, desktop](const QStringList &ids) {
         if (!self)
@@ -459,7 +527,6 @@ bool DesktopEnvironment::switchNow(const QString &desktop)
         m_apps(m_current, armed);
     else
         armed(m_openAppIds);
-    return true;
 }
 
 void DesktopEnvironment::leave()

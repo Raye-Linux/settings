@@ -9,6 +9,7 @@
 // The other desktop is never removed by itself: removing Hyprland is its
 // own button, shown when both are there.
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import org.raye.settings
 
@@ -29,6 +30,9 @@ PageScaffold {
     property string notNow: ""
     // the transition gave way: the apps are being asked to close
     property bool waitingForApps: false
+    // what the password line under the switch says, "" for nothing
+    property string walletError: ""
+    readonly property bool walletShown: desktops.walletAsks && desktops.canSwitchNow && !keeping
 
     // the other desktop picked, or this one again while the next sign-in
     // would open the other
@@ -63,10 +67,21 @@ PageScaffold {
     function switchNow() {
         page.failure = null
         page.notNow = ""
+        page.walletError = ""
+        let password = ""
+        if (page.walletShown) {
+            password = walletPassword.text
+            if (password === "") {
+                page.walletError = i18nc("@info", "Type your password first.")
+                walletPassword.forceActiveFocus()
+                return
+            }
+            walletPassword.clear()
+        }
         if (page.installed(page.target))
-            desktops.switchNow(page.target)
+            desktops.switchNow(page.target, password)
         else
-            desktops.install(page.target, desktops.canSwitchNow)
+            desktops.install(page.target, desktops.canSwitchNow, password)
     }
     function switchLater() {
         page.failure = null
@@ -84,6 +99,13 @@ PageScaffold {
                 transition.dismiss()
                 page.waitingForApps = false
             }
+            if (action === "switch-now" && (message === "wallet-wrong" || message === "wallet-password")) {
+                page.walletError = message === "wallet-wrong"
+                                   ? i18nc("@info", "That password isn't right. Try again.")
+                                   : i18nc("@info", "Type your password first.")
+                walletPassword.forceActiveFocus()
+                return
+            }
             if (ok) {
                 page.signOutLater = false
                 page.failure = null
@@ -95,6 +117,9 @@ PageScaffold {
             transition.from = page.desktops.current
             transition.to = desktop
             transition.title = i18nc("@info:status", "Switching to %1…", page.nameOf(desktop))
+            // the pictures and the words on the screen Settings is on
+            const w = page.Window.window
+            transition.mainScreen = w && w.screen ? w.screen.name : ""
             transition.play()
         }
         function onSwitchNowUnavailable(desktop) {
@@ -302,6 +327,41 @@ PageScaffold {
                 font: Theme.body
                 color: Theme.textSecondary
                 wrapMode: Text.WordWrap
+            }
+            // the saved passwords (KDE wallet) open with the sign-in
+            // password; the automatic sign-in of a switch has none, so it
+            // is asked here, once, instead of by a window later
+            ColumnLayout {
+                objectName: "walletBox"
+                Layout.fillWidth: true
+                visible: page.walletShown
+                spacing: Theme.s2
+                Text {
+                    objectName: "walletLine"
+                    Layout.fillWidth: true
+                    text: i18nc("@info", "Your saved passwords (Wi-Fi, websites, accounts) come along. Type your password to keep them unlocked on %1.", page.nameOf(page.target))
+                    font: Theme.body
+                    color: Theme.textSecondary
+                    wrapMode: Text.WordWrap
+                }
+                PasswordField {
+                    id: walletPassword
+                    objectName: "walletPassword"
+                    Layout.preferredWidth: 320
+                    placeholderText: i18nc("@label password field", "Your password")
+                    enabled: page.desktops.busy === ""
+                    onAccepted: page.switchNow()
+                    onTextChanged: if (text !== "") page.walletError = ""
+                }
+                Text {
+                    objectName: "walletError"
+                    Layout.fillWidth: true
+                    visible: page.walletError !== ""
+                    text: page.walletError
+                    font: Theme.body
+                    color: Theme.critical
+                    wrapMode: Text.WordWrap
+                }
             }
             RowLayout {
                 spacing: Theme.s3

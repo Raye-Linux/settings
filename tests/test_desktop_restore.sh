@@ -17,6 +17,9 @@ mkdir -p "$dir/state/raye" "$dir/data/applications" "$dir/sys/applications"
 for id in org.kde.kate org.kde.dolphin org.raye.settings; do touch "$dir/sys/applications/$id.desktop"; done
 printf '#!/bin/sh\necho "$1 $2" >> %s/started\n' "$dir" > "$dir/launch"; chmod +x "$dir/launch"
 export RAYE_LAUNCHER=$dir/launch
+# the wallet step (raye-settings --wallet-open): written down in the same log
+printf '#!/bin/sh\necho "wallet $1" >> %s/started\n' "$dir" > "$dir/wallet"; chmod +x "$dir/wallet"
+export RAYE_WALLET_OPEN=$dir/wallet
 list=$dir/state/raye/desktop-switch
 write() { # to, seconds ago
     printf '# Written by Settings\nto=%s\nat=%s\napp=org.kde.kate\napp=org.kde.dolphin\napp=../../bin/sh\napp=not.installed\napp=org.raye.settings\n' \
@@ -26,7 +29,8 @@ started() { cat "$dir/started" 2>/dev/null; }
 
 write hyprland 5
 XDG_CURRENT_DESKTOP=Hyprland sh "$helper"
-check "the apps open again on Hyprland" sh -c "[ \"\$(cut -d' ' -f1 '$dir/started' | tr '\n' ' ')\" = 'org.kde.kate org.kde.dolphin org.raye.settings ' ]"
+check "the saved passwords open first, then the apps" sh -c "[ \"\$(cut -d' ' -f1 '$dir/started' | tr '\n' ' ')\" = 'wallet org.kde.kate org.kde.dolphin org.raye.settings ' ]"
+check "through the wallet step of Settings" grep -qx "wallet --wallet-open" "$dir/started"
 check "from their own .desktop files" grep -qx "org.kde.kate $dir/sys/applications/org.kde.kate.desktop" "$dir/started"
 check "the list is read once" test ! -e "$list"
 rm -f "$dir/started"

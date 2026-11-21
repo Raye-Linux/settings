@@ -52,6 +52,15 @@ start() { # desktop id, its file
     fi
 }
 
+# The saved passwords first, before the apps that read them: Settings left
+# the wallet's key with a keeper when the switch was made (the automatic
+# sign-in had no password to open it with); hand it to the wallet now.
+# Nothing to do when there is no keeper.
+wallet_open=${RAYE_WALLET_OPEN:-raye-settings}
+if command -v "$wallet_open" >/dev/null 2>&1; then
+    timeout 20 "$wallet_open" --wallet-open >/dev/null 2>&1 || true
+fi
+
 printf '%s\n' "$content" | sed -n 's/^app=//p' | head -n 40 | while IFS= read -r id; do
     case $id in ''|*[!A-Za-z0-9._-]*) continue ;; esac
     file=$(find_app "$id") || continue

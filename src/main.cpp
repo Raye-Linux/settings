@@ -10,6 +10,7 @@
 #include "router.h"
 #include "systeminfo.h"
 #include "updatestatus.h"
+#include "wallethandoff.h"
 #include "windowsimport.h"
 
 #include <KAboutData>
@@ -190,6 +191,20 @@ int main(int argc, char *argv[])
         if (std::strcmp(argv[i], "--knows") == 0) {
             QCoreApplication ask(argc, argv);
             return knows(QString::fromLocal8Bit(argv[i + 1])) ? 0 : 1;
+        }
+    }
+
+    // the saved passwords across a desktop switch (wallethandoff.h): the
+    // keeper that holds the wallet key for the new desktop, and the step of
+    // the new desktop that takes it
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--wallet-keep") == 0) {
+            QCoreApplication keeper(argc, argv);
+            return WalletHandoff::keep();
+        }
+        if (std::strcmp(argv[i], "--wallet-open") == 0) {
+            QCoreApplication opener(argc, argv);
+            return WalletHandoff::open();
         }
     }
 

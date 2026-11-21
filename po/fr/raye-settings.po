@@ -11190,3 +11190,23 @@ msgid "1 app is open: %2"
 msgid_plural "%1 apps are open: %2"
 msgstr[0] "%1 application est ouverte : %2"
 msgstr[1] "%1 applications sont ouvertes : %2"
+
+msgctxt "@info"
+msgid "Type your password first."
+msgstr "Tapez d'abord votre mot de passe."
+
+msgctxt "@info"
+msgid "That password isn't right. Try again."
+msgstr "Ce mot de passe n'est pas le bon. Réessayez."
+
+msgctxt "@info"
+msgid ""
+"Your saved passwords (Wi-Fi, websites, accounts) come along. Type your "
+"password to keep them unlocked on %1."
+msgstr ""
+"Vos mots de passe enregistrés (Wi-Fi, sites web, comptes) vous suivent. "
+"Tapez votre mot de passe pour qu'ils restent déverrouillés sur %1."
+
+msgctxt "@label password field"
+msgid "Your password"
+msgstr "Votre mot de passe"

@@ -110,8 +110,10 @@ mkdir -p "$dir/logind"
 } > "$dir/loginctl"
 printf '#!/bin/sh\necho "$@" >> %s/run-calls\n' "$dir" > "$dir/systemd-run"
 chmod +x "$dir/loginctl" "$dir/systemd-run"
+mkdir -p "$dir/vt"
 export RAYE_LOGINCTL=$dir/loginctl RAYE_SYSTEMD_RUN=$dir/systemd-run RAYE_SELF=$helper RAYE_SWITCH_WINDOW=2
-mine() { printf 'User=%s\nActive=yes\nClass=user\nType=wayland\nSeat=seat0\nState=active\n' "$RAYE_TEST_UID"; }
+export RAYE_VT_DIR=$dir/vt RAYE_SWITCH_SETTLE=0
+mine() { printf 'User=%s\nActive=yes\nClass=user\nType=wayland\nSeat=seat0\nState=active\nVTNr=2\n' "$RAYE_TEST_UID"; }
 mine > "$dir/logind/5"
 switch=$dir/conf.d/zz-raye-switch.conf
 check "switch to Hyprland now" sh "$helper" switch hyprland 5
@@ -192,6 +194,37 @@ start=$(date +%s)
 RAYE_SWITCH_WINDOW=60 RAYE_SWITCH_AFTER=2 sh "$helper" watch "$RAYE_TEST_UID" 5 "$me"
 check "no new session after the old one ended: gone soon" sh -c "[ \$(( \$(date +%s) - $start )) -le 5 ] && [ ! -e '$switch' ]"
 mine > "$dir/logind/5"
+
+# Owner's Dell, 2026-11-21: a full screen of terminal text for a few
+# seconds during the switch. The old session's terminal is what shows once
+# its desktop has let go of the screen: it is emptied, painted in the new
+# desktop's first colour, no cursor; given back once the new one is there.
+: > "$dir/vt/tty2"
+sh "$helper" switch hyprland 5
+printf '5 %s %s seat0\n9 %s %s seat0\n' "$RAYE_TEST_UID" "$me" "$RAYE_TEST_UID" "$me" > "$dir/logind/list"
+sed -i 's/State=active/State=closing/' "$dir/logind/5"
+sh "$helper" watch "$RAYE_TEST_UID" 5 "$me"
+vt=$(od -An -c "$dir/vt/tty2" | tr -d ' \n')
+check "the old session's terminal gets Hyprland's colour" sh -c "printf '%s' '$vt' | grep -q ']P00e0a17'"
+check "it is emptied and its cursor hidden" sh -c "printf '%s' '$vt' | grep -q '\[2J' && printf '%s' '$vt' | grep -q '\[?25l'"
+check "its colours and cursor come back at the end" sh -c "printf '%s' '$vt' | grep -q ']R' && printf '%s' '$vt' | grep -q '\[?25h'"
+check "painted before it is given back" sh -c "[ \$(printf '%s' '$vt' | grep -bo ']P0' | head -1 | cut -d: -f1) -lt \$(printf '%s' '$vt' | grep -bo ']R' | head -1 | cut -d: -f1) ]"
+mine > "$dir/logind/5"
+: > "$dir/vt/tty2"
+sh "$helper" switch plasma 5
+sed -i 's/State=active/State=closing/' "$dir/logind/5"
+sh "$helper" watch "$RAYE_TEST_UID" 5 "$me"
+check "towards Plasma: the colour of its start screen" grep -q ']P0100f13' "$dir/vt/tty2"
+mine | sed 's/VTNr=2/VTNr=2;x/' > "$dir/logind/5"
+: > "$dir/vt/tty2"
+sh "$helper" switch plasma 5 2>/dev/null
+sed -i 's/State=active/State=closing/' "$dir/logind/5"
+sh "$helper" watch "$RAYE_TEST_UID" 5 "$me"
+check "a strange terminal number is not written to" test ! -s "$dir/vt/tty2"
+rm -f "$dir/logind/list"
+mine > "$dir/logind/5"
+sh "$helper" cancel 2>/dev/null
+
 PKEXEC_UID=$RAYE_TEST_UID sh "$helper" watch "$RAYE_TEST_UID" 5 "$me" 2>/dev/null
 check "the watcher is never run through pkexec" test $? -eq 2
 check "boot takes it away" grep -qs '^r /etc/sddm.conf.d/zz-raye-switch.conf' "$SOURCE_DIR"/data/tmpfiles/raye-desktop-switch.conf

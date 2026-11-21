@@ -77,6 +77,10 @@ class DesktopEnvironment : public QObject
     Q_PROPERTY(int busyPercent READ busyPercent NOTIFY busyChanged)
     // the names of the apps open now (Settings itself left out)
     Q_PROPERTY(QStringList openApps READ openApps NOTIFY openAppsChanged)
+    // switching now needs the person's password, typed on the page: the
+    // saved passwords (KDE wallet) open with it on the other desktop, as
+    // they do at a normal sign-in (wallethandoff.h)
+    Q_PROPERTY(bool walletAsks READ walletAsks NOTIFY changed)
 
 public:
     // (operation "install" or "remove", package names, progress 0-100, done(ok, error text))
@@ -106,16 +110,22 @@ public:
     QString busyDesktop() const { return m_busyDesktop; }
     int busyPercent() const { return m_busyPercent; }
     QStringList openApps() const { return m_openAppNames; }
+    bool walletAsks() const;
+    // the tests: where the wallets are, what checks the password, and what
+    // keeps the key for the new desktop
+    using KeyKeeper = std::function<void(const QByteArray &key, std::function<void(bool)> done)>;
+    void setWallet(const QString &folder, const QString &chkpwd, KeyKeeper keeper);
 
     Q_INVOKABLE bool installed(const QString &desktop) const;
     // the next sign-in opens this (installed) desktop
     Q_INVOKABLE bool choose(const QString &desktop);
     // install it; then, when now is true, switch to it right away, else
     // make it the next sign-in's
-    Q_INVOKABLE bool install(const QString &desktop, bool now);
+    Q_INVOKABLE bool install(const QString &desktop, bool now, const QString &walletPassword = QString());
     // go to this desktop now: save the apps, arm one sign-in, leave. The
     // page plays its transition between readyToLeave and leave().
-    Q_INVOKABLE bool switchNow(const QString &desktop);
+    // walletPassword: the person's password when walletAsks (else ignored)
+    Q_INVOKABLE bool switchNow(const QString &desktop, const QString &walletPassword = QString());
     Q_INVOKABLE void leave();
     Q_INVOKABLE bool removeHyprland();
     Q_INVOKABLE void signOut();
@@ -180,4 +190,10 @@ private:
     QStringList m_openAppIds;
     QStringList m_openAppNames;
     QTimer m_stillHere;
+    QString m_walletFolder;
+    QString m_chkpwd;
+    KeyKeeper m_keyKeeper;
+    // typed on the page for an "Install and switch now": used once
+    QString m_walletPassword;
+    void armSwitch(const QString &desktop);
 };
